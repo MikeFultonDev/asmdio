@@ -6,6 +6,7 @@
 set -e
 
 MODE='64'
+MODE='31'
 
 if [ "${MODE}" = "31" ]; then
   DATA_MODEL="ilp32"

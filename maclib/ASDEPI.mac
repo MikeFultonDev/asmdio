@@ -1,5 +1,5 @@
-         MACRO -- RDTEPI -- General Epilog for 31-bit & 64-bit linkage
-&NAME    RDTEPI
+         MACRO -- ASDEPI -- General Epilog for 31-bit & 64-bit linkage
+&NAME    ASDEPI
 .*
 .* Pull in the right macro based on the SYSPARM AMODE setting
 .*
@@ -9,9 +9,9 @@
          MNOTE 8 'AMODE not specified in SYSPARM.'
          MNOTE 8 '  AMODE must be AMODE31 or AMODE64'
 .AMODE64 DS 0H
-&NAME    RDT64EPI 
-         AGO       .RDTEPIE 
+&NAME    ASD64EPI 
+         AGO       .ASDEPIE 
 .AMODE31 DS 0H
 &NAME    EDCEPIL
-.RDTEPIE DS 0H
+.ASDEPIE DS 0H
          MEND

@@ -1,5 +1,5 @@
-         MACRO -- RDTSECT -- General Section Specification
-&NAME    RDTSECT
+         MACRO -- ASDSECT -- General Section Specification
+&NAME    ASDSECT
 &NAME    CSECT
 &NAME    AMODE 31
 &NAME    RMODE ANY
@@ -13,8 +13,8 @@
          MNOTE 8 '  AMODE must be AMODE31 or AMODE64'
 .AMODE64 DS 0H  
 &NAME    XATTR REFERENCE(DATA)
-         AGO       .RDTSECTE 
+         AGO       .ASDSECTE 
 .AMODE31 DS 0H
 .*
-.RDTSECTE DS 0H
+.ASDSECTE DS 0H
          MEND

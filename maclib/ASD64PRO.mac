@@ -1,5 +1,5 @@
-         MACRO -- RDT64PRO -- 31-bit Linkage in 64-bit LE370 env
-&NAME    RDT64PRO &USRDSAL=0,                                          +
+         MACRO -- ASD64PRO -- 31-bit Linkage in 64-bit LE370 env
+&NAME    ASD64PRO &USRDSAL=0,                                          +
                &BASEREG=3
          LCLC  &UU
 &UU      SETC  '&SYSNDX'

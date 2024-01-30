@@ -1,5 +1,5 @@
-         MACRO -- RDTPRO -- General Prolog for 31-bit & 64-bit linkage
-&NAME    RDTPRO &USR_DSAL=0,                                           +
+         MACRO -- ASDPRO -- General Prolog for 31-bit & 64-bit linkage
+&NAME    ASDPRO &USR_DSAL=0,                                           +
                &BASE_REG=12
 .*
 .* Pull in the right macro based on the SYSPARM AMODE setting
@@ -10,9 +10,9 @@
          MNOTE 8 'AMODE not specified in SYSPARM.'
          MNOTE 8 '  AMODE must be AMODE31 or AMODE64'
 .AMODE64 DS 0H
-&NAME    RDT64PRO USRDSAL=&USR_DSAL,BASEREG=&BASE_REG
-         AGO       .RDTPROE 
+&NAME    ASD64PRO USRDSAL=&USR_DSAL,BASEREG=&BASE_REG
+         AGO       .ASDPROE 
 .AMODE31 DS 0H
 &NAME    EDCPRLG USRDSAL=&USR_DSAL,BASEREG=&BASE_REG
-.RDTPROE DS 0H
+.ASDPROE DS 0H
          MEND
