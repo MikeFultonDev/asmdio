@@ -1,0 +1,9 @@
+#
+# Basic script to clean built files
+#
+
+# Use set -e to force failure if something doesn't build
+set -e
+
+(cd src && make clean)
+(cd test && make clean)

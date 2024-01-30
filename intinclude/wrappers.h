@@ -2,30 +2,32 @@
  * wrappers for C 31-bit or 64-bit functions
  */
 
-#include "dio.h"
-
 #if AMODE==31
-  #pragma linkage(OPENA, OS)
-  #pragma linkage(CLOSEA, OS)
+  #pragma linkage(OPENA,    OS)
+  #pragma linkage(CLOSEA,   OS)
+  #pragma linkage(MALOC24A, OS)
+  #pragma linkage(FREE24A,  OS)
 
-  int OPENA(struct dcb* __ptr32 dcb);
-  int CLOSEA(struct dcb* __ptr32 dcb);
-  void* __ptr32 MALLOC24(int len);
-  void* __ptr32 FREE24(void* __ptr32, int len);
+  struct opencb;
+
+  int OPENA(struct opencb* __ptr32 opencb);
+  int CLOSEA(struct opencb* __ptr32 opencb);
+  void* __ptr32 MALOC24A(int len);
+  int FREE24A(void* __ptr32, int len);
 
 #elif AMODE == 64
   extern int OPENA;
   extern int CLOSEA;
-  extern int MALLOC24;
-  extern int FREEC24;
-  #pragma variable(OPENA, NORENT)
-  #pragma variable(CLOSEA,  NORENT)
-  #pragma variable(MALLOC24,  NORENT)
-  #pragma variable(FREE24,  NORENT)
-	#define OPENA(dcb)    call31asm("OPENA", &OPENA, 1, dcb)
-	#define CLOSEA(dcb)   call31asm("CLOSEA", &CLOSEA, 1, dcb)
-	#define MALLOC24(len) call31asm("MALLOC24", &MALLOC24, 1, len)
-	#define FREE24(ptr)   call31asm("FREE24", &FREE24, 2, ptr, len)
+  extern int MALOC24A;
+  extern int FREE24A;
+  #pragma variable(OPENA,    NORENT)
+  #pragma variable(CLOSEA,   NORENT)
+  #pragma variable(MALOC24A, NORENT)
+  #pragma variable(FREE24A,  NORENT)
+	#define OPENA(dcb)        call31asm("OPENA", &OPENA, 1, dcb)
+	#define CLOSEA(dcb)       call31asm("CLOSEA", &CLOSEA, 1, dcb)
+	#define MALOC24A(len)     call31asm("MALOC24A", &MALOC24A, 1, len)
+	#define FREE24A(ptr,len)  call31asm("FREE24A", &FREE24A, 2, ptr, len)
 #else
 	#error "AMODE must be 31 or 64"
 #endif

@@ -1,18 +1,6 @@
-*
-* IBM Confidential
-* Licensed Materials - Property of IBM
-*
-* IBM Rational Developer Traveler
-*
-* (C) Copyright IBM Corporation 2013, 2014.
-*
-* The source code for this program is not published or otherwise
-* divested of its trade secrets, irrespective of what has been
-* deposited with the U.S. Copyright Office
-*
-DIO   TITLE 'DIO   - Dataset services'
+DIOA  TITLE 'DIOA  - Dataset services'
          SPACE 1
-DIO      RDTSECT
+DIOA     RDTSECT
 
 **| OPENA..... OPEN macro, return results
 **| Input:
@@ -20,15 +8,16 @@ DIO      RDTSECT
 **| Output:
 **|   R15 -> RC 0 if successful, non-zero otherwise
 
-DIO      CSECT
+DIOA     CSECT
          ENTRY OPENA
-OPENA    RDTPRO BASE_REG=12,USR_DSAL=OPENA_DSAL
+OPENA    RDTPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
          LR    R7,R1
          USING OPENA_PARMS,R7
 
 * Call SVC19 (OPEN) with 24-bit DCB
 
 *        SVC 19
+         LA  R15,0
 *
 OPENA_EXIT   DS    0H
          RDTEPI
@@ -42,10 +31,11 @@ OPENA_DSAL EQU 0
 
 **| CLOSEA..... CLOSE macro, return results
 
-DIO      CSECT
+DIOA     CSECT
          ENTRY CLOSEA
-CLOSEA   RDTPRO BASE_REG=12,USR_DSAL=CLOSEA_DSAL
+CLOSEA   RDTPRO BASE_REG=3,USR_DSAL=CLOSEA_DSAL
          LR    R7,R1
+         LA  R15,0
 
 CLOSEA_EXIT    DS    0H
          RDTEPI
@@ -57,64 +47,65 @@ CLOSEA_PARMS   DSECT
 CLOSEA_DCB   DS  AL4
 CLOSEA_DSAL  EQU 0
 
-**| MALLOC24.... acquire storage below the line
-**| R1 -> Fullword allocation length
+**| MALOC24A.... acquire storage below the line
+**| R1 -> Pointer to fullword allocation length
 **| R15 -> Pointer to allocated storage or 0 if failure
 
-DIO      CSECT
-         ENTRY MALLOC24
-MALLOC24 RDTPRO BASE_REG=12,USR_DSAL=MALLOC24_DSAL
+DIOA     CSECT
+         ENTRY MALOC24A
+MALOC24A RDTPRO BASE_REG=3,USR_DSAL=MALOC24A_DSAL
          LR    R7,R1
-         USING MALLOC24_PARMS,R7
-         L     R8,MALLOC24_LEN
+         USING MALOC24A_PARMS,R7
+         L     R8,MALOC24A_LEN
+         L     R8,0(,R8)
 
 * Get 24-bit storage
 
          STORAGE OBTAIN,LENGTH=(8),LOC=24
          CHI R15,0
-         BZ  MALLOC24_SUCCESS
-MALLOC24_FAILURE DS    0H
+         BZ  MALOC24A_SUCCESS
+MALOC24A_FAILURE DS    0H
          LA  R15,0
-         B   MALLOC24_EXIT
-MALLOC24_SUCCESS DS    0H
+         B   MALOC24A_EXIT
+MALOC24A_SUCCESS DS    0H
          LR    R15,R1
-MALLOC24_EXIT    DS    0H
+MALOC24A_EXIT    DS    0H
          RDTEPI
 
          DROP
          LTORG
 
-MALLOC24_PARMS   DSECT
-MALLOC24_LEN   DS  AL4
-MALLOC24_DSAL  EQU 0
+MALOC24A_PARMS   DSECT
+MALOC24A_LEN   DS  AL4
+MALOC24A_DSAL  EQU 0
 
-**| FREE24.... free storage below the line
+**| FREE24A.... free storage below the line
 **| R1 -> Fullword pointer and Fullword allocation length
 **| R15 -> 0 if successful, non-zero otherwise
 
-DIO      CSECT
-         ENTRY FREE24
-FREE24   RDTPRO BASE_REG=12,USR_DSAL=FREE24_DSAL
+DIOA     CSECT
+         ENTRY FREE24A
+FREE24A  RDTPRO BASE_REG=3,USR_DSAL=FREE24A_DSAL
          LR    R7,R1
-         USING FREE24_PARMS,R7
-         LA    R8,FREE24_PTR
-         L     R9,FREE24_LEN
+         USING FREE24A_PARMS,R7
+         L     R8,FREE24A_PTR
+         L     R9,FREE24A_LEN
+         L     R9,0(,R9)
 
 * Get 24-bit storage
 
          STORAGE RELEASE,ADDR=(8),LENGTH=(9)
-FREE24_EXIT    DS    0H
+FREE24A_EXIT    DS    0H
          RDTEPI
 
          DROP
          LTORG
 
-FREE24_PARMS   DSECT
-FREE24_PTR   DS  AL4
-FREE24_LEN   DS  AL4
-FREE24_DSAL  EQU 0
+FREE24A_PARMS   DSECT
+FREE24A_PTR   DS  AL4
+FREE24A_LEN   DS  AL4
+FREE24A_DSAL  EQU 0
 
-**| Common Equates Follow
 **| Common Equates Follow
 
 R0         EQU   0
@@ -136,6 +127,6 @@ R15        EQU   15
 
 **| Finish off the CSECT
 
-DIO      CSECT
+DIOA     CSECT
          DC    C'Open Source'
          END

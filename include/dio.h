@@ -16,5 +16,11 @@
   };
   #pragma pack(pop)
 
-  #define SET_24BIT_PTR(ref,val) (ref) = (val)
+  #define SET_24BIT_PTR(ref,val) (ref) = ((int)(val))
+
+  int OPEN(struct opencb* __ptr32 opencb);
+  int CLOSE(struct opencb* __ptr32 opencb);
+  void* __ptr32 MALLOC24(int len);
+  int FREE24(void* __ptr32 addr, int len);
+
 #endif
