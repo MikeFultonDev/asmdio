@@ -24,7 +24,6 @@ Examples:
 "
 }
 
-
 verbose=false
 if [ $# -gt 0 ]; then
   if [ "$1" = "-h" ] || [ "$1" = '--help' ]; then
@@ -55,7 +54,7 @@ fi
 
 struct_name=''
 if [ "${input}" != "" ]; then
-  tmp_input=false
+  source=$(cat "${input}")
 else
   source=""
   OLDIFS="$IFS"
@@ -65,22 +64,19 @@ else
 ${line}"
   done </dev/stdin
   IFS="$OLDIFS"
-  input="/tmp/edcdsect.$$.s"
-  printf '%s\n' "${source}" >"${input}"
-  tmp_input=true
 fi
 
 compiler="CBC.SCCNCMP"
 
-asm='as'
-asm_opts='--SUPRWARN(425,434),GOFF,ADATA,NOTERM,NODECK,NOOBJECT,LIST'
+asm='ASMA90'
+asm_opts='SUPRWARN(425,434),GOFF,ADATA,NOTERM,NODECK,NOOBJECT,LIST'
 sysadata=$(mvstmp $(hlq))
 if ! dtouch -rvb -l8144 -tseq "${sysadata}" ; then
   printf 'Unable to allocate SYSADATA temporary dataset %s' "${sysadata}"
   exit 4
 fi
 
-listing=$(as --gadata="//'${sysadata}'" "${asm_opts}" "${input}" 2>/dev/null)
+listing=$(printf '%s\n' "${source}" | mvscmd --pgm="${asm}" --args="${asm_opts}" --syslib=SYS1.MACLIB --sysadata="${sysadata}" --sysin=stdin --sysprint=* --syspunch=DUMMY --syslin=DUMMY)
 rc=$?
 
 if [ $rc -gt 4 ] ; then
@@ -112,7 +108,3 @@ fi
 
 drm -f "${sysadata}"
 drm -f "${tmp_output}"
-if ${tmp_input} ; then
-  rm -f "${input}"
-fi
-
