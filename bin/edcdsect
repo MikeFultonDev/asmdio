@@ -35,6 +35,9 @@ if [ $# -gt 0 ]; then
     verbose=true
     shift
   fi
+fi
+
+if [ $# -gt 0 ]; then
   if [ -e "$1" ]; then
     input="$1"
   else
@@ -80,9 +83,13 @@ fi
 listing=$(as --gadata="//'${sysadata}'" "${asm_opts}" "${input}" 2>/dev/null)
 rc=$?
 
-if [ $rc -gt 4 ]; then
+if [ $rc -gt 4 ] ; then
   printf '%s\n' "${listing}"
   exit $rc
+fi
+
+if ${verbose} ; then
+  printf 'Assembler Listing:\n%s\n' "${listing}" >&2
 fi
 
 tmp_output=$(mvstmp $(hlq))
@@ -97,6 +104,10 @@ cat "//'${tmp_output}'"
 if [ $rc -gt 0 ]; then
   printf '%s\n' "${err}" >&2
   exit $rc
+fi
+
+if ${verbose} ; then
+  printf 'CCNEDSCT Listing:\n%s\n' "${err}" >&2
 fi
 
 drm -f "${sysadata}"
