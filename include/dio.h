@@ -10,11 +10,7 @@
   };
   #pragma pack(pop)
 
-  #pragma pack(full)
-  struct dcb {
-    int stuff;
-  };
-  #pragma pack(pop)
+  #include "s99.h"
 
   #define SET_24BIT_PTR(ref,val) (ref) = ((int)(val))
 
@@ -22,5 +18,7 @@
   int CLOSE(struct opencb* __ptr32 opencb);
   void* __ptr32 MALLOC24(int len);
   int FREE24(void* __ptr32 addr, int len);
+
+  int SVC99(struct s99rbp* __ptr32 s99rbp);
 
 #endif
