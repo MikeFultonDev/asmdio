@@ -1,117 +1,224 @@
-#pragma pack(packed)
+#ifndef __S99X__
+	#define __S99X__ 1
+	#include <stdlib.h>
+	#include <stdio.h>
 
-struct s99rbp {
-  unsigned int   s99rbpnd  : 1, /* LAST POINTER INDICATOR */
-                          : 31;
-  };
+	#pragma pack(1)
 
-struct s99rb {
-  unsigned char  s99rbln;  /* LENGTH OF REQUEST BLOCK         */
-  unsigned char  s99verb;  /* VERB CODE                       */
-  union {
-    unsigned char  s99flag1[2]; /* FLAGS */
-    struct {
-      unsigned int   s99oncnv : 1, /* ALLOC FUNCTION-DO NOT USE AN     */
-                     s99nocnv : 1, /* ALLOC FUNCTION-DO NOT USE AN     */
-                     s99nomnt : 1, /* ALLOC FUNCTION-DO NOT MOUNT      */
-                     s99jbsys : 1, /* ALLOC FUNC-JOB RELATED SYSOUT    */
-                     s99cnenq : 1, /* ALL FUNCTIONS-ISSUE A   @ZA32641 */
-                     s99gdgnt : 1, /* ALLOC FUNCTION - IGNORE @YA10531 */
-                     s99msgl0 : 1, /* All functions - ignore the  @01A */
-                     s99nomig : 1; /* ALLOC function - do not     @03A */
-      unsigned int   s99nosym : 1, /* Allocate, unallocate, info       */
-                     s99acucb : 1, /* Alloc function-use Actual        */
-                     s99dsaba : 1, /* Request that the DSAB for        */
-                     s99dxacu : 1, /* Request above-the-line DSABs,    */
-                              : 4;
-      struct {
-        unsigned char  s99error[2]; /* ERROR REASON CODE                */
-        unsigned char  s99info[2];  /* INFORMATION REASON CODE          */
-        } s99rsc;                   /* REASON CODE FIELDS               */
-      };
-    };
-  int            s99txtpp; /* ADDR OF LIST OF TEXT UNIT PTRS  */
-  int            s99s99x;  /* ADDR OF REQ BLK EXTENSION  @L1C */
-  union {
-    unsigned char  s99flag2[4]; /* FLAGS FOR AUTHORIZED FUNCTIONS */
-    struct {
-      unsigned int   s99wtvol : 1, /* ALLOC FUNCTION-WAIT FOR          */
-                     s99wtdsn : 1, /* ALLOC FUNCTION-WAIT FOR DSNAME   */
-                     s99nores : 1, /* ALLOC FUNCTION-DO NOT DO         */
-                     s99wtunt : 1, /* ALLOC FUNCTION-WAIT FOR UNITS    */
-                     s99offln : 1, /* ALLOC FUNCTION-CONSIDER OFFLINE  */
-                     s99tionq : 1, /* ALL FUNCTIONS-TIOT ENQ ALREADY   */
-                     s99catlg : 1, /* ALLOC FUNCTION-SET SPECIAL       */
-                     s99mount : 1; /* ALLOC FUNCTION-MAY MOUNT VOLUME  */
-      unsigned int   s99udevt : 1, /* ALLOCATION FUNCTION-UNIT NAME    */
-                     s99pcint : 1, /* ALLOC FUNCTION-ALLOC    @Y30QPPB */
-                     s99dyndi : 1, /* ALLOC FUNCTION-NO JES3  @ZA63125 */
-                     s99tioex : 1, /* ALLOC FUNCTION - XTIOT           */
-                     s99aserr : 1, /* Unit Allocation / Unallocation   */
-                     s99igncl : 1, /* Alloc function - ignore          */
-                     s99dasup : 1, /* Alloc function - suppress        */
-                              : 1;
-      unsigned char  s99flg23;     /* THIRD BYTE OF FLAGS              */
-      unsigned char  s99flg24;     /* FOURTH BYTE OF FLAGS             */
-      };
-    };
-  };
+	typedef enum s99_verb {
+		S99VRBAL = 1, 
+		S99VRBUN = 2, 
+		S99VRBCC = 3, 
+		S99VRBDC = 4, 
+		S99VRBRI = 5, 
+		S99VRBDN = 6, 
+		S99VRBIN = 7 
+	};
 
-struct s99tupl {
-  unsigned int   s99tupln  : 1, /* LAST TEXT UNIT POINTER IN LIST */
-                          : 31;
-  };
+	struct s99_flag1 {
+		int s99oncnv:1;
+		int s99nocnv:1;
+		int s99nomnt:1;
+		int s99jbsys:1;
+		int s99cnenq:1;
+		int s99gdgnt:1;
+		int s99msglo:1;
+		int s99nomig:1;
+		int s99nosym:1;
+		int s99acucb:1;
+		int s99dsaba:1;
+		int s99dxacu:1;
+		int s99rsrv:4;
+	};
 
-struct s99tunit {
-  unsigned char  s99tukey[2]; /* KEY                             */
-  unsigned char  s99tunum[2]; /* N0. OF LENGTH+PARAMETER ENTRIES */
-  union {
-    unsigned char  s99tuent;    /* ENTRY OF LENGTH+PARAMETER        */
-    unsigned char  s99tulng[2]; /* LENGH OF 1ST (OR ONLY) PARAMETER */
-    };
-  unsigned char  s99tupar;    /* 1ST (OR ONLY) PARAMETER         */
-  };
+	struct s99_flag2 {
+		int s99wtvol:1;
+		int s99wtdsn:1;
+		int s99nores:1;
+		int s99wtunt:1;
+		int s99offln:1;
+		int s99tionq:1;
+		int s99catlg:1;
+		int s99mount:1;
+		int s99udevt:1;
+		int s99rsrv1:1;
+		int s99dyndi:1;
+		int s99tioex:1;
+		int s99dasup:1;
+		int s99rsrv2:19;
+	};
+		
+	struct s99_unit_entry {         
+		unsigned short s99tulng;
+		char s99tupar[0];
+	};
 
-struct s99tufld {
-  unsigned char  s99tulen[2]; /* LENGTH OF PARAMETER */
-  unsigned char  s99tuprm;    /* PARAMETER           */
-  };
+	struct s99_basic_text_unit {
+		unsigned short s99tukey;
+		unsigned short s99tunum;
+		struct s99_unit_entry entry[0];
+	};
 
-struct s99rbx {
-  unsigned char  s99eid[6];    /* CONTROL BLOCK ID ='S99RBX'  @L1A */
-  unsigned int            : 7,
-                 s99rbxvr : 1; /* CURRENT VERSION NUMBER      @L2A */
-  unsigned int   s99eimsg : 1, /* ISSUE MSG BEFORE RETURNING  @L1A */
-                 s99ermsg : 1, /* RETURN MSG TO CALLER        @L1A */
-                 s99elsto : 1, /* USER STORAGE SHOULD BE      @L1A */
-                 s99emkey : 1, /* USER SPECIFIED STORAGE KEY  @L1A */
-                 s99emsub : 1, /* USER SPECIFIED SUBPOOL FOR  @L1A */
-                 s99ewtp  : 1, /* USE WTO FOR MESSAGE OUTPUT  @L2A */
-                          : 2;
-  unsigned char  s99esubp;     /* SUBPOOL FOR MESSAGE BLOCKS  @L1A */
-  unsigned char  s99ekey;      /* STORAGE KEY FOR MESSAGE     @L1A */
-  unsigned char  s99emgsv;     /* SEVERITY LEVEL FOR MESSAGES @L1A */
-  unsigned char  s99enmsg;     /* NUMBER OF MESSAGE BLOCKS         */
-  int            s99ecppl;     /* ADDRESS OF CPPL             @L1A */
-  union {
-    unsigned char  s99emrc[4]; /* MESSAGE SERVICE RETURN CODE @L1A */
-    struct {
-      unsigned char  s99ercr; /* RESERVED                    @L1A */
-      unsigned char  s99ercm; /* RESERVED                    @D1C */
-      unsigned char  s99erco; /* RETURN CODE DEALING WITH    @L1A */
-      unsigned char  s99ercf; /* RETURN CODE DEALING WITH    @L1A */
-      };
-    };
-  int            s99ewrc;      /* PUTLINE/WTO RETURN CODE     @L1A */
-  int            s99emsgp;     /* MESSAGE BLOCK POINTER       @L1A */
-  union {
-    int            s99esirc; /* INFORMATION RETRIEVAL       @L1A */
-    struct {
-      unsigned char  s99eerr[2];  /* ERROR REASON CODE                */
-      unsigned char  s99einfo[2]; /* INFORMATION REASON CODE          */
-      };
-    };
-  unsigned char  s99ersn[4];   /* SMS REASON CODE             @02C */
-  };
+	struct s99_common_text_unit {
+		unsigned short s99tukey;
+		unsigned short s99tunum;
+		unsigned short s99tulng;
+		char s99tupar[256];
+	};
 
-#pragma pack(reset)
+	#define DALEROPT_SKIP 0x40
+
+	#define BTOKLEN(member) (sizeof((SVC99BrowseTokenTextUnit_T*) 0)->member)
+	#define BTOKIDLEN (BTOKLEN(btokid))
+	#define BTOKIOTPLEN (BTOKLEN(btokiotp))
+	#define BTOKJKEYLEN (BTOKLEN(btokjkey))
+	#define BTOKASIDLEN (BTOKLEN(btokasid))
+	#define BTOKRCIDLEN (BTOKLEN(btokrcid))
+
+	#define BTOKACTBUF    0xFFFF
+        #define BTOKBRWS 0
+        #define BTOKSTKN 3
+        #define BTOKVRNM 3
+
+	struct s99_browse_token_text_unit {
+		unsigned short s99tukey;
+		unsigned short s99tunum;
+		unsigned short btokpl1; 
+		char btokid[4];
+		unsigned short btokpl2;
+		unsigned char btoktype;
+		unsigned char btokvers;
+		unsigned short btokpl3;
+		char * __ptr32 btokiotp;
+		unsigned short btokpl4;
+		unsigned int btokjkey;
+		unsigned short btokpl5;
+		unsigned short btokasid;
+		unsigned short btokpl6;
+		char btokrcid[8];
+		unsigned short btokpl7;
+		unsigned char btoklsdl;
+		char btoklsda[254];
+		char rsrv;    
+	};
+
+	struct s99_text_unit {
+		union {
+			struct s99_common_text_unit ctu;
+			struct s99_basic_text_unit btu;
+			struct s99_browse_text_unit bttu;
+		};
+	};
+
+	#define DALDDNAM 0x01
+	#define DALDSNAM 0x02
+	#define DALSTATS 0x04
+	#define DALNDISP 0x05
+	#define DALEROPT 0x3D
+	#define DALRTDDN 0x55
+	#define DALBRTKN 0x6E
+	#define DALSSREQ 0x5C
+
+	#define DUNDDNAM 0x01
+
+	struct s99_eopts {
+		int s99eimsg:1;
+		int s99ermsg:1;
+		int s99elsto:1;
+		int s99emkey:1;
+		int s99emsub:1;
+		int s99ewtp:1;
+		int s99ersrv:2;
+	};
+
+	struct s99_emgsv {
+		int s99xrsrv1:4;
+		int s99xseve:1;
+		int s99xwarn:1;
+		int s99xrsrv2:2;
+	};
+
+	#define S99RBXVR 1
+	struct s99_rbx {
+		char s99eid[6];
+		char s99ever;
+		struct s99_eopts s99eopts;
+		char s99esubp;
+		char s99ekey;
+		struct s99_emgsv s99emgsv;
+		char s99enmsg;
+		void* __ptr32 s99ecppl;
+		char s99ercr;
+		char s99ercm;
+		char s99erco;
+		char s99ercf;
+		unsigned int s99ewrc;
+		void* __ptr32 s99emsgp;
+		unsigned short s99eerr;
+		unsigned short s99einfo;
+		unsigned int s99ersn;
+	};
+
+	struct s99rb {
+		unsigned char s99rbln;   /* length of request block-20*/
+		enum s99_verb s99verb;  
+    struct s99_flag1 s99flag1; 
+    unsigned short s99error;
+    unsigned short s99info;
+		struct s99_text_unit* __ptr32 * __ptr32 s99txtpp;
+		struct s99_rbx* __ptr32 s99s99x;
+    struct s99_flag2 s99flag2;  
+	};
+
+	struct s99_em_bufs {
+		unsigned short embufl1;
+		unsigned short embufo1;
+		char embuft1[251];
+		char emrsrv1;
+		unsigned short embufl2;
+		unsigned short embufo2;
+		char embuft2[251];
+		char emrsrv2;
+	};
+
+	struct s99_em_wtdert {
+		unsigned short emwtdesc;
+		char emwtrtcd[16];
+		unsigned short emrsrv;
+	};
+
+	struct s99_em {
+		int emputlin:1;
+		int emwtp:1; 
+		int emreturn:1; 
+		int emkeep:1; 
+		int emwtpcde:1; 
+		int emrsrv1:3; 
+
+		char emidnum;
+		char emnmsgbk;
+		char emsrsrv2;
+		struct s99rb * __ptr32 ems99rbp;
+		unsigned int emretcod;
+		void* __ptr32 emcpplp;
+		void* __ptr32 embufp;
+		unsigned int emsrsrv3;
+		void* __ptr32 emwtpcdp;
+
+		struct s99_em_wtdert emwtdert;
+
+		struct s99_em_bufs embuf;
+	};
+
+	#pragma pack(reset)
+
+	#define EMDAIR  1
+	#define EMFREE  51
+	#define EMSVC99 50
+
+  void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms);
+  struct s99rb* __ptr32 s99_init(SVC99Verb_T verb, SVC99Flag1_T flag1, SVC99Flag2_T flag2, struct s99_rbx* rbxin, size_t numtextunits, ...);
+  void s99_free(struct s99rb* __ptr32 parms);
+  int s99(struct s99rb* __ptr32 parms);
+  int s99_prt_msg(FILE* stream, struct s99rb* __ptr32 svc99parms, int svc99rc);
+#endif

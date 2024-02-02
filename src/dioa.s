@@ -106,30 +106,55 @@ FREE24A_PTR   DS  AL4
 FREE24A_LEN   DS  AL4
 FREE24A_DSAL  EQU 0
 
-**| SVC99A..... SVC99
+**| S99A..... SVC99
 **| Input:
 **|   R1 -> pointer to S99RBP
 **| Output:
 **|   R15 -> RC 0 if successful, non-zero otherwise
 
 DIOA     CSECT
-         ENTRY SVC99A
-SVC99A   ASDPRO BASE_REG=3,USR_DSAL=SVC99A_DSAL
+         ENTRY S99A
+S99A     ASDPRO BASE_REG=3,USR_DSAL=S99A_DSAL
          L     R1,0(,R1)
 
 * Call SVC99 (DYNALLOC) with S99RBP
 
          SVC 99
 *
-SVC99A_EXIT   DS    0H
+S99A_EXIT   DS    0H
          ASDEPI
 
          DROP
          LTORG
 
-SVC99A_PARMS   DSECT
-SVC99ARBP   DS AL4
-SVC99A_DSAL EQU 0         
+S99A_PARMS   DSECT
+S99ARBP   DS AL4
+S99A_DSAL EQU 0         
+
+**| S99MSGA..... SVC99MSG
+**| Input:
+**|   R1 -> pointer to em_parms
+**| Output:
+**|   R15 -> RC 0 if successful, non-zero otherwise
+
+DIOA     CSECT
+         ENTRY S99MSGA
+S99MSGA  ASDPRO BASE_REG=3,USR_DSAL=S99MSGA_DSAL
+         USING S99MSGA_PARMS,R13
+         ST   R1,S99MSGAP
+
+* Call SVC99MSG 
+         LINK EP=IEFDB476
+*
+S99MSGA_EXIT   DS    0H
+         ASDEPI
+
+         DROP
+         LTORG
+
+S99MSGA_PARMS   DSECT
+S99MSGAP DS  AL4
+S99MSGA_DSAL EQU 0
 
 **| Common Equates Follow
 

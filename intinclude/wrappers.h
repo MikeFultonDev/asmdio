@@ -3,6 +3,8 @@
  */
 
 #if AMODE==31
+  #pragma linkage(S99A,     OS)
+  #pragma linkage(S99MSGA,  OS)
   #pragma linkage(OPENA,    OS)
   #pragma linkage(CLOSEA,   OS)
   #pragma linkage(MALOC24A, OS)
@@ -11,7 +13,8 @@
   struct s99rbp;
   struct opencb;
 
-  int SVC99A(struct s99rbp* __ptr32 addr);
+  int S99A(struct s99rbp* __ptr32 addr);
+  int S99MSGA(struct s99_em* __ptr32 addr);
   int OPENA(struct opencb* __ptr32 opencb);
   int CLOSEA(struct opencb* __ptr32 opencb);
 
@@ -19,17 +22,20 @@
   int FREE24A(void* __ptr32 addr, int len);
 
 #elif AMODE == 64
-  extern int SVC99A;
+  extern int S99A;
+  extern int S99MSGA;
   extern int OPENA;
   extern int CLOSEA;
   extern int MALOC24A;
   extern int FREE24A;
-  #pragma variable(SVC99A,   NORENT)
+  #pragma variable(S99A,     NORENT)
+  #pragma variable(SMSG99A,  NORENT)
   #pragma variable(OPENA,    NORENT)
   #pragma variable(CLOSEA,   NORENT)
   #pragma variable(MALOC24A, NORENT)
   #pragma variable(FREE24A,  NORENT)
-	#define SVC99A(ptr)       call31asm("SVC99A", &SVC99A, 1, ptr)
+	#define S99A(ptr)         call31asm("S99A", &S99A, 1, ptr)
+	#define S99MSGA(ptr)      call31asm("S99A", &S99MSGA, 1, ptr)
 	#define OPENA(dcb)        call31asm("OPENA", &OPENA, 1, dcb)
 	#define CLOSEA(dcb)       call31asm("CLOSEA", &CLOSEA, 1, dcb)
 	#define MALOC24A(len)     call31asm("MALOC24A", &MALOC24A, 1, len)
