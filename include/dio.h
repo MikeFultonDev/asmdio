@@ -19,6 +19,7 @@
   void* __ptr32 MALLOC24(int len);
   int FREE24(void* __ptr32 addr, int len);
 
-  int SVC99(struct s99rb* __ptr32 s99rbp);
+  int S99(struct s99rb* __ptr32 s99rbp);
+  int S99MSG(struct s99_em* __ptr32 s99em);
 
 #endif

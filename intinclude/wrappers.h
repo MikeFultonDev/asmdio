@@ -19,7 +19,7 @@
   int OPENA(struct opencb* __ptr32 opencb);
   int CLOSEA(struct opencb* __ptr32 opencb);
 
-  void* __ptr32 MALOC24A(int len);
+  int MALOC24A(int len);
   int FREE24A(void* __ptr32 addr, int len);
 
 #elif AMODE == 64
@@ -30,13 +30,13 @@
   extern int MALOC24A;
   extern int FREE24A;
   #pragma variable(S99A,     NORENT)
-  #pragma variable(SMSG99A,  NORENT)
+  #pragma variable(S99MSGA,  NORENT)
   #pragma variable(OPENA,    NORENT)
   #pragma variable(CLOSEA,   NORENT)
   #pragma variable(MALOC24A, NORENT)
   #pragma variable(FREE24A,  NORENT)
 	#define S99A(ptr)         call31asm("S99A", &S99A, 1, ptr)
-	#define S99MSGA(ptr)      call31asm("S99A", &S99MSGA, 1, ptr)
+	#define S99MSGA(ptr)      call31asm("S99MSGA", &S99MSGA, 1, ptr)
 	#define OPENA(dcb)        call31asm("OPENA", &OPENA, 1, dcb)
 	#define CLOSEA(dcb)       call31asm("CLOSEA", &CLOSEA, 1, dcb)
 	#define MALOC24A(len)     call31asm("MALOC24A", &MALOC24A, 1, len)

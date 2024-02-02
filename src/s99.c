@@ -78,12 +78,12 @@ void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms)
 	fprintf(stream, "  RBLN:%d VERB:%d FLAG1:%4.4X ERROR:%4.4X INFO:%4.4X FLAG2:%8.8X\n", 
 		parms->s99rbln, *s99verb, *s99flag1, *s99error, *s99info, *s99flag2);         
 
-	fprintf(stream, "  S99X: %8.8X", rbx);
+	fprintf(stream, "  S99 RBX: %8.8X", rbx);
 	if (rbx) {
 		char* s99eopts = (char*) &rbx->s99eopts;
 		char* s99emgsv = (char*) &rbx->s99emgsv;
-		fprintf(stream, "    EID:%6.6s EVER: %2.2X EOPTS: %2.2X SUBP: %2.2x EKEY: %2.2X EMGSV: %2.2X ECPPL: %8.8X EMSGP: %8.8X\n", 
-			rbx->s99eid, rbx->s99ever, *s99eopts, rbx->s99esubp, rbx->s99ekey, *s99emgsv, rbx->s99ecppl, rbx->s99emsgp); 
+		fprintf(stream, "    EID:%6.6s EVER: %2.2X EOPTS: %2.2X SUBP: %2.2x EKEY: %2.2X EMGSV: %2.2X ECPPL: %8.8X EMSGP: %8.8X ERCO: %2.2x\n", 
+			rbx->s99eid, rbx->s99ever, *s99eopts, rbx->s99esubp, rbx->s99ekey, *s99emgsv, rbx->s99ecppl, rbx->s99emsgp, rbx->s99erco); 
 	} else {
 		fprintf(stream, "\n");
 	}
@@ -158,11 +158,6 @@ void s99_free(struct s99rb* __ptr32 parms)
 	free(parms);
 }
 
-int s99(struct s99rb* __ptr32 parms) 
-{
-	return S99A(parms);
-}
-
 void s99_em_fmt_dmp(FILE* stream, struct s99_em* __ptr32 parms) {
 	char* funct = (char* ) parms;
 	fprintf(stream, "SVC99 EM Parms Dump\n");
@@ -188,10 +183,10 @@ int s99_prt_msg(FILE* stream, struct s99rb* __ptr32 svc99parms, int svc99rc)
 	msgparms->emwtpcdp = &msgparms->emwtdert;
 	msgparms->embufp = &msgparms->embuf;
 
-	fprintf(stream, "SVC99 rc:0x%x\n", svc99rc);
+	fprintf(stream, "SVC99 parms:%p rc:0x%x\n", svc99parms, svc99rc);
 	fprintf(stream, "SVC99 failed with error:%d (0x%x) info: %d (0x%x)\n", 
 		svc99parms->s99error, svc99parms->s99error, svc99parms->s99info, svc99parms->s99info);
-	rc = S99MSGA(msgparms);
+	rc = S99MSG(msgparms);
 	if (rc) {
 		fprintf(stream, "SVC99MSG rc:0x%x\n", rc);
 		fprintf(stream, "IEFDB476 failed with rc:0x%x\n", rc);
