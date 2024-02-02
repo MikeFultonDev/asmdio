@@ -1,3 +1,4 @@
 *.lst
 *.o
 basicread
+basicalloc
