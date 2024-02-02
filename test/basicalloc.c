@@ -25,9 +25,13 @@ static int ddalloc(struct s99_common_text_unit* dsn, struct s99_common_text_unit
 	}
 	rc = S99(parms);
   if (rc) {
+    fprintf(stderr, "SVC99 failed with rc:%d\n", rc);
     s99_fmt_dmp(stderr, parms);
     s99_prt_msg(stderr, parms, rc);
     return(rc);
+  } else {
+    fprintf(stdout, "SVC99 Succeeded. Dump of storage\n");
+    s99_fmt_dmp(stdout, parms);
   }
 
 	s99_free(parms);

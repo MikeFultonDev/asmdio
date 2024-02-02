@@ -5,8 +5,8 @@
 # Use set -e to force failure if something doesn't build
 set -e
 
-MODE='64'
 MODE='31'
+MODE='64'
 
 if [ "${MODE}" = "31" ]; then
   DATA_MODEL="ilp32"

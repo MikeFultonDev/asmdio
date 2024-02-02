@@ -76,13 +76,18 @@ void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms)
 
 	fprintf(stream, "SVC99 Formatted Dump\n");
 	fprintf(stream, "  RBLN:%d VERB:%d FLAG1:%4.4X ERROR:%4.4X INFO:%4.4X FLAG2:%8.8X\n", 
-		parms->s99rbln, *s99verb, *s99flag1, *s99error, *s99info, *s99flag2);         
+		parms->s99rbln, *s99verb, *s99flag1, *s99error, *s99info, *s99flag2);
 
-	fprintf(stream, "  S99 RBX: %8.8X", rbx);
+	fprintf(stream, "SVC99 RB\n");
+  dumpstg(stream, parms, sizeof(struct s99rb));
+
+
 	if (rbx) {
 		char* s99eopts = (char*) &rbx->s99eopts;
 		char* s99emgsv = (char*) &rbx->s99emgsv;
-		fprintf(stream, "    EID:%6.6s EVER: %2.2X EOPTS: %2.2X SUBP: %2.2x EKEY: %2.2X EMGSV: %2.2X ECPPL: %8.8X EMSGP: %8.8X ERCO: %2.2x\n", 
+	  fprintf(stream, "\nSVC99 RBX: %8.8X", rbx);
+    dumpstg(stream, rbx, sizeof(struct s99_rbx));
+		fprintf(stream, "\n  EID:%6.6s EVER: %2.2X EOPTS: %2.2X SUBP: %2.2x EKEY: %2.2X EMGSV: %2.2X ECPPL: %8.8X EMSGP: %8.8X ERCO: %2.2x\n", 
 			rbx->s99eid, rbx->s99ever, *s99eopts, rbx->s99esubp, rbx->s99ekey, *s99emgsv, rbx->s99ecppl, rbx->s99emsgp, rbx->s99erco); 
 	} else {
 		fprintf(stream, "\n");

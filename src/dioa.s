@@ -116,10 +116,11 @@ DIOA     CSECT
          ENTRY S99A
 S99A     ASDPRO BASE_REG=3,USR_DSAL=S99A_DSAL
 
-* Call SVC99 (DYNALLOC) with S99RBP
+* Ensure the High Order Bit is ON for 0(R1)
          L   R2,0(,R1)
-         OI  3(R2),X'80'
+         OILH R2,X'8000'
          ST  R2,0(,R1)
+* Call SVC99 (DYNALLOC) with S99RBP
          SVC 99
 *
 S99A_EXIT   DS    0H
