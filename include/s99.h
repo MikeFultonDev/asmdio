@@ -106,7 +106,7 @@
 		union {
 			struct s99_common_text_unit ctu;
 			struct s99_basic_text_unit btu;
-			struct s99_browse_text_unit bttu;
+			struct s99_browse_token_text_unit bttu;
 		};
 	};
 
@@ -217,7 +217,7 @@
 	#define EMSVC99 50
 
   void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms);
-  struct s99rb* __ptr32 s99_init(SVC99Verb_T verb, SVC99Flag1_T flag1, SVC99Flag2_T flag2, struct s99_rbx* rbxin, size_t numtextunits, ...);
+  struct s99rb* __ptr32 s99_init(enum s99_verb verb, struct s99_flag1 flag1, struct s99_flag2 flag2, struct s99_rbx* rbxin, size_t num_text_units, ...);
   void s99_free(struct s99rb* __ptr32 parms);
   int s99(struct s99rb* __ptr32 parms);
   int s99_prt_msg(FILE* stream, struct s99rb* __ptr32 svc99parms, int svc99rc);

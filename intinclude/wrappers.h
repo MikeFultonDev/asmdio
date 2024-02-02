@@ -10,10 +10,11 @@
   #pragma linkage(MALOC24A, OS)
   #pragma linkage(FREE24A,  OS)
 
-  struct s99rbp;
+  struct s99rb;
   struct opencb;
+  struct s99_em;
 
-  int S99A(struct s99rbp* __ptr32 addr);
+  int S99A(struct s99rb* __ptr32 addr);
   int S99MSGA(struct s99_em* __ptr32 addr);
   int OPENA(struct opencb* __ptr32 opencb);
   int CLOSEA(struct opencb* __ptr32 opencb);

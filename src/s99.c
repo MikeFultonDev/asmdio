@@ -99,7 +99,7 @@ void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms)
 	return;
 }
 
-struct s99rb* __ptr32 s99_init(SVC99Verb_T verb, SVC99Flag1_T flag1, SVC99Flag2_T flag2, struct s99_rbx* rbxin, size_t numtextunits, ...) i
+struct s99rb* __ptr32 s99_init(enum s99_verb verb, struct s99_flag1 flag1, struct s99_flag2 flag2, struct s99_rbx* rbxin, size_t num_text_units, ...)
 {
 	va_list arg_ptr;
 	size_t i;
@@ -108,7 +108,7 @@ struct s99rb* __ptr32 s99_init(SVC99Verb_T verb, SVC99Flag1_T flag1, SVC99Flag2_
 	struct s99_text_unit* __ptr32 * __ptr32 textunit;
 	unsigned int* __ptr32 pp;
 
-	textunit = MALLOC31(numtextunits * (sizeof(struct s99_text_unit* __ptr32)));
+	textunit = MALLOC31(num_text_units * (sizeof(struct s99_text_unit* __ptr32)));
 	if (!textunit) {
 		return 0;
 	}
@@ -121,12 +121,12 @@ struct s99rb* __ptr32 s99_init(SVC99Verb_T verb, SVC99Flag1_T flag1, SVC99Flag2_
 		return 0;
 	} 
 
-	va_start(arg_ptr, numtextunits);
-	for (i=0; i<numtextunits; ++i) {
+	va_start(arg_ptr, num_text_units);
+	for (i=0; i<num_text_units; ++i) {
 		struct s99_text_unit* inunit = (struct s99_text_unit*) va_arg(arg_ptr, void*);
 		textunit[i] = calloc_text_unit(inunit);
 	}
-	pp = (unsigned int* __ptr32) (&textunit[numtextunits-1]);	
+	pp = (unsigned int* __ptr32) (&textunit[num_text_units-1]);	
 	*pp |= 0x80000000;
 
 	va_end(arg_ptr);
@@ -195,7 +195,7 @@ int s99_prt_msg(FILE* stream, struct s99rb* __ptr32 svc99parms, int svc99rc)
 	if (rc) {
 		fprintf(stream, "SVC99MSG rc:0x%x\n", rc);
 		fprintf(stream, "IEFDB476 failed with rc:0x%x\n", rc);
-		SVC99emfmtdmp(stderr, msgparms);
+		s99_em_fmt_dmp(stderr, msgparms);
 	} else {
 		fprintf(stream, "%.*s\n", msgparms->embuf.embufl1, &msgparms->embuf.embuft1[msgparms->embuf.embufo1]);
 		fprintf(stream, "%.*s\n", msgparms->embuf.embufl2, &msgparms->embuf.embuft2[msgparms->embuf.embufo2]);
