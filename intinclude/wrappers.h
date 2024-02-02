@@ -19,8 +19,8 @@
   int OPENA(struct opencb* __ptr32 opencb);
   int CLOSEA(struct opencb* __ptr32 opencb);
 
-  int MALOC24A(int len);
-  int FREE24A(void* __ptr32 addr, int len);
+  int MALOC24A(size_t len);
+  int FREE24A(void* __ptr32 addr, size_t len);
 
 #elif AMODE == 64
   extern int S99A;

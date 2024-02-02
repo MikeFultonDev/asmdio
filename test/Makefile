@@ -11,7 +11,7 @@ basicread: basicread.o ../src/*.o
 basicalloc: basicalloc.o ../src/*.o
 	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o
 
-basicread.o: basicread.c $(INCDIR)/dio.h
+basicread.o: basicread.c $(INCDIR)/dio.h $(INCDIR)/s99.h $(INCDIR)/ihadcb.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 basicalloc.o: basicalloc.c $(INCDIR)/dio.h $(INCDIR)/s99.h

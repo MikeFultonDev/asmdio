@@ -2,17 +2,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include "dio.h"
 #include "s99.h"
 #include "wrappers.h"
-
-static void* __ptr32 MALLOC31(size_t bytes) 
-{
-	void* __ptr32 p = __malloc31(bytes);
-#ifdef DEBUG
-	memset(p, 0xFE, bytes);
-#endif
-	return p;
-}
 
 static size_t text_unit_size(struct s99_text_unit* inunit) 
 {
@@ -45,18 +37,6 @@ static struct s99_text_unit* __ptr32 calloc_text_unit(struct s99_text_unit* inun
 		memcpy(outunit, inunit, tunitsize);
 	}
 	return outunit;
-}
-
-static void dumpstg(FILE* stream, void* p, size_t len) 
-{
-	char* buff = p;
-	size_t i;
-	for (i=0; i<len; ++i) { 
-		if (i % 4 == 0) {
-			fprintf(stream, " ");
-		}
-		fprintf(stream, "%2.2X", buff[i]);
-	}
 }
 
 void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms) 
