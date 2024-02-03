@@ -93,7 +93,7 @@ if ! dtouch -rvb -l137 -tseq "${tmp_output}" ; then
   printf 'Unable to allocate DSECT temporary output dataset %s' "${tmp_output}"
   exit 4
 fi
-err=$(mvscmd --pgm=CCNEDSCT --args="SECT(${struct_name}),EQU,NODEF,UNNAMED" --steplib="${compiler}" --sysadata="${sysadata}" --edcdsect="${tmp_output}" --sysprint=stdout --sysout=stdout)
+err=$(mvscmd --pgm=CCNEDSCT --args="SECT(${struct_name}),EQU(BIT,DEF,DEFP),UNNAMED,LP64" --steplib="${compiler}" --sysadata="${sysadata}" --edcdsect="${tmp_output}" --sysprint=stdout --sysout=stdout)
 rc=$?
 
 cat "//'${tmp_output}'"

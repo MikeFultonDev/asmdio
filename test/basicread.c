@@ -73,9 +73,10 @@ static int ddfree(struct s99_common_text_unit* dd)
  * - Free DDName 
  */
 const struct opencb opencb_template = { 1, 0, 0 };
+
 int main(int argc, char* argv[]) {
   struct opencb* __ptr32 opencb;
-  struct ihadcb* __ptr32 dcb24;
+  struct ihadcb* __ptr32 dcb;
   int rc;
 
   struct s99_common_text_unit dsn = { DALDSNAM, 1, sizeof(DS_MACLIB)-1, DS_MACLIB };
@@ -92,14 +93,21 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
     return 4;
   }
-  dcb24 = MALLOC24(sizeof(struct ihadcb));
-  if (!dcb24) {
+  dcb = dcb_init(DD_MACLIB);
+  if (!dcb) {
     fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
     return 4;
   }
 
+  /*
+   * DCB set to PO, BPAM READ and POINT
+   */
+  dcb->dcbdsgpo = 1; 
+  dcb->dcboflgs = dcbofuex;
+  dcb->dcbmacr.dcbmacr1 = dcbmrrd|dcbmrpt1;
+
   *opencb = opencb_template;
-  SET_24BIT_PTR(opencb->dcb24, dcb24);
+  SET_24BIT_PTR(opencb->dcb24, dcb);
   
   rc = OPEN(opencb);
   if (rc) {
@@ -113,7 +121,7 @@ int main(int argc, char* argv[]) {
     return rc;
   }
 
-  rc = FREE24(dcb24, sizeof(struct ihadcb));
+  rc = FREE24(dcb, sizeof(struct ihadcb));
   if (rc) {
     fprintf(stderr, "Unable to free dcb storage. rc:%d\n", rc);
     return rc;
