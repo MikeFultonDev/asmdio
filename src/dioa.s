@@ -2,7 +2,8 @@ DIOA  TITLE 'DIOA  - Dataset services'
          SPACE 1
 DIOA     ASDSECT
 
-**| OPENA..... OPEN macro, return results
+**| OPENA..... SVC 19, return results
+**| https://tech.mikefulton.ca/SVC19-OPEN
 **| Input:
 **|   R1 -> pointer to 4 byte OPT/DCB array
 **| Output:
@@ -107,6 +108,7 @@ FREE24A_LEN   DS  AL4
 FREE24A_DSAL  EQU 0
 
 **| S99A..... SVC99
+**| https://tech.mikefulton.ca/SVC99
 **| Input:
 **|   R1 -> pointer to S99RBP
 **| Output:
@@ -133,7 +135,50 @@ S99A_PARMS   DSECT
 S99ARBP   DS AL4
 S99A_DSAL EQU 0         
 
+**| STOWA..... SVC 21 massaging input and output
+**| https://tech.mikefulton.ca/SVC21
+**| Input:
+**|   R1 -> pointer to type, dcb address and list address
+**| Output:
+**|   R15 -> high order 2 bytes are reason code. 
+**|          low order 2 bytes are return code. 
+
+DIOA     CSECT
+         ENTRY STOWA
+STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
+
+* For the STOW (SVC 21) call:
+*  R0 is the list address and 
+*  R1 is the dcb address
+         L   R0,4(,R1)
+         L   R1,8(,R1)
+
+* Need to set the high-order bit on R0 and R1
+* based on the type
+*
+         ST  0,0 # force abend since not coded
+         SVC 21
+*
+* For the return, put low halfword of R0 
+* into high halfword of R15 and return R15
+*
+         SLL  R0,16
+         AR   R15,R0
+*
+STOWA_EXIT   DS    0H
+         ASDEPI
+
+         DROP
+         LTORG
+
+STOWA_PARMS   DSECT
+STOWA_TYPE DS AL4
+STOWA_DCB DS AL4
+STOWA_LST DS AL4
+STOWA_DSAL EQU 0         
+
 **| S99MSGA..... SVC99MSG
+**| https://tech.mikefulton.ca/IEFDB476
 **| Input:
 **|   R1 -> pointer to em_parms
 **| Output:

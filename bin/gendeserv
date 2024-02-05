@@ -1,0 +1,7 @@
+#!/bin/sh
+
+echo '*
+  USING *,3
+  DESERV CONN_INTENT=HOLD,AREA=(0,999),DCB=(0),NAME_LIST=(0,1),FUNC=GET
+  END
+' | ./edcdsect

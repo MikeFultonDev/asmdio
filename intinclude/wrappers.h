@@ -13,9 +13,12 @@
   struct s99rb;
   struct opencb;
   struct s99_em;
+  struct ihadcb;
+  struct stowlist;
 
-  int S99A(struct s99rb* __ptr32 addr);
-  int S99MSGA(struct s99_em* __ptr32 addr);
+  int STOWA(struct ihadcb* __ptr32 dcb, struct stowlist* __ptr32 list);
+  int S99A(struct s99rb* __ptr32 rb);
+  int S99MSGA(struct s99_em* __ptr32 em);
   int OPENA(struct opencb* __ptr32 opencb);
   int CLOSEA(struct opencb* __ptr32 opencb);
 
@@ -23,18 +26,21 @@
   int FREE24A(void* __ptr32 addr, size_t len);
 
 #elif AMODE == 64
+  extern int STOWA;
   extern int S99A;
   extern int S99MSGA;
   extern int OPENA;
   extern int CLOSEA;
   extern int MALOC24A;
   extern int FREE24A;
+  #pragma variable(STOWA,    NORENT)
   #pragma variable(S99A,     NORENT)
   #pragma variable(S99MSGA,  NORENT)
   #pragma variable(OPENA,    NORENT)
   #pragma variable(CLOSEA,   NORENT)
   #pragma variable(MALOC24A, NORENT)
   #pragma variable(FREE24A,  NORENT)
+	#define STOWA(dcb,lst)    call31asm("STOWA", &STOWA, 2, dcb, lst)
 	#define S99A(ptr)         call31asm("S99A", &S99A, 1, ptr)
 	#define S99MSGA(ptr)      call31asm("S99MSGA", &S99MSGA, 1, ptr)
 	#define OPENA(dcb)        call31asm("OPENA", &OPENA, 1, dcb)

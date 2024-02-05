@@ -6,6 +6,9 @@
 
   #define SET_24BIT_PTR(ref,val) (ref) = ((int)(val))
 
+  #define DD_SYSTEM "????????"
+  #define DS_MAX (44)
+
   int OPEN(struct opencb* __ptr32 opencb);
   int CLOSE(struct opencb* __ptr32 opencb);
 

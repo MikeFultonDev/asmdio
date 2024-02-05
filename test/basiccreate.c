@@ -3,18 +3,13 @@
 #include "ihadcb.h"
 #include "s99.h"
 #include "dio.h"
-#include "ioservices.h"
-
-#define DS_MACLIB "SYS1.MACLIB"
-#define DD_MACLIB "DDMAC"
 
 /*
- * Basic Read of a PDS Member:
+ * Basic Create of a PDS Member:
  * - Allocate DDName to PDS
  * - Establish DCB for DDName
  * - Perform OPEN on PDS
- * - Perform FIND on member
- * - Read records of member
+ * - Perform STOW to create PDS member
  * - Close DCB
  * - Free DDName 
  */
@@ -29,7 +24,6 @@ int main(int argc, char* argv[]) {
   struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
   struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} };
 
-
   if (argc != 3) {
     fprintf(stderr, "Syntax: %s <dataset> <member>\n", argv[0]);
     return 4;
@@ -37,11 +31,11 @@ int main(int argc, char* argv[]) {
 
   rc = init_dsnam_text_unit(argv[1], &dsn);
   if (rc) {
-    return rc;
+    return 4;
   }
   rc = pdsdd_alloc(&dsn, &dd, &stats);
   if (rc) {
-    return rc;
+    return 4;
   }
 
   opencb = MALLOC31(sizeof(struct opencb));
@@ -49,7 +43,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
     return 4;
   }
-  dcb = dcb_init(DD_MACLIB);
+  dcb = dcb_init(DD_SYSTEM);
   if (!dcb) {
     fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
     return 4;
