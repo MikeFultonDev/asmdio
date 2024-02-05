@@ -2,8 +2,20 @@
 #include <stdlib.h>
 
 #include "dio.h"
+#include "stow.h"
+#include "s99.h"
 #include "wrappers.h"
 
+int STOW(struct ihadcb* __ptr32 dcbp, union stowlist* __ptr32 listp, enum stowtype type)
+{
+  /*
+   * Need to set the bits on the dcb and list pointers, so make 
+   * them 32 bit to ensure C does not try to do anything 'fancy'
+   */ 
+  unsigned int dcb = (unsigned int) dcbp;
+  unsigned int list = (unsigned int) listp;
+  return STOWA(dcb, list);
+}
 int S99(struct s99rb* __ptr32 s99rb)
 {
   return S99A(s99rb);

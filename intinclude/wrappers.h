@@ -3,6 +3,7 @@
  */
 
 #if AMODE==31
+  #pragma linkage(STOWA,    OS)
   #pragma linkage(S99A,     OS)
   #pragma linkage(S99MSGA,  OS)
   #pragma linkage(OPENA,    OS)
@@ -14,9 +15,8 @@
   struct opencb;
   struct s99_em;
   struct ihadcb;
-  struct stowlist;
 
-  int STOWA(struct ihadcb* __ptr32 dcb, struct stowlist* __ptr32 list);
+  int STOWA(unsigned int dcb, unsigned int list);
   int S99A(struct s99rb* __ptr32 rb);
   int S99MSGA(struct s99_em* __ptr32 em);
   int OPENA(struct opencb* __ptr32 opencb);

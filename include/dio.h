@@ -3,12 +3,15 @@
 
   #include "opencb.h"
   #include "s99.h"
+  #include "ihadcb.h"
+  #include "stow.h"
 
   #define SET_24BIT_PTR(ref,val) (ref) = ((int)(val))
 
   #define DD_SYSTEM "????????"
   #define DS_MAX (44)
 
+  int STOW(struct ihadcb* __ptr32 dcb, union stowlist* __ptr32 list, enum stowtype type);
   int OPEN(struct opencb* __ptr32 opencb);
   int CLOSE(struct opencb* __ptr32 opencb);
 

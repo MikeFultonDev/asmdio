@@ -3,7 +3,7 @@
 
   #pragma pack(packed)
 
-  struct stow_list_disc {
+  struct stowlist_disc {
     unsigned short list_len;
     unsigned char type;
     unsigned short reserved;
@@ -11,7 +11,7 @@
     /* more stuff */
   };
 
-  struct stow_list_iff {
+  struct stowlist_iff {
     unsigned short list_len;
     unsigned char type;
     unsigned short reserved;
@@ -22,6 +22,23 @@
     unsigned short ccsid;
   };
 
+  union stowlist {
+    struct stowlist_iff iff;
+    struct stowlist_disc disc;
+  };
+
+  enum stowtype {
+    STOW_A=1,
+    STOW_C,
+    STOW_D,
+    STOW_I,
+    STOW_R,
+    STOW_DISC,
+    STOW_IFF,
+    STOW_RG,
+    STOW_DG,
+    STOW_RECOVERG
+  }; 
   #pragma pack(pop)
 
 #endif

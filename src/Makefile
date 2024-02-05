@@ -13,7 +13,7 @@ call31.o: call31.c $(IINCDIR)/wrappers.h
 call31a.o: call31a.s
 	$(AS) $(ASFLAGS) -I$(MACDIR) $< >$*.lst
 
-dio.o: dio.c $(IINCDIR)/wrappers.h $(INCDIR)/dio.h $(INCDIR)/s99.h
+dio.o: dio.c $(IINCDIR)/wrappers.h $(INCDIR)/dio.h $(INCDIR)/s99.h $(INCDIR)/stow.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(IINCDIR) -c $<
 
 s99.o: s99.c $(IINCDIR)/wrappers.h $(INCDIR)/dio.h $(INCDIR)/s99.h

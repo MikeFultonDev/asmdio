@@ -153,10 +153,6 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
          L   R0,4(,R1)
          L   R1,8(,R1)
 
-* Need to set the high-order bit on R0 and R1
-* based on the type
-*
-         ST  0,0 # force abend since not coded
          SVC 21
 *
 * For the return, put low halfword of R0 

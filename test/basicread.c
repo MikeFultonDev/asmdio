@@ -5,8 +5,7 @@
 #include "dio.h"
 #include "ioservices.h"
 
-#define DS_MACLIB "SYS1.MACLIB"
-#define DD_MACLIB "DDMAC"
+#define MYDD "MYDD"
 
 /*
  * Basic Read of a PDS Member:
@@ -26,7 +25,7 @@ int main(int argc, char* argv[]) {
   int rc;
 
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
-  struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
+  struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(MYDD)-1, MYDD };
   struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} };
 
 
@@ -49,7 +48,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
     return 4;
   }
-  dcb = dcb_init(DD_MACLIB);
+  dcb = dcb_init(MYDD);
   if (!dcb) {
     fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
     return 4;
