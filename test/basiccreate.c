@@ -14,6 +14,10 @@
  * - Free DDName 
  */
 const struct opencb opencb_template = { 1, 0, 0 };
+const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
+const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
+
+#define MYDD "MYDD"
 
 int main(int argc, char* argv[]) {
   struct opencb* __ptr32 opencb;
@@ -21,11 +25,21 @@ int main(int argc, char* argv[]) {
   int rc;
 
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
-  struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
+  struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(MYDD)-1, MYDD };
   struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} };
+
+  union stowlist* stowlist;
+  struct stowlist_add* stowlistadd;
+  size_t memlen;
 
   if (argc != 3) {
     fprintf(stderr, "Syntax: %s <dataset> <member>\n", argv[0]);
+    return 4;
+  }
+
+  memlen = strlen(argv[2]);
+  if (memlen == 0 || memlen > 8) {
+    fprintf(stderr, "Member must be 1 to 8 characters long\n");
     return 4;
   }
 
@@ -38,24 +52,24 @@ int main(int argc, char* argv[]) {
     return 4;
   }
 
-  opencb = MALLOC31(sizeof(struct opencb));
-  if (!opencb) {
-    fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
-    return 4;
-  }
-  dcb = dcb_init(DD_SYSTEM);
+  dcb = dcb_init(MYDD);
   if (!dcb) {
     fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
     return 4;
   }
 
   /*
-   * DCB set to PO, BPAM READ and POINT
+   * DCB set to PO, BPAM WRITE and POINT
    */
   dcb->dcbdsgpo = 1; 
   dcb->dcboflgs = dcbofuex;
-  dcb->dcbmacr.dcbmacr1 = dcbmrrd|dcbmrpt1;
+  dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
 
+  opencb = MALLOC31(sizeof(struct opencb));
+  if (!opencb) {
+    fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
+    return 4;
+  }
   *opencb = opencb_template;
   SET_24BIT_PTR(opencb->dcb24, dcb);
   
@@ -65,7 +79,28 @@ int main(int argc, char* argv[]) {
     return rc;
   }
 
-  CLOSE(opencb);
+  stowlist = MALLOC31(sizeof(struct stowlist_iff));
+  stowlistadd = MALLOC31(sizeof(struct stowlist_add));
+  if (!stowlist || !stowlistadd) {
+    fprintf(stderr, "Unable to obtain storage for STOW\n");
+    return 4;
+  }
+  stowlist->iff = stowlistiff_template;
+  *stowlistadd = stowlistadd_template;
+  memcpy(stowlistadd->mem_name, argv[2], memlen);
+
+  SET_24BIT_PTR(stowlist->iff.dcb24, dcb);
+  stowlist->iff.type = STOW_IFF;
+  stowlist->iff.direntry = stowlistadd;
+  stowlist->iff.ccsid = 819; 
+
+  rc = STOW(stowlist, NULL, STOW_IFF);
+  if (rc) {
+    fprintf(stderr, "Unable to perform STOW. rc:%d\n", rc);
+    return rc;
+  }
+
+  rc = CLOSE(opencb);
   if (rc) {
     fprintf(stderr, "Unable to perform CLOSE. rc:%d\n", rc);
     return rc;

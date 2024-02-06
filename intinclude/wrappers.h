@@ -16,7 +16,7 @@
   struct s99_em;
   struct ihadcb;
 
-  int STOWA(unsigned int dcb, unsigned int list);
+  int STOWA(unsigned int list, unsigned int dcb);
   int S99A(struct s99rb* __ptr32 rb);
   int S99MSGA(struct s99_em* __ptr32 em);
   int OPENA(struct opencb* __ptr32 opencb);
@@ -40,7 +40,7 @@
   #pragma variable(CLOSEA,   NORENT)
   #pragma variable(MALOC24A, NORENT)
   #pragma variable(FREE24A,  NORENT)
-	#define STOWA(dcb,lst)    call31asm("STOWA", &STOWA, 2, dcb, lst)
+	#define STOWA(lst,dcb)    call31asm("STOWA", &STOWA, 2, list, dcb)
 	#define S99A(ptr)         call31asm("S99A", &S99A, 1, ptr)
 	#define S99MSGA(ptr)      call31asm("S99MSGA", &S99MSGA, 1, ptr)
 	#define OPENA(dcb)        call31asm("OPENA", &OPENA, 1, dcb)
