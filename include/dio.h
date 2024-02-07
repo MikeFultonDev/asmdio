@@ -4,6 +4,7 @@
   #include "opencb.h"
   #include "s99.h"
   #include "ihadcb.h"
+  #include "decb.h"
   #include "stow.h"
 
   #define SET_24BIT_PTR(ref,val) (ref) = ((int)(val))
@@ -11,8 +12,9 @@
   #define DD_SYSTEM "????????"
   #define DS_MAX (44)
 
-  int STOW(union stowlist* __ptr32 list, struct ihadcb* __ptr32 dcb, enum stowtype type);
   int OPEN(struct opencb* __ptr32 opencb);
+  int WRITE(struct decb* __ptr32 decb);
+  int STOW(union stowlist* __ptr32 list, struct ihadcb* __ptr32 dcb, enum stowtype type);
   int CLOSE(struct opencb* __ptr32 opencb);
 
   void* __ptr32 MALLOC24(size_t len);

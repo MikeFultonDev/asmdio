@@ -12,13 +12,14 @@ DIOA     ASDSECT
 DIOA     CSECT
          ENTRY OPENA
 OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
-         LR    R7,R1
-         USING OPENA_PARMS,R7
 
 * Call SVC19 (OPEN) with 24-bit DCB
-
-*        SVC 19
-         LA  R15,0
+         SR  R0,R0
+         SR  R15,R15
+         L   R1,0(,R1)
+         SR  R2,R2
+         ICM R2,B'0111',1(R1)
+         SVC 19
 *
 OPENA_EXIT   DS    0H
          ASDEPI
@@ -29,6 +30,39 @@ OPENA_EXIT   DS    0H
 OPENA_PARMS   DSECT
 OPENA_OPTSANDDCB   DS AL4
 OPENA_DSAL EQU 0         
+
+**| WRITEA..... Write BLOCK, return results
+**| https://tech.mikefulton.ca/WRITEMacro
+**| Input:
+**|   R1 -> pointer to DECB
+**| Output:
+**|   R15 -> RC 0 if successful, non-zero otherwise
+
+DIOA     CSECT
+         ENTRY WRITEA
+WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
+         LR    R7,R1
+         USING WRITEA_PARMS,R7
+
+* Call Write function (found in DCB, which is 8(DECB))
+         L   R1,0(,R1)
+         L   R2,8(,R1)
+         SR  R15,R15
+         ICM R15,B'0111',49(R2)
+         BALR R14,R15
+         LA  R15,0
+*
+WRITEA_EXIT   DS    0H
+         ASDEPI
+
+         DROP
+         LTORG
+
+WRITEA_PARMS   DSECT
+WRITEA_DECB    DS AL4
+WRITEA_DCB     DS AL4
+WRITEA_AREA    DS AL4
+WRITEA_DSAL EQU 0         
 
 **| CLOSEA..... CLOSE macro, return results
 

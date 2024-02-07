@@ -75,6 +75,10 @@ int OPEN(struct opencb* __ptr32 opencb)
 {
   return OPENA(opencb);
 }
+int WRITE(struct decb* __ptr32 decb)
+{
+  return WRITEA(decb);
+}
 int CLOSE(struct opencb* __ptr32 opencb)
 {
   return CLOSEA(opencb);

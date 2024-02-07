@@ -76,7 +76,7 @@ if ! dtouch -rvb -l8144 -tseq "${sysadata}" ; then
   exit 4
 fi
 
-listing=$(printf '%s\n' "${source}" | mvscmd --pgm="${asm}" --args="${asm_opts}" --syslib=SYS1.MACLIB --sysadata="${sysadata}" --sysin=stdin --sysprint=* --syspunch=DUMMY --syslin=DUMMY)
+listing=$(printf '%s\n' "${source}" | mvscmd --pgm="${asm}" --args="${asm_opts}" --syslib=SYS1.MACLIB:SYS1.MODGEN --sysadata="${sysadata}" --sysin=stdin --sysprint=* --syspunch=DUMMY --syslin=DUMMY)
 rc=$?
 
 if [ $rc -gt 4 ] ; then

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "ihadcb.h"
 #include "s99.h"
+#include "decb.h"
 #include "dio.h"
 
 /*
@@ -16,17 +17,20 @@
 const struct opencb opencb_template = { 1, 0, 0 };
 const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
 const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
+const struct decb decb_template = { 0 };
 
 #define MYDD "MYDD"
 
 int main(int argc, char* argv[]) {
   struct opencb* __ptr32 opencb;
   struct ihadcb* __ptr32 dcb;
+  struct decb* __ptr32 decb;
   int rc;
 
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
   struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(MYDD)-1, MYDD };
   struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} };
+  void* __ptr32 block;
 
   union stowlist* stowlist;
   struct stowlist_add* stowlistadd;
@@ -72,10 +76,37 @@ int main(int argc, char* argv[]) {
   }
   *opencb = opencb_template;
   SET_24BIT_PTR(opencb->dcb24, dcb);
+  opencb->mode = OPEN_OUTPUT;
+
+  printf("opencb:%p\n", opencb);
+  dumpstg(stdout, opencb, sizeof(struct opencb));
+  printf("\n");
   
   rc = OPEN(opencb);
   if (rc) {
     fprintf(stderr, "Unable to perform OPEN. rc:%d\n", rc);
+    return rc;
+  }
+  printf("DCB Block size after open:%u\n", dcb->dcbblksi);
+
+  decb = MALLOC31(sizeof(struct decb));
+  if (!decb) {
+    fprintf(stderr, "Unable to obtain storage for WRITE decb\n");
+    return 4;
+  }
+  block = MALLOC31(dcb->dcbblksi);
+  if (!block) {
+    fprintf(stderr, "Unable to obtain storage for WRITE block\n");
+    return 4;
+  }
+
+  *decb = decb_template;
+  SET_24BIT_PTR(decb->dcb24, dcb);
+  decb->area = block;
+
+  rc = WRITE(decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform WRITE. rc:%d\n", rc);
     return rc;
   }
 
@@ -97,6 +128,11 @@ int main(int argc, char* argv[]) {
   rc = STOW(stowlist, NULL, STOW_IFF);
   if (rc) {
     fprintf(stderr, "Unable to perform STOW. rc:%d\n", rc);
+    fprintf(stderr, "add:%p\n", stowlistadd);
+    dumpstg(stderr, stowlistadd, sizeof(struct stowlist_add));
+    fprintf(stderr, "\nSTOWList after: %p\n", stowlist);
+    dumpstg(stderr, stowlist, sizeof(struct stowlist_iff));
+    fprintf(stderr, "\n");
     return rc;
   }
 
