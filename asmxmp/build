@@ -1,6 +1,12 @@
 #!/bin/sh
 
 set -e
-as --LIST crtmem.s >crtmem.lst
-ld -ocrtmem crtmem.o
+set -x
+
+xmplib=$(echo "$(hlq).ASMXMP.LOAD")
+drm -f ${xmplib}
+dtouch -ru ${xmplib}
+
+as --LIST,SUPRWARN\(425,434\) crtmem.s >crtmem.lst
+ld -o"//'${xmplib}(CRTMEM)'" crtmem.o
 
