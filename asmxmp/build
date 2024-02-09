@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -e
+as --LIST crtmem.s >crtmem.lst
+ld -ocrtmem crtmem.o
+
