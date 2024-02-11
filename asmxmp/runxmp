@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+set -x
+
+wrtlib=$(echo "$(hlq).ASMXMP.DATA")
+drm -f "${wrtlib}"
+dtouch -B80 "${wrtlib}"
+
+xmplib=$(echo "$(hlq).ASMXMP.LOAD")
+
+mvscmd --steplib=$xmplib --mydd="${wrtlib}" --pgm=CRTMEM
