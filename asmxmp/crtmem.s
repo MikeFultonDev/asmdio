@@ -37,8 +37,8 @@ STG_WA_CLEAR DS 0H
 * DCB has to be below the line
 *
         STORAGE OBTAIN,LENGTH=DCBLEN,EXECUTABLE=NO,LOC=24,CHECKZERO=YES
-         LR R2,R1                   R2 points to Output DCB
-         USING IHADCB,R2
+         LR R8,R1                   R8 points to Output DCB
+         USING DCBAREA,R8
 
 *
 * Clear storage
@@ -53,12 +53,13 @@ STG_WA_CLEAR DS 0H
 STG_DCB_CLEAR DS 0H
 *
 *
-* Copy the DCB template into IHADCB 24-bit storage
+* Copy the DCB template into 24-bit storage
 * The OPEN_PARMS and DCBE is 31-bit to minimize below-line stg
 *
 LIB_OPEN  DS  0H
-         MVC IHADCB(DCBLEN),CONST_DCB
-        OPEN (IHADCB,OUTPUT),MF=(E,OPEN_PARMS),MODE=31
+         MVC LIB_DCB(DCBLEN),CONST_DCB
+         MVC OPEN_PARMS(OPENLEN),CONST_OPEN
+        OPEN (LIB_DCB,OUTPUT),MF=(E,OPEN_PARMS),MODE=31
          CIJE R15,0,OPEN_SUCCESS
 *
 OPEN_FAIL DS  0H
@@ -67,19 +68,20 @@ OPEN_FAIL DS  0H
 *
 OPEN_SUCCESS DS 0H
 *
-MEM_WRITE DS  0H
-        WRITE MEM_DECB,SF,(R2),WRITE_BUFFER
-         CIJE R15,0,WRITE_SUCCESS
-WRITE_FAIL DS  0H
-         LR  R9,R15                put err code in R9
-         B   DONE
+*MEM_WRITE DS  0H
+*        WRITE MEM_DECB,SF,LIB_DCB,WRITE_BUFFER,MF=E
+*         CIJE R15,0,WRITE_SUCCESS
+*WRITE_FAIL DS  0H
+*         LR  R9,R15                put err code in R9
+*         B   DONE
 *
-WRITE_SUCCESS DS 0H
+*WRITE_SUCCESS DS 0H
 *
 
 *
 LIB_CLOSE  DS 0H
-        CLOSE (IHADCB),MF=(E,CLOSE_PARMS),MODE=31
+         MVC CLOSE_PARMS(CLOSELEN),CONST_CLOSE
+        CLOSE (LIB_DCB),MF=(E,CLOSE_PARMS),MODE=31
          CIJE R15,0,CLOSE_SUCCESS
 *
 CLOSE_FAIL DS  0H
@@ -92,7 +94,7 @@ CLOSE_SUCCESS DS 0H
 * Free DCB storage
 *
 RLSE_DCB   DS 0H
-        STORAGE RELEASE,ADDR=(R12),LENGTH=DCBLEN,EXECUTABLE=NO 
+        STORAGE RELEASE,ADDR=(R8),LENGTH=DCBLEN,EXECUTABLE=NO 
 
 *------------------------------------------------------------------- 
 * Linkage and storage release. set RC (reg 15)                     -
@@ -110,6 +112,10 @@ DATCONST   DS    0D                 Doubleword alignment for LARL
 CONST_DCB  DCB   DSORG=PO,MACRF=(W),DDNAME=MYDD,DCBE=CONST_DCBE
 CONST_DCBE DCBE  RMODE31=BUFF
 DCBLEN    EQU   *-CONST_DCB
+CONST_OPEN OPEN (*-*,(OUTPUT)),MODE=31,MF=L
+OPENLEN   EQU   *-CONST_OPEN
+CONST_CLOSE CLOSE (*-*),MODE=31,MF=L
+CLOSELEN  EQU   *-CONST_CLOSE
 *
 WRITE_BUFFER DC CL80'Hello world'
          LTORG ,
@@ -119,9 +125,10 @@ WRITE_BUFFER DC CL80'Hello world'
 *------------------------------------------------------------------- 
 WAREA       DSECT 
 SAVEA       DS    18F 
-OPEN_PARMS  DS 2A
-CLOSE_PARMS DS 2A
+OPEN_PARMS  DS CL(OPENLEN)
+CLOSE_PARMS DS CL(CLOSELEN)
 WALEN       EQU  *-SAVEA
 
-IHADCB      DCBD 
+DCBAREA     DSECT
+LIB_DCB     DS   CL(DCBLEN)
          END   CRTMEM   
