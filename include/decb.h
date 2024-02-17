@@ -4,7 +4,7 @@
   #pragma pack(packed)
   struct decb {
     unsigned int ecb;
-    unsigned int type;
+    unsigned short type;
     unsigned short length;
     unsigned int dcb24_hoB: 8;
     unsigned int dcb24: 24;

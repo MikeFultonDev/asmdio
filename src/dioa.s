@@ -44,10 +44,10 @@ WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
 
 * Call Write function (found in DCB, which is 8(DECB))
          L   R1,0(,R1)
-         L   R2,8(,R1)
-         SR  R15,R15
-         ICM R15,B'0111',49(R2)
+         L   R15,8(,R1)
+         ICM R15,B'0111',49(R15)
          BALR R14,R15
+         ST  0,0
          LA  R15,0
 *
 WRITEA_EXIT   DS    0H
