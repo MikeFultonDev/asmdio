@@ -1,10 +1,12 @@
 #ifndef __IHADCB__
   #define __IHADCB__ 1
 
+  #include "dcbe.h"
+
   #pragma pack(packed)
   struct ihadcb {
     union {
-      void * __ptr32 dcbdcbe;     /* DCBE ADDRESS ASSOCIATED WITH THIS    @L5A */
+      struct dcbe* __ptr32 dcbdcbe;     /* DCBE ADDRESS ASSOCIATED WITH THIS    @L5A */
       unsigned char  dcbrelad[4]; /* --- PARTITIONED ORGANIZATION DATA SET -   */
       };
     char           dcbkeycn;     /* KEYED BLOCK OVERHEAD CONSTANT             */

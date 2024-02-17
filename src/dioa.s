@@ -5,7 +5,7 @@ DIOA     ASDSECT
 **| OPENA..... SVC 19, return results
 **| https://tech.mikefulton.ca/SVC19-OPEN
 **| Input:
-**|   R1 -> pointer to 4 byte OPT/DCB array
+**|   R1 -> pointer to 8 byte OPT/DCB array
 **| Output:
 **|   R15 -> RC 0 if successful, non-zero otherwise
 
@@ -14,11 +14,9 @@ DIOA     CSECT
 OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
 
 * Call SVC19 (OPEN) with 24-bit DCB
-         SR  R0,R0
+         L   R0,0(,R1)
+         SR  R1,R1
          SR  R15,R15
-         L   R1,0(,R1)
-         SR  R2,R2
-         ICM R2,B'0111',1(R1)
          SVC 19
 *
 OPENA_EXIT   DS    0H

@@ -6,11 +6,17 @@
 #include "dio.h"
 
 const struct ihadcb dcb_template = { 0 };
+const struct dcbe dcbe_template = { "DCBE", sizeof(struct dcbe) };
 struct ihadcb* __ptr32 dcb_init(const char* ddname)
 {
   struct ihadcb* __ptr32 dcb;
+  struct dcbe* __ptr32 dcbe;
   if (sizeof(struct ihadcb) != 0x58) {
     fprintf(stderr, "DCB should be 0x58 bytes in size but it is 0x%x bytes\n", sizeof(struct ihadcb));
+    return NULL;
+  }
+  if (sizeof(struct dcbe) != 0x38) {
+    fprintf(stderr, "DCBE should be 0x38 bytes in size but it is 0x%x bytes\n", sizeof(struct dcbe));
     return NULL;
   }
 
@@ -18,10 +24,20 @@ struct ihadcb* __ptr32 dcb_init(const char* ddname)
 
   if (!dcb) {
     fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
-    return dcb;
+    return NULL;
+  }
+
+  dcbe = MALLOC31(sizeof(struct dcbe));
+
+  if (!dcbe) {
+    fprintf(stderr, "Unable to obtain storage for OPEN dcbe\n");
+    return NULL;
   }
 
   *dcb = dcb_template;
+  *dcbe = dcbe_template;
+
+  dcb->dcbdcbe = dcbe;
 
   if (ddname) {
     size_t ddname_len = strlen(ddname);
