@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     return 4;
   }
   *opencb = opencb_template;
-  SET_24BIT_PTR(opencb->dcb24, dcb);
+  opencb->dcb24, dcb;
   opencb->mode = OPEN_OUTPUT;
 
   printf("DCB Before %p\n", dcb);
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
   }
 
   *decb = decb_template;
-  SET_24BIT_PTR(decb->dcb24, dcb);
+  decb->dcb24, dcb;
   decb->area = block;
 
   printf("DECB Before %p\n", decb);

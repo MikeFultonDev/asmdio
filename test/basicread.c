@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
   dcb->dcbmacr.dcbmacr1 = dcbmrrd|dcbmrpt1;
 
   *opencb = opencb_template;
-  SET_24BIT_PTR(opencb->dcb24, dcb);
+  opencb->dcb24, dcb;
   
   rc = OPEN(opencb);
   if (rc) {
