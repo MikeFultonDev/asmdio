@@ -4,7 +4,7 @@ set -e
 
 wrtlib=$(echo "$(hlq).ASMXMP.DATA")
 drm -f "${wrtlib}"
-dtouch -B80 "${wrtlib}"
+dtouch -B320 "${wrtlib}"
 
 xmplib=$(echo "$(hlq).ASMXMP.LOAD")
 

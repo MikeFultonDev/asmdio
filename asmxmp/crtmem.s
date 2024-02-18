@@ -69,7 +69,11 @@ OPEN_SUCCESS DS 0H
 
 MEM_WRITE  DS  0H
          MVC   WRITE_DECB(WRITELEN),DECBMODW
-         MVC   WRITE_BUFFER(BUFFLEN),CONST_BUFFER
+         LA   R2,WRITE_BUFFER
+         LA   R3,BUFFLEN
+         LA   R4,CONST_BUFFER
+         LR   R5,R3
+         MVCL R2,R4              Copy CONST_BUFFER to WRITE_BUFFER
         WRITE WRITE_DECB,SF,LIB_DCB,WRITE_BUFFER,'S',MF=E
 *        CIJE R15,0,WRITE_SUCCESS
 *
@@ -142,6 +146,9 @@ WRITE    WRITE  DECBMODW,SF,0,0,'S',MF=L
 WRITELEN EQU   *-DECBMODW
 
 CONST_BUFFER DC CL80'Hello world'
+             DC CL80'Jello world'
+             DC CL80'Cello world'
+             DC CL80'Yellow world'
 BUFFLEN EQU *-CONST_BUFFER
 
 CONST_MEM_IFF      DS 0F
