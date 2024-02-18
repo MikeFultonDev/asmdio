@@ -169,7 +169,7 @@ S99A_DSAL EQU 0
 **| STOWA..... SVC 21 massaging input and output
 **| https://tech.mikefulton.ca/SVC21
 **| Input:
-**|   R1 -> pointer to list address and dcb address
+**|   R1 -> pointer to list address and dcb address pointers
 **| Output:
 **|   R15 -> high order 2 bytes are reason code. 
 **|          low order 2 bytes are return code. 
@@ -181,8 +181,10 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
 * For the STOW (SVC 21) call:
 *  R0 is the list address and 
 *  R1 is the dcb address
-         L   R0,0(,R1)
-         L   R1,4(,R1)
+         L   R3,0(,R1)
+         L   R4,4(,R1)
+         L   R0,0(,R3)
+         L   R1,0(,R4)
          SVC 21
 *
 * For the return, put low halfword of R0 
