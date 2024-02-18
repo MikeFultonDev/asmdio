@@ -6,7 +6,8 @@
     int last_entry:1;
     int disp:3;
     int mode:4;
-    int dcb24:24;
+    int reserved:24;
+    void* __ptr32 dcb24;
   };
 
   #define OPEN_INPUT (0)

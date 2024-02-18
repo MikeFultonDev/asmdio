@@ -14,10 +14,10 @@
  * - Close DCB
  * - Free DDName 
  */
-const struct opencb opencb_template = { 1, 0, 0 };
+const struct opencb opencb_template = { 1, 0, 0, 0 };
 const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
 const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
-const struct decb decb_template = { 0 };
+const struct decb decb_template = { 0, 0x8020 };
 
 #define MYDD "MYDD"
 
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
   struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(MYDD)-1, MYDD };
-  struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} };
+  struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} }; /* OLD=1, SHR=8 */
   void* __ptr32 block;
 
   union stowlist* stowlist;
@@ -75,26 +75,29 @@ int main(int argc, char* argv[]) {
     return 4;
   }
   *opencb = opencb_template;
-  SET_24BIT_PTR(opencb->dcb24, dcb);
+  opencb->dcb24 = dcb;
   opencb->mode = OPEN_OUTPUT;
 
-  printf("opencb:%p\n", opencb);
-  dumpstg(stdout, opencb, sizeof(struct opencb));
-  printf("\n");
-  
+  printf("DCB Before %p\n", dcb);
+  dumpstg(stdout, dcb, sizeof(struct ihadcb));
+  fprintf(stdout, "\n");
+
   rc = OPEN(opencb);
   if (rc) {
     fprintf(stderr, "Unable to perform OPEN. rc:%d\n", rc);
     return rc;
   }
-  printf("DCB Block size after open:%u\n", dcb->dcbblksi);
+  printf("DCB %p Block size:%u\n", dcb, dcb->dcbblksi);
+  dumpstg(stdout, dcb, sizeof(struct ihadcb));
+  fprintf(stdout, "\n");
 
-  decb = MALLOC31(sizeof(struct decb));
+
+  decb = MALLOC24(sizeof(struct decb));
   if (!decb) {
     fprintf(stderr, "Unable to obtain storage for WRITE decb\n");
     return 4;
   }
-  block = MALLOC31(dcb->dcbblksi);
+  block = MALLOC24(dcb->dcbblksi);
   if (!block) {
     fprintf(stderr, "Unable to obtain storage for WRITE block\n");
     return 4;
@@ -103,6 +106,10 @@ int main(int argc, char* argv[]) {
   *decb = decb_template;
   SET_24BIT_PTR(decb->dcb24, dcb);
   decb->area = block;
+
+  printf("DECB Before %p\n", decb);
+  dumpstg(stdout, decb, sizeof(struct decb));
+  fprintf(stdout, "\n");
 
   rc = WRITE(decb);
   if (rc) {

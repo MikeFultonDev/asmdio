@@ -4,8 +4,8 @@ set -e
 
 wrtlib=$(echo "$(hlq).ASMXMP.DATA")
 drm -f "${wrtlib}"
-dtouch -B320 "${wrtlib}"
+dtouch -B6160 "${wrtlib}"
 
 xmplib=$(echo "$(hlq).ASMXMP.LOAD")
 
-mvscmd --steplib=$xmplib --mydd="${wrtlib}" --pgm=CRTMEM
+mvscmd --steplib=$xmplib --pds="${wrtlib}" --pgm=CRTMEMB

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+xmplib=$(echo "$(hlq).ASMXMP.LOAD")
+drm -f ${xmplib}
+dtouch -ru ${xmplib}
+
+as --LIST,SUPRWARN\(425,434\) brennanxmp.s >brennanxmp.lst
+ld -o"//'${xmplib}(CRTMEMB)'" brennanxmp.o
+

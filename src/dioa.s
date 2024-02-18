@@ -5,7 +5,7 @@ DIOA     ASDSECT
 **| OPENA..... SVC 19, return results
 **| https://tech.mikefulton.ca/SVC19-OPEN
 **| Input:
-**|   R1 -> pointer to 4 byte OPT/DCB array
+**|   R1 -> pointer to 8 byte OPT/DCB array
 **| Output:
 **|   R15 -> RC 0 if successful, non-zero otherwise
 
@@ -14,11 +14,9 @@ DIOA     CSECT
 OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
 
 * Call SVC19 (OPEN) with 24-bit DCB
-         SR  R0,R0
+         L   R0,0(,R1)
+         SR  R1,R1
          SR  R15,R15
-         L   R1,0(,R1)
-         SR  R2,R2
-         ICM R2,B'0111',1(R1)
          SVC 19
 *
 OPENA_EXIT   DS    0H
@@ -46,9 +44,8 @@ WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
 
 * Call Write function (found in DCB, which is 8(DECB))
          L   R1,0(,R1)
-         L   R2,8(,R1)
-         SR  R15,R15
-         ICM R15,B'0111',49(R2)
+         L   R15,8(,R1)
+         ICM R15,B'0111',49(R15)
          BALR R14,R15
          LA  R15,0
 *
@@ -172,7 +169,7 @@ S99A_DSAL EQU 0
 **| STOWA..... SVC 21 massaging input and output
 **| https://tech.mikefulton.ca/SVC21
 **| Input:
-**|   R1 -> pointer to list address and dcb address
+**|   R1 -> pointer to list address and dcb address pointers
 **| Output:
 **|   R15 -> high order 2 bytes are reason code. 
 **|          low order 2 bytes are return code. 
@@ -184,8 +181,10 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
 * For the STOW (SVC 21) call:
 *  R0 is the list address and 
 *  R1 is the dcb address
-         L   R0,0(,R1)
-         L   R1,4(,R1)
+         L   R3,0(,R1)
+         L   R4,4(,R1)
+         L   R0,0(,R3)
+         L   R1,0(,R4)
          SVC 21
 *
 * For the return, put low halfword of R0 

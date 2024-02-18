@@ -11,7 +11,7 @@ CRTMEM   RMODE ANY
          BAKR  R14,0                use linkage stack 
          LARL  R12,DATCONST         setup base for CONSTANTS
          USING DATCONST,R12         "baseless" CSECT 
-        STORAGE OBTAIN,LENGTH=WALEN,EXECUTABLE=NO,LOC=ANY,CHECKZERO=YES
+        STORAGE OBTAIN,LENGTH=WALEN,EXECUTABLE=NO,LOC=24,CHECKZERO=YES
          LR    R10,R1               R10 points to Working Storage 
          USING WAREA,R10            BASE FOR DSECT 
 *
@@ -39,7 +39,6 @@ STG_WA_CLEAR DS 0H
         STORAGE OBTAIN,LENGTH=DCBLEN,EXECUTABLE=NO,LOC=24,CHECKZERO=YES
          LR R8,R1                   R8 points to Output DCB
          USING DCBAREA,R8
-
 *
 * Clear storage
 *
@@ -67,17 +66,43 @@ OPEN_FAIL DS  0H
          B   DONE
 *
 OPEN_SUCCESS DS 0H
+
+MEM_WRITE  DS  0H
+         MVC   WRITE_DECB(WRITELEN),DECBMODW
+         LA   R2,WRITE_BUFFER
+         LA   R3,BUFFLEN
+         LA   R4,CONST_BUFFER
+         LR   R5,R3
+         MVCL R2,R4              Copy CONST_BUFFER to WRITE_BUFFER
+        WRITE WRITE_DECB,SF,LIB_DCB,WRITE_BUFFER,'S',MF=E
+*        CIJE R15,0,WRITE_SUCCESS
 *
-*MEM_WRITE DS  0H
-*        WRITE MEM_DECB,SF,LIB_DCB,WRITE_BUFFER,MF=E
-*         CIJE R15,0,WRITE_SUCCESS
 *WRITE_FAIL DS  0H
 *         LR  R9,R15                put err code in R9
 *         B   DONE
 *
-*WRITE_SUCCESS DS 0H
-*
+WRITE_SUCCESS DS 0H
 
+MEM_CHECK  DS 0H
+         CHECK WRITE_DECB             WAIT UNTIL COMPLETE
+
+MEM_NOTE   DS 0H
+         NOTE LIB_DCB                 GET TTR TO 1st (ONLY) BLOCK
+*
+         MVC   MEM_IFF(MEMINFOLEN),CONST_MEM_IFF
+         STCM  R1,14,MEM_TTR          SAVE TTR FOR USE BY STOW
+         LA    R2,MEM_DIR
+         ST    R2,MEM_DIRA
+         STOW  LIB_DCB,MEM_IFF,IFF     ADD TO DIRECTORY
+
+         CIJE R15,4,STOW_SUCCESS   4 is expected - create new mem
+*
+STOW_FAIL DS  0H
+         LR  R9,R15                put err code in R9
+         B   DONE
+*
+STOW_SUCCESS DS 0H
+         SR  R9,R9                 clear R9 to 0
 *
 LIB_CLOSE  DS 0H
          MVC CLOSE_PARMS(CLOSELEN),CONST_CLOSE
@@ -110,14 +135,37 @@ RLSE_WA  DS 0H
 *------------------------------------------------------------------- 
 DATCONST   DS    0D                 Doubleword alignment for LARL
 CONST_DCB  DCB   DSORG=PO,MACRF=(W),DDNAME=MYDD,DCBE=CONST_DCBE
-CONST_DCBE DCBE  RMODE31=BUFF
 DCBLEN    EQU   *-CONST_DCB
+CONST_DCBE DCBE  RMODE31=BUFF
 CONST_OPEN OPEN (*-*,(OUTPUT)),MODE=31,MF=L
 OPENLEN   EQU   *-CONST_OPEN
 CONST_CLOSE CLOSE (*-*),MODE=31,MF=L
 CLOSELEN  EQU   *-CONST_CLOSE
 *
-WRITE_BUFFER DC CL80'Hello world'
+WRITE    WRITE  DECBMODW,SF,0,0,'S',MF=L
+WRITELEN EQU   *-DECBMODW
+
+CONST_BUFFER DC CL80'Hello world'
+             DC CL80'Jello world'
+             DC CL80'Cello world'
+             DC CL80'Yellow world'
+BUFFLEN EQU *-CONST_BUFFER
+
+CONST_MEM_IFF      DS 0F
+CONST_MEM_LEN      DC AL2(MEMIFFLEN)
+CONST_MEM_FLAGS    DC XL1'0'
+CONST_MEM_DCB24    DC XL3'0'
+CONST_MEM_TIME     DC 2F'0'
+CONST_MEM_DIRA     DC 1A(0)
+CONST_MEM_TYPE     DC XL16'0'
+CONST_MEM_CCSID    DC 1H'1047'
+MEMIFFLEN EQU *-CONST_MEM_IFF
+
+CONST_MEM_DIR      DS 0F
+CONST_MEM_NAME     DC CL8'NEWMEM'
+CONST_MEM_TTR      DC XL3'0'
+MEMINFOLEN EQU *-CONST_MEM_IFF
+
          LTORG ,
 
 *------------------------------------------------------------------- 
@@ -127,6 +175,21 @@ WAREA       DSECT
 SAVEA       DS    18F 
 OPEN_PARMS  DS CL(OPENLEN)
 CLOSE_PARMS DS CL(CLOSELEN)
+WRITE_DECB  DS CL(WRITELEN)
+WRITE_BUFFER DS CL(BUFFLEN)
+
+MEM_IFF      DS 0F
+MEM_LEN      DS 1H
+MEM_FLAGS    DS XL1
+MEM_DCB24    DS XL3
+MEM_TIME     DS 2F
+MEM_DIRA     DS 1A
+MEM_TYPE     DS XL16
+MEM_CCSID    DS 1H
+
+MEM_DIR      DS 0F
+MEM_NAME     DS CL8
+MEM_TTR      DS XL3
 WALEN       EQU  *-SAVEA
 
 DCBAREA     DSECT
