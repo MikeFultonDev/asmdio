@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     return 4;
   }
   *opencb = opencb_template;
-  opencb->dcb24, dcb;
+  opencb->dcb24 = dcb;
   opencb->mode = OPEN_OUTPUT;
 
   printf("DCB Before %p\n", dcb);
@@ -92,19 +92,19 @@ int main(int argc, char* argv[]) {
   fprintf(stdout, "\n");
 
 
-  decb = MALLOC31(sizeof(struct decb));
+  decb = MALLOC24(sizeof(struct decb));
   if (!decb) {
     fprintf(stderr, "Unable to obtain storage for WRITE decb\n");
     return 4;
   }
-  block = MALLOC31(dcb->dcbblksi);
+  block = MALLOC24(dcb->dcbblksi);
   if (!block) {
     fprintf(stderr, "Unable to obtain storage for WRITE block\n");
     return 4;
   }
 
   *decb = decb_template;
-  decb->dcb24, dcb;
+  SET_24BIT_PTR(decb->dcb24, dcb);
   decb->area = block;
 
   printf("DECB Before %p\n", decb);

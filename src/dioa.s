@@ -47,7 +47,6 @@ WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
          L   R15,8(,R1)
          ICM R15,B'0111',49(R15)
          BALR R14,R15
-         ST  0,0
          LA  R15,0
 *
 WRITEA_EXIT   DS    0H
