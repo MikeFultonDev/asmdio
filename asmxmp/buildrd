@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+xmplib=$(echo "$(hlq).ASMXMP.LOAD")
+drm -f ${xmplib}
+dtouch -ru ${xmplib}
+
+as --LIST,SUPRWARN\(425,434\) rdmem.s >rdmem.lst
+ld -o"//'${xmplib}(RDMEM)'" rdmem.o
+

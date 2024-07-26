@@ -14,7 +14,7 @@
  * - Close DCB
  * - Free DDName 
  */
-const struct opencb opencb_template = { 1, 0, 0, 0 };
+const struct opencb opencb_template = { 1, 0, 0, 0, 0 };
 const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
 const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
 const struct decb decb_template = { 0, 0x8020 };
