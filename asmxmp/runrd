@@ -9,8 +9,6 @@ if [ "${mem}" != "NEWMEM" ]; then
   echo "Run CRTMEM to create the member before trying to read"
   exit 4
 fi
-#drm -f "${wrtlib}"
-#dtouch -B320 "${wrtlib}"
 
 xmplib=$(echo "$(hlq).ASMXMP.LOAD")
 
