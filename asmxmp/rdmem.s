@@ -1,9 +1,9 @@
          START , 
-         YREGS ,                   register equates, syslib SYS1.MACLIB 
+         YREGS ,                  register equates, syslib SYS1.MACLIB 
 *
 * DSECTs for USING
 *
-         IGWDES                    DSECTs for DESERV
+         IGWDES                   DSECTs for DESERV
          IGWSMDE
 
 RDMEM    CSECT , 
