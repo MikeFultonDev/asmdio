@@ -76,8 +76,8 @@ OPEN_FAIL DS  0H
 OPEN_SUCCESS DS 0H
 
 MEM_DESERV  DS 0H
-         LA R6,DESERV_NAME_LEN
-         ST R6,MEM_NAME_LEN
+         LA  R6,DESERV_NAME_LEN
+         STH R6,MEM_NAME_LEN
          MVC MEM_NAME_VAL(DESERV_NAME_LEN),DESERV_NAME
          
          DESERV FUNC=GET,CONN_INTENT=HOLD,DCB=LIB_DCB,                 +
@@ -86,6 +86,7 @@ MEM_DESERV  DS 0H
                AREA=(DESERV_AREA,DESERV_AREA_LEN),                     +
                MF=(E,DESP_AREA)
          CIJE R15,0,DESERV_SUCCESS   
+         ST 0,0
 *
 DESERV_FAIL DS  0H
          LHI R8,DESERV_FAIL_MASK
