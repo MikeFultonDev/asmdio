@@ -68,7 +68,9 @@ LIB_OPEN  DS  0H
          CIJE R15,0,OPEN_SUCCESS
 *
 OPEN_FAIL DS  0H
+         LHI R8,OPEN_FAIL_MASK
          LR  R9,R15                put err code in R9
+         OR  R9,R8
          B   DONE
 *
 OPEN_SUCCESS DS 0H
@@ -86,7 +88,9 @@ MEM_DESERV  DS 0H
          CIJE R15,0,DESERV_SUCCESS   
 *
 DESERV_FAIL DS  0H
+         LHI R8,DESERV_FAIL_MASK
          LR  R9,R15                put err code in R9 (need R0 too)
+         OR  R9,R8
          B   DONE
 *
 DESERV_SUCCESS DS 0H
@@ -109,7 +113,9 @@ LIB_CLOSE  DS 0H
          CIJE R15,0,CLOSE_SUCCESS
 *
 CLOSE_FAIL DS  0H
+         LHI R8,CLOSE_FAIL_MASK
          LR  R9,R15                put err code in R9
+         OR  R9,R8
          B   DONE
 *
 CLOSE_SUCCESS DS 0H
@@ -185,6 +191,12 @@ WALEN       EQU  *-SAVEA
 DCBAREA     DSECT
 LIB_DCB     DS   CL(DCBLEN)
 
+*------------------------------------------------------------------- 
+* Equates                                                            - 
+*------------------------------------------------------------------- 
+OPEN_FAIL_MASK EQU   16
+DESERV_FAIL_MASK EQU 32
+CLOSE_FAIL_MASK EQU  64
 
 
          END   RDMEM    
