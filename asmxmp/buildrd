@@ -4,8 +4,8 @@ set -e
 
 xmplib=$(echo "$(hlq).ASMXMP.LOAD")
 drm -f ${xmplib}
-dtouch -ru ${xmplib}
+dtouch -tPDS -ru ${xmplib}
 
-as --LIST,SUPRWARN\(425,434\) rdmem.s >rdmem.lst
-ld -o"//'${xmplib}(RDMEM)'" rdmem.o
+as --LIST,SUPRWARN\(425,434\),TEST rdmem.s >rdmem.lst
+ld -bTEST -V -o"//'${xmplib}(RDMEM)'" rdmem.o
 

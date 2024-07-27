@@ -79,12 +79,16 @@ MEM_DESERV  DS 0H
          LA  R6,DESERV_NAME_LEN
          STH R6,MEM_NAME_LEN
          MVC MEM_NAME_VAL(DESERV_NAME_LEN),DESERV_NAME
-         LA  R6,MEM_NAME_LIST
-         ST  R6,MEM_NAME_PTR
+         LA  R7,MEM_NAME_LIST_DESL
+         USING DESL,R7
+         XC  DESL_ENTRY,DESL_ENTRY
+         LA  R6,MEM_NAME
+         ST  R6,DESL_NAME_PTR
+         DROP R7
          
          DESERV FUNC=GET,CONN_INTENT=HOLD,DCB=LIB_DCB,                 +
                EXT_ATTR=YES,                                           +
-               NAME_LIST=(MEM_NAME_PTR,DESERV_NAME_COUNT),             +
+               NAME_LIST=(MEM_NAME_LIST_DESL,DESERV_NAME_COUNT),       +
                AREA=(DESERV_AREA,DESERV_AREA_LEN),                     +
                MF=(E,DESP_AREA)
          CIJE R15,0,DESERV_SUCCESS   
@@ -185,8 +189,8 @@ DESP_AREA   DS CL(DESP_LEN_IV)
 
 MEM_CCSID    DS 1H
 
-MEM_NAME_PTR  DS A
-MEM_NAME_LIST DS 0D
+MEM_NAME_LIST_DESL DS CL16
+MEM_NAME      DS 0H
 MEM_NAME_LEN  DS 1H
 MEM_NAME_VAL  DS CL8
 
