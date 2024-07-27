@@ -34,3 +34,9 @@ The LIST command does much of what you need:
 - `list 5r?? len(4)` # double-indirection from R5 instead of just one indirection
 - `list 10FE6. len(20)` # dump 20 bytes from address 0x10FE6
 - `list +3a i m(20)` # list 20 instructions starting from address +3a
+
+## Using HLASM Toolkit
+
+- Need to build with ADATA and then run ASMLANGX to generate a LANGX file (see buildrd)
+- [Using IDF](https://www.ibm.com/docs/en/hla-and-tf/1.6?topic=guide-using-idf)
+- [Invoking IDF](https://www.ibm.com/docs/en/hla-and-tf/1.6?topic=tso-invoking-idf)
