@@ -76,6 +76,7 @@ OPEN_FAIL DS  0H
 OPEN_SUCCESS DS 0H
 
 MEM_DESERV  DS 0H
+         MVC DESP_AREA(DESERV_LEN),CONST_DESP
          LA  R6,DESERV_NAME_LEN
          STH R6,MEM_NAME_LEN
          MVC MEM_NAME_VAL(DESERV_NAME_LEN),DESERV_NAME
@@ -92,7 +93,6 @@ MEM_DESERV  DS 0H
                AREA=(DESERV_AREA,DESERV_AREA_LEN),                     +
                MF=(E,DESP_AREA)
          CIJE R15,0,DESERV_SUCCESS   
-         ST 0,0
 *
 DESERV_FAIL DS  0H
          LHI R8,DESERV_FAIL_MASK
@@ -101,12 +101,32 @@ DESERV_FAIL DS  0H
          B   DONE
 *
 DESERV_SUCCESS DS 0H
+         LA  R7,DESERV_AREA
+         USING DESB,R7
+         LA  R4,DESB_DATA
+         USING SMDE,R4
+         XR  R6,R6
+         LH  R6,SMDE_EXT_ATTR_OFF
+         CHI R6,0
+         BNZ  EXTATTR
+NO_EXTATTR DS 0H
+         L   R0,0
+         B   SAVE_CCSID
+EXTATTR  DS  0H
+         LA  R5,0(R4,R6)
+         USING SMDE_EXT_ATTR,R5
+         LH  R0,SMDE_CCSID
+SAVE_CCSID DS 0H
+         STH R0,MEM_CCSID
+         DROP R7
+         DROP R5
+         DROP R4
 *
 * Need to move to location for member
 *
 MEM_READ  DS  0H
          MVC   READ_DECB(READLEN),DECBMODW
-        READ READ_DECB,SF,LIB_DCB,READ_BUFFER,'S',MF=E
+         READ READ_DECB,SF,LIB_DCB,READ_BUFFER,'S',MF=E
 
 MEM_CHECK  DS 0H
          CHECK READ_DECB           WAIT UNTIL COMPLETE
@@ -116,7 +136,7 @@ READ_SUCCESS DS 0H
 *
 LIB_CLOSE  DS 0H
          MVC CLOSE_PARMS(CLOSELEN),CONST_CLOSE
-        CLOSE (LIB_DCB),MF=(E,CLOSE_PARMS),MODE=31
+         CLOSE (LIB_DCB),MF=(E,CLOSE_PARMS),MODE=31
          CIJE R15,0,CLOSE_SUCCESS
 *
 CLOSE_FAIL DS  0H
@@ -126,7 +146,7 @@ CLOSE_FAIL DS  0H
          B   DONE
 *
 CLOSE_SUCCESS DS 0H
-         LA  R9,0                  RDMEM  successful put 0 in R9
+         LH    R9,MEM_CCSID        Put CCSID in R9 as RC
 *
 * Free DCB storage
 *
@@ -138,7 +158,7 @@ RLSE_DCB   DS 0H
 *------------------------------------------------------------------- 
 DONE     DS 0H
 RLSE_WA  DS 0H
-        STORAGE RELEASE,ADDR=(R10),LENGTH=WALEN,EXECUTABLE=NO 
+         STORAGE RELEASE,ADDR=(R10),LENGTH=WALEN,EXECUTABLE=NO 
          LR    R15,R9               get saved rc into R15
          PR    ,                    return to caller 
 
@@ -157,8 +177,8 @@ CLOSELEN  EQU   *-CONST_CLOSE
 READ    READ  DECBMODW,SF,0,0,'S',MF=L
 READLEN EQU   *-DECBMODW
 *
-DESERV_CONN_ID DS 0D
-            DC A(0)
+CONST_DESP        DESERV MF=L
+DESERV_LEN        EQU *-CONST_DESP
 *
 DESERV_NAME_COUNT EQU 1
 DESERV_NAME       DC CL6'NEWMEM'
@@ -185,7 +205,7 @@ READ_DECB   DS CL(READLEN)
 READ_BUFFER DS CL(BUFFLEN)
 
 DESERV_AREA DS CL(DESERV_AREA_LEN)
-DESP_AREA   DS CL(DESP_LEN_IV)
+DESP_AREA   DS CL(DESERV_LEN)
 
 MEM_CCSID    DS 1H
 

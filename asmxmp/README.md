@@ -40,3 +40,16 @@ The LIST command does much of what you need:
 - Need to build with ADATA and then run ASMLANGX to generate a LANGX file (see buildrd)
 - [Using IDF](https://www.ibm.com/docs/en/hla-and-tf/1.6?topic=guide-using-idf)
 - [Invoking IDF](https://www.ibm.com/docs/en/hla-and-tf/1.6?topic=tso-invoking-idf)
+
+- [Example](https://www.ibm.com/docs/en/hla-and-tf/1.6?topic=details-address-expressions) to set R6 to 0xEC
+  - `R6 X'EC'` 
+
+### Debugging RDMEM with IDF on TSO
+
+- Set up DD for dataset to read:  `ALLOC DD(MYDD) DA(ASMXMP.DATA)`
+- Set up DD for ASMLANGX: `ALLOC DD(ASMLANGX) DA(ASMXMP.ASMLANGX)`
+- Set up DD for load module: `TSOLIB ACT DA(ASMXMP.LOAD)`
+- Run IDF: `ASMIDF RDMEM`
+- When done:
+  - Free TSOLIB: `TSOLIB DEACT`
+  - Free ASMLANGX: `FREE DD(ASMLANGX)`
