@@ -11,9 +11,9 @@ This directory has 3 examples in assembler:
 - crtmem.s: This example:
   - same general idea as brennanxmp.s but the STOW also specifies IFF to indicate a CCSID of 1047
 
-- rdmem.s: This example:
-  - opens the PDSE and uses DESERV to get extended attributes (DESERV failing right now)
-  - intent is to return the CCSID for the member (if set) as a way to validate the CCSID in crtmem works
+- rdmccsid.s: This example:
+  - opens the PDSE and uses DESERV to get extended attributes
+  - returns the CCSID for the member (if set) as a way to validate the CCSID in crtmem works
   - Note that standard utilities DO NOT dump the extended attribute information (the JCLs in this directory)
 
 ## Using TSO Test
