@@ -44,12 +44,18 @@ The LIST command does much of what you need:
 - [Example](https://www.ibm.com/docs/en/hla-and-tf/1.6?topic=details-address-expressions) to set R6 to 0xEC
   - `R6 X'EC'` 
 
-### Debugging RDMEM with IDF on TSO
+### Debugging RDMCCSID and CRTMEM with IDF on TSO
 
 - Set up DD for dataset to read:  `ALLOC DD(MYDD) DA(ASMXMP.DATA)`
-- Set up DD for ASMLANGX: `ALLOC DD(ASMLANGX) DA(ASMXMP.ASMLANGX)`
+- Set up DD for ASMLANGX: 
+  - `ALLOC DD(ASMLANGX) DA(ASMXMP.CRTMEM.ASMLANGX)`
+  or
+  - `ALLOC DD(ASMLANGX) DA(ASMXMP.RDMCCSID.ASMLANGX)`
 - Set up DD for load module: `TSOLIB ACT DA(ASMXMP.LOAD)`
-- Run IDF: `ASMIDF RDMEM`
+- Run IDF: 
+  - `ASMIDF CRTMEM`
+  or
+  - `ASMIDF RDMCCSID`
 - When done:
   - Free TSOLIB: `TSOLIB DEACT`
   - Free ASMLANGX: `FREE DD(ASMLANGX)`

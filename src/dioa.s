@@ -43,7 +43,7 @@ WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
          USING WRITEA_PARMS,R7
 
 * Call Write function (found in DCB, which is 8(DECB))
-         L   R1,0(,R1)
+         L   R1,WRITEA_DECB
          L   R15,8(,R1)
          ICM R15,B'0111',49(R15)
          BALR R14,R15
@@ -60,8 +60,6 @@ WRITEA_EXIT   DS    0H
 
 WRITEA_PARMS   DSECT
 WRITEA_DECB    DS AL4
-WRITEA_DCB     DS AL4
-WRITEA_AREA    DS AL4
 WRITEA_DSAL EQU 0         
 
 **| CHECKA..... CHECK DECB, return results
@@ -77,7 +75,7 @@ CHECKA   ASDPRO BASE_REG=3,USR_DSAL=CHECKA_DSAL
          USING CHECKA_PARMS,R7
 
 * Call CHECK function (found in DCB, which is 8(DECB))
-         L   R1,0(,R1)
+         L   R1,CHECKA_DECB
          L   R15,8(,R1)
          ICM R15,B'0111',53(R15)
          BALR R14,R15
@@ -86,7 +84,7 @@ CHECKA   ASDPRO BASE_REG=3,USR_DSAL=CHECKA_DSAL
 *
          LA  R15,0
 *
-CHECKAA_EXIT   DS    0H
+CHECKA_EXIT   DS    0H
          ASDEPI
 
          DROP
@@ -94,9 +92,36 @@ CHECKAA_EXIT   DS    0H
 
 CHECKA_PARMS   DSECT
 CHECKA_DECB    DS AL4
-CHECKA_DCB     DS AL4
-CHECKA_AREA    DS AL4
 CHECKA_DSAL EQU 0         
+
+**| NOTEA..... NOTE DCB, return results
+**| Input:
+**|   R1 -> pointer to DCB
+**| Output:
+**|   R15 -> TTRz returned if successful.
+
+DIOA     CSECT
+         ENTRY NOTEA
+NOTEA   ASDPRO BASE_REG=3,USR_DSAL=NOTEA_DSAL
+         LR    R7,R1
+         USING NOTEA_PARMS,R7
+
+* Call NOTE function (found in DCB)
+         L   R1,NOTEA_DCB
+         XR  R15,R15
+         ICM R15,B'0111',85(R1)
+         BASR R14,R15
+         LR  R15,R1
+*
+NOTEA_EXIT   DS    0H
+         ASDEPI
+
+         DROP
+         LTORG
+
+NOTEA_PARMS   DSECT
+NOTEA_DCB     DS AL4
+NOTEA_DSAL EQU 0
 
 **| CLOSEA..... CLOSE macro, return results
 
@@ -222,7 +247,6 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
          L   R4,4(,R1)
          L   R0,0(,R3)
          L   R1,0(,R4)
-         ST  0,0
          SVC 21
 *
 * For the return, put low halfword of R0 

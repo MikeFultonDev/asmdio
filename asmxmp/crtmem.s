@@ -82,8 +82,8 @@ MEM_CHECK  DS 0H
          CHECK WRITE_DECB             WAIT UNTIL COMPLETE
 
 MEM_NOTE   DS 0H
-*        NOTE LIB_DCB                 GET TTR TO 1st (ONLY) BLOCK
-*        STCM  R1,14,MEM_TTR          SAVE TTR FOR USE BY STOW
+         NOTE LIB_DCB                 GET TTR TO 1st (ONLY) BLOCK
+         STCM  R1,14,MEM_TTR          SAVE TTR FOR USE BY STOW
 *
          MVC   MEM_IFF(MEMINFOLEN),CONST_MEM_IFF
          LA    R2,MEM_DIR
@@ -141,7 +141,7 @@ WRITE    WRITE  DECBMODW,SF,0,0,'S',MF=L
 WRITELEN EQU   *-DECBMODW
 
 CONST_BUFFER DC CL80'Hello world'
-             DC CL80'Jello world'
+             DC CL80'Velo world'
              DC CL80'Cello world'
              DC CL80'Yellow world'
 BUFFLEN EQU *-CONST_BUFFER

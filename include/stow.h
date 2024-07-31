@@ -11,6 +11,12 @@
     unsigned char user_data[62];
   };
 
+  #define STOW_SET_TTR(add, ttr) \
+   ( \
+    ( (add).tt = ((ttr) & 0xFFFF0000) >> 16), \
+    ( (add).r = ((ttr) & 0xFF00) >> 8) \
+   )
+
   struct stowlist_generic_includes_dcb {
     unsigned short list_len;
     unsigned char type;

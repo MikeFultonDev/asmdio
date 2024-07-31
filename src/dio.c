@@ -84,6 +84,10 @@ int CHECK(struct decb* __ptr32 decb)
 {
   return CHECKA(decb);
 }
+unsigned NOTE(struct ihadcb* __ptr32 dcb)
+{
+  return NOTEA(dcb);
+}
 int CLOSE(struct opencb* __ptr32 opencb)
 {
   return CLOSEA(opencb);

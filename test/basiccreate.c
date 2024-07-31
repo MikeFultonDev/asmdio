@@ -27,6 +27,7 @@ int main(int argc, char* argv[]) {
   struct ihadcb* __ptr32 dcb;
   struct decb* __ptr32 decb;
   int rc;
+  unsigned int ttr;
 
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
   struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(MYDD)-1, MYDD };
@@ -67,8 +68,14 @@ int main(int argc, char* argv[]) {
    * DCB set to PO, BPAM WRITE and POINT
    */
   dcb->dcbdsgpo = 1; 
+  dcb->dcbeodad.dcbhiarc.dcbbftek.dcbbfaln = 0x84;
   dcb->dcboflgs = dcbofuex;
   dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
+
+  fprintf(stderr, "\nA(dcb):%p\n", dcb);
+
+  dumpstg(stderr, dcb, sizeof(struct ihadcb));
+  fprintf(stderr, "\n");
 
   opencb = MALLOC31(sizeof(struct opencb));
   if (!opencb) {
@@ -79,19 +86,11 @@ int main(int argc, char* argv[]) {
   opencb->dcb24 = dcb;
   opencb->mode = OPEN_OUTPUT;
 
-  printf("DCB Before %p\n", dcb);
-  dumpstg(stdout, dcb, sizeof(struct ihadcb));
-  fprintf(stdout, "\n");
-
   rc = OPEN(opencb);
   if (rc) {
     fprintf(stderr, "Unable to perform OPEN. rc:%d\n", rc);
     return rc;
   }
-  printf("DCB %p Block size:%u\n", dcb, dcb->dcbblksi);
-  dumpstg(stdout, dcb, sizeof(struct ihadcb));
-  fprintf(stdout, "\n");
-
 
   decb = MALLOC24(sizeof(struct decb));
   if (!decb) {
@@ -121,6 +120,10 @@ int main(int argc, char* argv[]) {
     return rc;
   }
 
+/* printf("dcb:%p NOTE routine address: %p NOTE routine:%p\n", dcb, &dcb->dcbnote, dcb->dcbnote); */
+  ttr = NOTE(dcb);
+  fprintf(stderr, "NOTE: ttr:0x%x\n", ttr);
+
   stowlist = MALLOC31(sizeof(struct stowlist_iff));
   stowlistadd = MALLOC31(sizeof(struct stowlist_add));
   if (!stowlist || !stowlistadd) {
@@ -130,6 +133,7 @@ int main(int argc, char* argv[]) {
   stowlist->iff = stowlistiff_template;
   *stowlistadd = stowlistadd_template;
   memcpy(stowlistadd->mem_name, argv[2], memlen);
+  STOW_SET_TTR((*stowlistadd), ttr);
 
   SET_24BIT_PTR(stowlist->iff.dcb24, dcb);
   stowlist->iff.type = STOW_IFF;
@@ -146,7 +150,7 @@ int main(int argc, char* argv[]) {
   rc = STOW(stowlist, NULL, STOW_IFF);
   if (rc) {
     fprintf(stderr, "Unable to perform STOW. rc:%d\n", rc);
-    fprintf(stderr, "add:%p\n", stowlistadd);
+    fprintf(stderr, "stowlistadd:%p\n", stowlistadd);
     dumpstg(stderr, stowlistadd, sizeof(struct stowlist_add));
     fprintf(stderr, "\nSTOWList after: %p\n", stowlist);
     dumpstg(stderr, stowlist, sizeof(struct stowlist_iff));
