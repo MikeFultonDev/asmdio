@@ -22,7 +22,8 @@
   struct stowlist_iff {
     unsigned short list_len;
     unsigned char type;
-    unsigned short reserved;
+    unsigned char reserved;
+    int dcbHOB: 8; 
     int dcb24: 24;
     char timestamp[8];
     void* __ptr32 direntry;

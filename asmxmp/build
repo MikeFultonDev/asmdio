@@ -1,0 +1,35 @@
+#!/bin/sh
+
+set -e
+
+if [ $# -lt 1 ]; then
+  echo "Need to specify program to build" >&2
+  exit 4
+fi
+pgm=$1
+
+xmplib="$(hlq).ASMXMP.LOAD"
+xmpadata="$(hlq).ASMXMP.${pgm}.SYSADATA"
+xmplangx="$(hlq).ASMXMP.${pgm}.ASMLANGX"
+
+dls "${xmplib}" >/dev/null 2>/dev/null
+if [ $? -gt 0 ]; then
+  dtouch -tPDS -ru ${xmplib}
+else
+  set +e
+  mrm "${xmplib}(${pgm})" >/dev/null 2>/dev/null
+  set -e
+fi
+
+drm -f ${xmplangx}
+dtouch -tSEQ -rvb -l1562 ${xmplangx}
+drm -f ${xmpadata}
+dtouch -tSEQ -rvb -l1562 ${xmpadata}
+
+as --LIST,SUPRWARN\(425,434\) "--gadata=//'${xmpadata}'" ${pgm}.s >${pgm}.lst
+
+mvscmd --pgm=ASMLANGX --args=${pgm} --sysadata="${xmpadata}" --asmlangx="${xmplangx},old" --sysprint=*
+
+ld -o"//'${xmplib}(${pgm})'" ${pgm}.o
+
+echo "${xmplib}(${pgm}) created"

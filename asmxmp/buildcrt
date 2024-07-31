@@ -1,11 +1,3 @@
 #!/bin/sh
 
-set -e
-
-xmplib=$(echo "$(hlq).ASMXMP.LOAD")
-drm -f ${xmplib}
-dtouch -ru ${xmplib}
-
-as --LIST,SUPRWARN\(425,434\) crtmem.s >crtmem.lst
-ld -o"//'${xmplib}(CRTMEM)'" crtmem.o
-
+./build crtmem

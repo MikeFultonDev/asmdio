@@ -47,6 +47,9 @@ WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
          L   R15,8(,R1)
          ICM R15,B'0111',49(R15)
          BALR R14,R15
+*
+* Does not seem to be a return code for WRITE?
+*
          LA  R15,0
 *
 WRITEA_EXIT   DS    0H
@@ -60,6 +63,40 @@ WRITEA_DECB    DS AL4
 WRITEA_DCB     DS AL4
 WRITEA_AREA    DS AL4
 WRITEA_DSAL EQU 0         
+
+**| CHECKA..... CHECK DECB, return results
+**| Input:
+**|   R1 -> pointer to DECB
+**| Output:
+**|   R15 -> RC 0 if successful, non-zero otherwise
+
+DIOA     CSECT
+         ENTRY CHECKA
+CHECKA   ASDPRO BASE_REG=3,USR_DSAL=CHECKA_DSAL
+         LR    R7,R1
+         USING CHECKA_PARMS,R7
+
+* Call CHECK function (found in DCB, which is 8(DECB))
+         L   R1,0(,R1)
+         L   R15,8(,R1)
+         ICM R15,B'0111',53(R15)
+         BALR R14,R15
+*
+* Does not seem to be a return code for CHECK?
+*
+         LA  R15,0
+*
+CHECKAA_EXIT   DS    0H
+         ASDEPI
+
+         DROP
+         LTORG
+
+CHECKA_PARMS   DSECT
+CHECKA_DECB    DS AL4
+CHECKA_DCB     DS AL4
+CHECKA_AREA    DS AL4
+CHECKA_DSAL EQU 0         
 
 **| CLOSEA..... CLOSE macro, return results
 
@@ -185,6 +222,7 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
          L   R4,4(,R1)
          L   R0,0(,R3)
          L   R1,0(,R4)
+         ST  0,0
          SVC 21
 *
 * For the return, put low halfword of R0 

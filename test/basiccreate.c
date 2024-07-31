@@ -103,18 +103,21 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Unable to obtain storage for WRITE block\n");
     return 4;
   }
+  memset(block, 'a', dcb->dcbblksi);
 
   *decb = decb_template;
   SET_24BIT_PTR(decb->dcb24, dcb);
   decb->area = block;
 
-  printf("DECB Before %p\n", decb);
-  dumpstg(stdout, decb, sizeof(struct decb));
-  fprintf(stdout, "\n");
-
   rc = WRITE(decb);
   if (rc) {
     fprintf(stderr, "Unable to perform WRITE. rc:%d\n", rc);
+    return rc;
+  }
+
+  rc = CHECK(decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform CHECK. rc:%d\n", rc);
     return rc;
   }
 
@@ -132,6 +135,13 @@ int main(int argc, char* argv[]) {
   stowlist->iff.type = STOW_IFF;
   stowlist->iff.direntry = stowlistadd;
   stowlist->iff.ccsid = 819; 
+
+  fprintf(stderr, "\nA(stowlist):%p A(stowlist_iff):%p type:%x dcb24:%p ccsid:%d\n", 
+    stowlist, &(stowlist->iff), stowlist->iff.type, stowlist->iff.dcb24, stowlist->iff.ccsid);
+
+  fprintf(stderr, "\nSTOWList before: %p\n", stowlist);
+  dumpstg(stderr, stowlist, sizeof(struct stowlist_iff));
+  fprintf(stderr, "\n");
 
   rc = STOW(stowlist, NULL, STOW_IFF);
   if (rc) {

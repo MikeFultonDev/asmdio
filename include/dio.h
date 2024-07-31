@@ -14,6 +14,7 @@
 
   int OPEN(struct opencb* __ptr32 opencb);
   int WRITE(struct decb* __ptr32 decb);
+  int CHECK(struct decb* __ptr32 decb);
   int STOW(union stowlist* __ptr32 list, struct ihadcb* __ptr32 dcb, enum stowtype type);
   int CLOSE(struct opencb* __ptr32 opencb);
 

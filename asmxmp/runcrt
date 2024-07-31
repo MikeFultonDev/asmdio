@@ -2,10 +2,12 @@
 
 set -e
 
-wrtlib=$(echo "$(hlq).ASMXMP.DATA")
+hlq=$(hlq)
+
+wrtlib="${hlq}.ASMXMP.DATA"
 drm -f "${wrtlib}"
 dtouch -B320 "${wrtlib}"
 
-xmplib=$(echo "$(hlq).ASMXMP.LOAD")
+xmplib="${hlq}.ASMXMP.LOAD"
 
 mvscmd --steplib=$xmplib --mydd="${wrtlib}" --pgm=CRTMEM

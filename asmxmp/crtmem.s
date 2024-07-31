@@ -27,7 +27,7 @@ CRTMEM   RMODE ANY
 STG_WA_CLEAR DS 0H
 *
          MVC   SAVEA+4(4),=C'F1SA'  linkage stack convention 
-         LAE   R13,SAVEA            ADDRESS OF OUR SA IN R13 
+         LA    R13,SAVEA            ADDRESS OF OUR SA IN R13 
 
 *------------------------------------------------------------------- 
 * application logic                                                - 
@@ -75,22 +75,17 @@ MEM_WRITE  DS  0H
          LR   R5,R3
          MVCL R2,R4              Copy CONST_BUFFER to WRITE_BUFFER
         WRITE WRITE_DECB,SF,LIB_DCB,WRITE_BUFFER,'S',MF=E
-*        CIJE R15,0,WRITE_SUCCESS
-*
-*WRITE_FAIL DS  0H
-*         LR  R9,R15                put err code in R9
-*         B   DONE
-*
+
 WRITE_SUCCESS DS 0H
 
 MEM_CHECK  DS 0H
          CHECK WRITE_DECB             WAIT UNTIL COMPLETE
 
 MEM_NOTE   DS 0H
-         NOTE LIB_DCB                 GET TTR TO 1st (ONLY) BLOCK
+*        NOTE LIB_DCB                 GET TTR TO 1st (ONLY) BLOCK
+*        STCM  R1,14,MEM_TTR          SAVE TTR FOR USE BY STOW
 *
          MVC   MEM_IFF(MEMINFOLEN),CONST_MEM_IFF
-         STCM  R1,14,MEM_TTR          SAVE TTR FOR USE BY STOW
          LA    R2,MEM_DIR
          ST    R2,MEM_DIRA
          STOW  LIB_DCB,MEM_IFF,IFF     ADD TO DIRECTORY
