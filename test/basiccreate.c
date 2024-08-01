@@ -120,7 +120,6 @@ int main(int argc, char* argv[]) {
     return rc;
   }
 
-/* printf("dcb:%p NOTE routine address: %p NOTE routine:%p\n", dcb, &dcb->dcbnote, dcb->dcbnote); */
   ttr = NOTE(dcb);
   fprintf(stderr, "NOTE: ttr:0x%x\n", ttr);
 
