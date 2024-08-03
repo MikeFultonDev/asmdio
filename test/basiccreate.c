@@ -74,7 +74,6 @@ int main(int argc, char* argv[]) {
   dcb->dcboflgs = dcbofuex;
   dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
 
-
   opencb = MALLOC31(sizeof(struct opencb));
   if (!opencb) {
     fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
@@ -128,11 +127,11 @@ int main(int argc, char* argv[]) {
   ttr = NOTE(dcb);
   fprintf(stderr, "NOTE: ttr:0x%x\n", ttr);
 
-/* #define STOW_IFF 1 */
-#ifdef STOW_IFF
+#define STOW_IFF_ON 1
+#ifdef STOW_IFF_ON
   stowlist = MALLOC24(sizeof(struct stowlist_iff));
   stowlistadd = MALLOC24(sizeof(struct stowlist_add));
-  if (!stowlist || !stowlistadd) {
+  if ((!stowlist) || (!stowlistadd)) {
     fprintf(stderr, "Unable to obtain storage for STOW\n");
     return 4;
   }
@@ -161,7 +160,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "\nSTOWList after: %p\n", stowlist);
     dumpstg(stderr, stowlist, sizeof(struct stowlist_iff));
     fprintf(stderr, "\n");
-  /*  return rc; */
+    return rc;
   }
 #else
   stowlist = MALLOC24(sizeof(struct stowlist_add));

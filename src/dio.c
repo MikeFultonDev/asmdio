@@ -94,15 +94,17 @@ int CLOSE(struct closecb* __ptr32 closecb)
 }
 void* __ptr32 MALLOC24(size_t bytes)
 {
-  int ptr;
-  ptr = MALOC24A(bytes);
+  int ptr24;
+  ptr24 = MALOC24A(bytes);
+  void* __ptr32 ptr = (void* __ptr32) ptr24;
 #ifdef DEBUG
-  memset(((void*)ptr), 0xFE, bytes);
+  memset(ptr, 0xFE, bytes);
 #else
-  memset(((void*)ptr), 0x00, bytes);
+  memset(ptr, 0x00, bytes);
 #endif
-  return (void* __ptr32) ptr;
+  return ptr;
 }
+
 int FREE24(void* __ptr32 addr, size_t len)
 {
   return FREE24A(addr, len);
