@@ -88,9 +88,9 @@ unsigned NOTE(struct ihadcb* __ptr32 dcb)
 {
   return NOTEA(dcb);
 }
-int CLOSE(struct opencb* __ptr32 opencb)
+int CLOSE(struct closecb* __ptr32 closecb)
 {
-  return CLOSEA(opencb);
+  return CLOSEA(closecb);
 }
 void* __ptr32 MALLOC24(size_t bytes)
 {

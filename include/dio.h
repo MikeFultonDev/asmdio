@@ -6,6 +6,7 @@
   #include "ihadcb.h"
   #include "decb.h"
   #include "stow.h"
+  #include "closecb.h"
 
   #define SET_24BIT_PTR(ref,val) (ref) = ((int)(val))
 
@@ -17,7 +18,7 @@
   int CHECK(struct decb* __ptr32 decb);
   unsigned int NOTE(struct ihadcb* __ptr32 dcb);
   int STOW(union stowlist* __ptr32 list, struct ihadcb* __ptr32 dcb, enum stowtype type);
-  int CLOSE(struct opencb* __ptr32 opencb);
+  int CLOSE(struct closecb* __ptr32 closecb);
 
   void* __ptr32 MALLOC24(size_t len);
   int FREE24(void* __ptr32 addr, size_t len);

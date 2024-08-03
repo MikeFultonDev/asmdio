@@ -124,12 +124,18 @@ NOTEA_DCB     DS AL4
 NOTEA_DSAL EQU 0
 
 **| CLOSEA..... CLOSE macro, return results
+**| https://tech.mikefulton.ca/SVC20-CLOSE 
+**| Input:
+**|   R1 -> pointer to 8 byte OPT/DCB array
+**| Output:
+**|   R15 -> RC 0 if successful, non-zero otherwise
 
 DIOA     CSECT
          ENTRY CLOSEA
 CLOSEA   ASDPRO BASE_REG=3,USR_DSAL=CLOSEA_DSAL
-         LR    R7,R1
-         LA  R15,0
+         L  R0,0(,R1)
+         SR R1,R1
+         SVC 20
 
 CLOSEA_EXIT    DS    0H
          ASDEPI
@@ -138,7 +144,7 @@ CLOSEA_EXIT    DS    0H
          LTORG
 
 CLOSEA_PARMS   DSECT
-CLOSEA_DCB   DS  AL4
+CLOSEA_OPTSANDDCB    DS  AL4
 CLOSEA_DSAL  EQU 0
 
 **| MALOC24A.... acquire storage below the line

@@ -12,15 +12,17 @@
  * - Allocate DDName to PDS
  * - Establish DCB for DDName
  * - Perform OPEN on PDS
- * - Perform FIND on member
- * - Read records of member
+ * - Perform FIND on member (to be written)
+ * - Read records of member (to be written)
  * - Close DCB
  * - Free DDName 
  */
 const struct opencb opencb_template = { 1, 0, 0 };
+const struct closecb closecb_template = { 1, 0, 0 };
 
 int main(int argc, char* argv[]) {
   struct opencb* __ptr32 opencb;
+  struct closecb* __ptr32 closecb;
   struct ihadcb* __ptr32 dcb;
   int rc;
 
@@ -70,7 +72,14 @@ int main(int argc, char* argv[]) {
     return rc;
   }
 
-  CLOSE(opencb);
+  closecb = MALLOC31(sizeof(struct closecb));
+  if (!closecb) {
+    fprintf(stderr, "Unable to obtain storage for CLOSE cb\n");
+    return 4;
+  }
+  *closecb = closecb_template;
+  closecb->dcb24 = closecb;
+  rc = CLOSE(closecb);
   if (rc) {
     fprintf(stderr, "Unable to perform CLOSE. rc:%d\n", rc);
     return rc;

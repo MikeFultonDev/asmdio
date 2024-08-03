@@ -19,11 +19,13 @@ const struct opencb opencb_template = { 1, 0, 0, 0, 0 };
 const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
 const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
 const struct decb decb_template = { 0, 0x8020 };
+const struct closecb closecb_template = { 1, 0, 0 };
 
 #define MYDD "MYDD"
 
 int main(int argc, char* argv[]) {
   struct opencb* __ptr32 opencb;
+  struct closecb* __ptr32 closecb;
   struct ihadcb* __ptr32 dcb;
   struct decb* __ptr32 decb;
   int rc;
@@ -126,7 +128,7 @@ int main(int argc, char* argv[]) {
   ttr = NOTE(dcb);
   fprintf(stderr, "NOTE: ttr:0x%x\n", ttr);
 
-#define STOW_IFF 1
+/* #define STOW_IFF 1 */
 #ifdef STOW_IFF
   stowlist = MALLOC24(sizeof(struct stowlist_iff));
   stowlistadd = MALLOC24(sizeof(struct stowlist_add));
@@ -159,7 +161,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "\nSTOWList after: %p\n", stowlist);
     dumpstg(stderr, stowlist, sizeof(struct stowlist_iff));
     fprintf(stderr, "\n");
-    return rc;
+  /*  return rc; */
   }
 #else
   stowlist = MALLOC24(sizeof(struct stowlist_add));
@@ -184,8 +186,15 @@ int main(int argc, char* argv[]) {
     return rc;
   }
 #endif
+  closecb = MALLOC31(sizeof(struct closecb));
+  if (!closecb) {
+    fprintf(stderr, "Unable to obtain storage for CLOSE cb\n");
+    return 4;
+  }
+  *closecb = closecb_template;
+  closecb->dcb24 = dcb;
 
-  rc = CLOSE(opencb);
+  rc = CLOSE(closecb);
   if (rc) {
     fprintf(stderr, "Unable to perform CLOSE. rc:%d\n", rc);
     return rc;

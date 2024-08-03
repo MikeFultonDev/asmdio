@@ -17,6 +17,7 @@
   struct s99_em;
   struct ihadcb;
   struct decb;
+  struct closecb;
 
   int S99A(struct s99rb* __ptr32 rb);
   int S99MSGA(struct s99_em* __ptr32 em);
@@ -25,7 +26,7 @@
   int CHECKA(struct decb* __ptr32 decb);
   unsigned int NOTEA(struct ihadcb* __ptr32 dcb);
   int STOWA(unsigned int list, unsigned int dcb);
-  int CLOSEA(struct opencb* __ptr32 opencb);
+  int CLOSEA(struct closecb* __ptr32 dcb);
 
   int MALOC24A(size_t len);
   int FREE24A(void* __ptr32 addr, size_t len);
@@ -53,12 +54,12 @@
   #pragma variable(FREE24A,  NORENT)
 	#define S99A(ptr)         call31asm("S99A", &S99A, 1, ptr)
 	#define S99MSGA(ptr)      call31asm("S99MSGA", &S99MSGA, 1, ptr)
-	#define OPENA(dcb)        call31asm("OPENA", &OPENA, 1, dcb)
+	#define OPENA(opencb)     call31asm("OPENA", &OPENA, 1, opencb)
 	#define WRITEA(decb)      call31asm("WRITEA", &WRITEA, 1, decb)
 	#define CHECKA(decb)      call31asm("CHECKA", &CHECKA, 1, decb)
 	#define NOTEA(decb)       call31asm("NOTEA", &NOTEA, 1, decb)
 	#define STOWA(lst,dcb)    call31asm("STOWA", &STOWA, 2, list, dcb)
-	#define CLOSEA(dcb)       call31asm("CLOSEA", &CLOSEA, 1, dcb)
+	#define CLOSEA(closecb)   call31asm("CLOSEA", &CLOSEA, 1, closecb)
 	#define MALOC24A(len)     call31asm("MALOC24A", &MALOC24A, 1, len)
 	#define FREE24A(ptr,len)  call31asm("FREE24A", &FREE24A, 2, ptr, len)
 #else
