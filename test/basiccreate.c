@@ -72,10 +72,6 @@ int main(int argc, char* argv[]) {
   dcb->dcboflgs = dcbofuex;
   dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
 
-  fprintf(stderr, "\nA(dcb):%p\n", dcb);
-
-  dumpstg(stderr, dcb, sizeof(struct ihadcb));
-  fprintf(stderr, "\n");
 
   opencb = MALLOC31(sizeof(struct opencb));
   if (!opencb) {
@@ -91,6 +87,13 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Unable to perform OPEN. rc:%d\n", rc);
     return rc;
   }
+
+  fprintf(stderr, "\nA(dcb):%p\n", dcb);
+  dumpstg(stderr, dcb, sizeof(struct ihadcb));
+
+  fprintf(stderr, "\nA(dcbe):%p\n", dcb->dcbdcbe);
+  dumpstg(stderr, dcb->dcbdcbe, sizeof(struct dcbe));
+  fprintf(stderr, "\n");
 
   decb = MALLOC24(sizeof(struct decb));
   if (!decb) {
@@ -123,8 +126,10 @@ int main(int argc, char* argv[]) {
   ttr = NOTE(dcb);
   fprintf(stderr, "NOTE: ttr:0x%x\n", ttr);
 
-  stowlist = MALLOC31(sizeof(struct stowlist_iff));
-  stowlistadd = MALLOC31(sizeof(struct stowlist_add));
+#define STOW_IFF 1
+#ifdef STOW_IFF
+  stowlist = MALLOC24(sizeof(struct stowlist_iff));
+  stowlistadd = MALLOC24(sizeof(struct stowlist_add));
   if (!stowlist || !stowlistadd) {
     fprintf(stderr, "Unable to obtain storage for STOW\n");
     return 4;
@@ -156,6 +161,29 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "\n");
     return rc;
   }
+#else
+  stowlist = MALLOC24(sizeof(struct stowlist_add));
+  if (!stowlist) {
+    fprintf(stderr, "Unable to obtain storage for STOW\n");
+    return 4;
+  }
+  stowlist->add = stowlistadd_template;
+  memcpy(stowlist->add.mem_name, argv[2], memlen);
+  STOW_SET_TTR((stowlist->add), ttr);
+
+  fprintf(stderr, "\nSTOWList before: %p\n", stowlist);
+  dumpstg(stderr, stowlist, sizeof(struct stowlist_add));
+  fprintf(stderr, "\n");
+
+  rc = STOW(stowlist, dcb, STOW_A);
+  if (rc) {
+    fprintf(stderr, "Unable to perform STOW. rc:%d\n", rc);
+    fprintf(stderr, "stowlist:%p\n", stowlist);
+    dumpstg(stderr, stowlist, sizeof(struct stowlist_add));
+    fprintf(stderr, "\n");
+    return rc;
+  }
+#endif
 
   rc = CLOSE(opencb);
   if (rc) {

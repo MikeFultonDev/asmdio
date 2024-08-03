@@ -92,12 +92,14 @@ int CLOSE(struct opencb* __ptr32 opencb)
 {
   return CLOSEA(opencb);
 }
-void* __ptr32 MALLOC24(size_t len)
+void* __ptr32 MALLOC24(size_t bytes)
 {
   int ptr;
-  ptr = MALOC24A(len);
+  ptr = MALOC24A(bytes);
 #ifdef DEBUG
-  memset(p, 0xFE, bytes);
+  memset(((void*)ptr), 0xFE, bytes);
+#else
+  memset(((void*)ptr), 0x00, bytes);
 #endif
   return (void* __ptr32) ptr;
 }
@@ -111,6 +113,8 @@ void* __ptr32 MALLOC31(size_t bytes)
   void* __ptr32 p = __malloc31(bytes);
 #ifdef DEBUG
   memset(p, 0xFE, bytes);
+#else
+  memset(p, 0x00, bytes);
 #endif
   return p;
 }
@@ -124,6 +128,9 @@ void dumpstg(FILE* stream, void* p, size_t len)
   char* buff = p;
   size_t i;
   for (i=0; i<len; ++i) {
+    if ((i != 0) && (i % 16 == 0)) {
+      fprintf(stream, "\n");
+    }
     if (i % 4 == 0) {
       fprintf(stream, " ");
     }
