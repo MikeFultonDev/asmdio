@@ -58,8 +58,7 @@ int STOW(union stowlist* __ptr32 listp, struct ihadcb* __ptr32 dcbp, enum stowty
         return -1;
       }
       break;
-    }
-  printf("list:%x dcb:%x\n", list, dcb);
+  }
   return STOWA(list, dcb);
 }
 

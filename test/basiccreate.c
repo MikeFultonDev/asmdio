@@ -6,11 +6,13 @@
 #include "dio.h"
 
 /*
- * Basic Create of a PDS Member:
- * - Allocate DDName to PDS
+ * Basic Create of a PDSE Member:
+ * - Allocate DDName 'MYDD' to (PDSE name passed in)
  * - Establish DCB for DDName
- * - Perform OPEN on PDS
- * - Perform STOW to create PDS member
+ * - Perform OPEN on PDSE
+ * - Perform WRITE on PDSE and write a block of ASCII a's to the PDSE (0x61)
+ * - Perform CHECK and NOTE on PDSE
+ * - Perform STOW to create PDSE member (member name passed in) (with CCSID 819 if STOW_IFF_ON) pointing to the block written
  * - Close DCB
  * - Free DDName 
  */
@@ -22,6 +24,8 @@ const struct decb decb_template = { 0, 0x8020 };
 const struct closecb closecb_template = { 1, 0, 0 };
 
 #define MYDD "MYDD"
+
+#define ASCII_A 0x61
 
 int main(int argc, char* argv[]) {
   struct opencb* __ptr32 opencb;
@@ -89,13 +93,6 @@ int main(int argc, char* argv[]) {
     return rc;
   }
 
-  fprintf(stderr, "\nA(dcb):%p\n", dcb);
-  dumpstg(stderr, dcb, sizeof(struct ihadcb));
-
-  fprintf(stderr, "\nA(dcbe):%p\n", dcb->dcbdcbe);
-  dumpstg(stderr, dcb->dcbdcbe, sizeof(struct dcbe));
-  fprintf(stderr, "\n");
-
   decb = MALLOC24(sizeof(struct decb));
   if (!decb) {
     fprintf(stderr, "Unable to obtain storage for WRITE decb\n");
@@ -106,7 +103,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Unable to obtain storage for WRITE block\n");
     return 4;
   }
-  memset(block, 'a', dcb->dcbblksi);
+  memset(block, ASCII_A, dcb->dcbblksi);
 
   *decb = decb_template;
   SET_24BIT_PTR(decb->dcb24, dcb);
@@ -125,7 +122,6 @@ int main(int argc, char* argv[]) {
   }
 
   ttr = NOTE(dcb);
-  fprintf(stderr, "NOTE: ttr:0x%x\n", ttr);
 
 #define STOW_IFF_ON 1
 #ifdef STOW_IFF_ON
@@ -145,21 +141,9 @@ int main(int argc, char* argv[]) {
   stowlist->iff.direntry = stowlistadd;
   stowlist->iff.ccsid = 819; 
 
-  fprintf(stderr, "\nA(stowlist):%p A(stowlist_iff):%p type:%x dcb24:%p ccsid:%d\n", 
-    stowlist, &(stowlist->iff), stowlist->iff.type, stowlist->iff.dcb24, stowlist->iff.ccsid);
-
-  fprintf(stderr, "\nSTOWList before: %p\n", stowlist);
-  dumpstg(stderr, stowlist, sizeof(struct stowlist_iff));
-  fprintf(stderr, "\n");
-
   rc = STOW(stowlist, NULL, STOW_IFF);
-  if (rc != 4) {
+  if (rc != STOW_IFF_CC_CREATE_OK) {
     fprintf(stderr, "Unable to perform STOW. rc:%d\n", rc);
-    fprintf(stderr, "stowlistadd:%p\n", stowlistadd);
-    dumpstg(stderr, stowlistadd, sizeof(struct stowlist_add));
-    fprintf(stderr, "\nSTOWList after: %p\n", stowlist);
-    dumpstg(stderr, stowlist, sizeof(struct stowlist_iff));
-    fprintf(stderr, "\n");
     return rc;
   }
 #else
@@ -172,19 +156,12 @@ int main(int argc, char* argv[]) {
   memcpy(stowlist->add.mem_name, argv[2], memlen);
   STOW_SET_TTR((stowlist->add), ttr);
 
-  fprintf(stderr, "\nSTOWList before: %p\n", stowlist);
-  dumpstg(stderr, stowlist, sizeof(struct stowlist_add));
-  fprintf(stderr, "\n");
-
   rc = STOW(stowlist, dcb, STOW_A);
-  if (rc) {
-    fprintf(stderr, "Unable to perform STOW. rc:%d\n", rc);
-    fprintf(stderr, "stowlist:%p\n", stowlist);
-    dumpstg(stderr, stowlist, sizeof(struct stowlist_add));
-    fprintf(stderr, "\n");
+  if (rc != STOW_CC_OK) {
     return rc;
   }
 #endif
+
   closecb = MALLOC31(sizeof(struct closecb));
   if (!closecb) {
     fprintf(stderr, "Unable to obtain storage for CLOSE cb\n");

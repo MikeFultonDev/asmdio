@@ -54,7 +54,14 @@
     STOW_RG=0x20,
     STOW_DG=0x10,
     STOW_RECOVERG=0x08
-  }; 
+  };
+
+  enum stowcc {
+    STOW_CC_OK=0,
+    STOW_IFF_CC_CREATE_OK=4,
+    STOW_IFF_CC_UPDATE_FAILED=8,
+    STOW_IFF_CC_PDS_UPDATE_UNSUPPORTED=28
+  };
   #pragma pack(pop)
 
 #endif
