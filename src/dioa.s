@@ -253,6 +253,7 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
          L   R4,4(,R1)
          L   R0,0(,R3)
          L   R1,0(,R4)
+         LR  R15,R0
          SVC 21
 *
 * For the return, put low halfword of R0 

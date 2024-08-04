@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
   fprintf(stderr, "\n");
 
   rc = STOW(stowlist, NULL, STOW_IFF);
-  if (rc) {
+  if (rc != 4) {
     fprintf(stderr, "Unable to perform STOW. rc:%d\n", rc);
     fprintf(stderr, "stowlistadd:%p\n", stowlistadd);
     dumpstg(stderr, stowlistadd, sizeof(struct stowlist_add));
