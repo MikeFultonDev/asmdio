@@ -28,7 +28,12 @@ dtouch -tSEQ -rvb -l1562 ${xmpadata}
 
 as --LIST,SUPRWARN\(425,434\) "--gadata=//'${xmpadata}'" ${pgm}.s >${pgm}.lst
 
+set +e
 mvscmd --pgm=ASMLANGX --args=${pgm} --sysadata="${xmpadata}" --asmlangx="${xmplangx},old" --sysprint=*
+if [ $? -gt 0 ]; then
+  echo "ASMLANGX not available on this system - ASMLANGX generation skipped."
+fi
+set -e
 
 ld -o"//'${xmplib}(${pgm})'" ${pgm}.o
 

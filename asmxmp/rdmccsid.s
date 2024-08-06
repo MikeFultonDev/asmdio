@@ -22,14 +22,14 @@
 * - Return the CCSID
 
          START , 
+         YREGS ,                  register equates, syslib SYS1.MACLIB 
+         IGWDES                   DSECTs for DESERV
+         IGWSMDE
 
 RDMCCSID CSECT , 
 *
 * DSECTs, EQUs for USING
 *
-         YREGS ,                  register equates, syslib SYS1.MACLIB 
-         IGWDES                   DSECTs for DESERV
-         IGWSMDE
 RDMCCSID AMODE 31 
 RDMCCSID RMODE ANY
          SYSSTATE AMODE64=NO,ARCHLVL=OSREL,OSREL=SYSSTATE 

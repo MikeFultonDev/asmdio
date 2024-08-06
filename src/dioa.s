@@ -127,6 +127,39 @@ NOTEA_PARMS   DSECT
 NOTEA_DCB     DS AL4
 NOTEA_DSAL    EQU 0
 
+**| DESERVA..... DESERV, return results
+**| https://tech.mikefulton.ca/DESERVMacro
+**| Input:
+**|   R1 -> pointer to DESP
+**| Output:
+**|   R15 -> Return Code
+
+DIOA     CSECT
+         ENTRY DESERVA
+DESERVA  ASDPRO BASE_REG=3,USR_DSAL=DESERVA_DSAL
+         LR    R7,R1
+         USING DESERVA_PARMS,R7
+
+* Do Program Call to DESERV Function
+         L   R1,DESERVA_DESP
+         L   R15,16(,0)          CVT
+         L   R15,1216(,R15)      DFA
+         L   R15,44(,R15)
+         L   R15,84(,R15)        DESERV PC
+         PC  0(R15)              Do Program Call
+*
+* Return code in R15
+*
+DESERVA_EXIT   DS    0H
+         ASDEPI
+
+         DROP
+         LTORG
+
+DESERVA_PARMS   DSECT
+DESERVA_DESP    DS AL4
+DESERVA_DSAL    EQU 0
+
 **| CLOSEA..... CLOSE macro, return results
 **| https://tech.mikefulton.ca/SVC20-CLOSE 
 **| Input:

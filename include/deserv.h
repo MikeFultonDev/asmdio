@@ -1,5 +1,18 @@
 #pragma pack(packed)
 
+struct desl_name {
+  unsigned short desl_name_len;
+  char desl_name[8];
+};
+
+struct desl {
+  unsigned char   desl_code;
+  unsigned short  desl_errcode;
+  unsigned char   _filler1;
+  struct desl_name* __ptr32   desl_smde_ptr;
+  struct desl_name* __ptr32   desl_name_ptr;
+};
+
 struct desp {
   union {
     unsigned char  desp_header[16]; /* Standard Header */
@@ -40,13 +53,13 @@ struct desp {
       unsigned char  _filler3;                /* RESERVED                            */
       };
     };
-  void * __ptr32 desp_dcb_ptr;              /* DCB address                      */
-  void * __ptr32 desp_deb_ptr;              /* DEB address                      */
+  struct dcb * __ptr32 desp_dcb_ptr;        /* DCB address                      */
+  struct deb * __ptr32 desp_deb_ptr;        /* DEB address                      */
   void * __ptr32 desp_conn_id_ptr;          /* connect identifier address       */
   void * __ptr32 desp_areaptr_ptr;          /* address for buffer address @L2A  */
   void * __ptr32 desp_area_ptr;             /* buffer address                   */
   int            desp_area2;                /* buffer length                    */
-  void * __ptr32 desp_de_list_ptr;          /* DE_LIST address            @L2A  */
+  struct desl* __ptr32 desp_de_list_ptr;    /* DE_LIST address            @L2A  */
   int            desp_de_list2;             /* DE_LIST entry count        @L2A  */
   int            desp_entry_gap;            /* entry gap size                   */
   void * __ptr32 desp_mem_data_ptr;         /* MEM_DATA address                 */
