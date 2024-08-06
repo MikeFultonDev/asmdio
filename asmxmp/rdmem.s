@@ -1,12 +1,12 @@
          START , 
-         YREGS ,                  register equates, syslib SYS1.MACLIB 
+RDMEM    CSECT , 
 *
 * DSECTs for USING
 *
+         YREGS ,                  register equates, syslib SYS1.MACLIB 
          IGWDES                   DSECTs for DESERV
          IGWSMDE
 
-RDMEM    CSECT , 
 RDMEM    AMODE 31 
 RDMEM    RMODE ANY
         SYSSTATE AMODE64=NO,ARCHLVL=OSREL,OSREL=SYSSTATE 

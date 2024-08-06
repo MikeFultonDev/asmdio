@@ -1,8 +1,8 @@
          START , 
-         YREGS ,                   register equates, syslib SYS1.MACLIB 
 CRTMEM   CSECT , 
 CRTMEM   AMODE 31 
 CRTMEM   RMODE ANY
+         YREGS ,                   register equates, syslib SYS1.MACLIB 
         SYSSTATE AMODE64=NO,ARCHLVL=OSREL,OSREL=SYSSTATE 
         IEABRCX  DEFINE    convert based branches to relative
 *------------------------------------------------------------------- 

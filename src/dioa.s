@@ -2,19 +2,21 @@ DIOA  TITLE 'DIOA  - Dataset services'
          SPACE 1
 DIOA     ASDSECT
 
+DIOA     CSECT
+         YREGS
+
 **| OPENA..... SVC 19, return results
 **| https://tech.mikefulton.ca/SVC19-OPEN
 **| Input:
 **|   R1 -> pointer to 8 byte OPT/DCB array
 **| Output:
 **|   R15 -> RC 0 if successful, non-zero otherwise
-
-DIOA     CSECT
          ENTRY OPENA
 OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
 
 * Call SVC19 (OPEN) with 24-bit DCB
-         L   R0,0(,R1)
+         USING OPENA_PARMS,R1
+         L   R0,OPENA_OPTSANDDCB
          SR  R1,R1
          SR  R15,R15
          SVC 19
@@ -25,9 +27,9 @@ OPENA_EXIT   DS    0H
          DROP
          LTORG
 
-OPENA_PARMS   DSECT
+OPENA_PARMS        DSECT
 OPENA_OPTSANDDCB   DS AL4
-OPENA_DSAL EQU 0         
+OPENA_DSAL         EQU 0         
 
 **| WRITEA..... Write BLOCK, return results
 **| https://tech.mikefulton.ca/WRITEMacro
@@ -60,7 +62,7 @@ WRITEA_EXIT   DS    0H
 
 WRITEA_PARMS   DSECT
 WRITEA_DECB    DS AL4
-WRITEA_DSAL EQU 0         
+WRITEA_DSAL    EQU 0         
 
 **| CHECKA..... CHECK DECB, return results
 **| Input:
@@ -92,7 +94,7 @@ CHECKA_EXIT   DS    0H
 
 CHECKA_PARMS   DSECT
 CHECKA_DECB    DS AL4
-CHECKA_DSAL EQU 0         
+CHECKA_DSAL    EQU 0         
 
 **| NOTEA..... NOTE DCB, return results
 **| Input:
@@ -102,7 +104,7 @@ CHECKA_DSAL EQU 0
 
 DIOA     CSECT
          ENTRY NOTEA
-NOTEA   ASDPRO BASE_REG=3,USR_DSAL=NOTEA_DSAL
+NOTEA    ASDPRO BASE_REG=3,USR_DSAL=NOTEA_DSAL
          LR    R7,R1
          USING NOTEA_PARMS,R7
 
@@ -121,7 +123,7 @@ NOTEA_EXIT   DS    0H
 
 NOTEA_PARMS   DSECT
 NOTEA_DCB     DS AL4
-NOTEA_DSAL EQU 0
+NOTEA_DSAL    EQU 0
 
 **| CLOSEA..... CLOSE macro, return results
 **| https://tech.mikefulton.ca/SVC20-CLOSE 
@@ -133,7 +135,8 @@ NOTEA_DSAL EQU 0
 DIOA     CSECT
          ENTRY CLOSEA
 CLOSEA   ASDPRO BASE_REG=3,USR_DSAL=CLOSEA_DSAL
-         L  R0,0(,R1)
+         USING CLOSEA_PARMS,R1
+         L  R0,CLOSEA_OPTSANDDCB
          SR R1,R1
          SVC 20
 
@@ -143,9 +146,9 @@ CLOSEA_EXIT    DS    0H
          DROP
          LTORG
 
-CLOSEA_PARMS   DSECT
+CLOSEA_PARMS         DSECT
 CLOSEA_OPTSANDDCB    DS  AL4
-CLOSEA_DSAL  EQU 0
+CLOSEA_DSAL          EQU 0
 
 **| MALOC24A.... acquire storage below the line
 **| R1 -> Pointer to fullword allocation length
@@ -161,7 +164,7 @@ MALOC24A ASDPRO BASE_REG=3,USR_DSAL=MALOC24A_DSAL
 
 * Get 24-bit storage
 
-         STORAGE OBTAIN,LENGTH=(8),LOC=24
+         STORAGE OBTAIN,LENGTH=(8),LOC=24,COND=YES
          CHI R15,0
          BZ  MALOC24A_SUCCESS
 MALOC24A_FAILURE DS    0H
@@ -176,8 +179,8 @@ MALOC24A_EXIT    DS    0H
          LTORG
 
 MALOC24A_PARMS   DSECT
-MALOC24A_LEN   DS  AL4
-MALOC24A_DSAL  EQU 0
+MALOC24A_LEN     DS  AL4
+MALOC24A_DSAL    EQU 0
 
 **| FREE24A.... free storage below the line
 **| R1 -> Fullword pointer and Fullword allocation length
@@ -201,7 +204,7 @@ FREE24A_EXIT    DS    0H
          DROP
          LTORG
 
-FREE24A_PARMS   DSECT
+FREE24A_PARMS DSECT
 FREE24A_PTR   DS  AL4
 FREE24A_LEN   DS  AL4
 FREE24A_DSAL  EQU 0
@@ -218,7 +221,8 @@ DIOA     CSECT
 S99A     ASDPRO BASE_REG=3,USR_DSAL=S99A_DSAL
 
 * Ensure the High Order Bit is ON for 0(R1)
-         L   R2,0(,R1)
+         USING S99A_PARMS,R1
+         L   R2,S99ARBP
          OILH R2,X'8000'
          ST  R2,0(,R1)
 * Call SVC99 (DYNALLOC) with S99RBP
@@ -231,8 +235,8 @@ S99A_EXIT   DS    0H
          LTORG
 
 S99A_PARMS   DSECT
-S99ARBP   DS AL4
-S99A_DSAL EQU 0         
+S99ARBP      DS AL4
+S99A_DSAL    EQU 0         
 
 **| STOWA..... SVC 21 massaging input and output
 **| https://tech.mikefulton.ca/SVC21
@@ -249,8 +253,11 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
 * For the STOW (SVC 21) call:
 *  R0 is the list address and 
 *  R1 is the dcb address
-         L   R3,0(,R1)
-         L   R4,4(,R1)
+*  R15 is also the list address
+
+         USING STOWA_PARMS,R1
+         L   R3,STOWA_LST
+         L   R4,STOWA_DCB
          L   R0,0(,R3)
          L   R1,0(,R4)
          LR  R15,R0
@@ -269,9 +276,9 @@ STOWA_EXIT   DS    0H
          LTORG
 
 STOWA_PARMS   DSECT
-STOWA_LST DS AL4
-STOWA_DCB DS AL4
-STOWA_DSAL EQU 0         
+STOWA_LST     DS AL4
+STOWA_DCB     DS AL4
+STOWA_DSAL    EQU 0         
 
 **| S99MSGA..... SVC99MSG
 **| https://tech.mikefulton.ca/IEFDB476
@@ -295,27 +302,8 @@ S99MSGA_EXIT   DS    0H
          LTORG
 
 S99MSGA_PARMS   DSECT
-S99MSGAP DS  AL4
-S99MSGA_DSAL EQU 0
-
-**| Common Equates Follow
-
-R0         EQU   0
-R1         EQU   1
-R2         EQU   2
-R3         EQU   3
-R4         EQU   4
-R5         EQU   5
-R6         EQU   6
-R7         EQU   7
-R8         EQU   8
-R9         EQU   9
-R10        EQU   10
-R11        EQU   11
-R12        EQU   12
-R13        EQU   13
-R14        EQU   14
-R15        EQU   15
+S99MSGAP DS     AL4
+S99MSGA_DSAL    EQU 0
 
 **| Finish off the CSECT
 

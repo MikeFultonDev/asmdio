@@ -1,6 +1,6 @@
          START , 
-         YREGS ,                   register equates, syslib SYS1.MACLIB 
 CRTMEMV  CSECT , 
+         YREGS ,                   register equates, syslib SYS1.MACLIB 
 CRTMEMV  AMODE 31 
 CRTMEMV  RMODE ANY
         SYSSTATE AMODE64=NO,ARCHLVL=OSREL,OSREL=SYSSTATE 

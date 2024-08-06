@@ -1,5 +1,5 @@
-         YREGS
 PDSWRITE CSECT
+         YREGS
          SAVE  (14,12)
          LR    R12,R15
          USING PDSWRITE,R12
