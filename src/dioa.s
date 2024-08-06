@@ -64,7 +64,8 @@ WRITEA_PARMS   DSECT
 WRITEA_DECB    DS AL4
 WRITEA_DSAL    EQU 0         
 
-**| CHECKA..... CHECK DECB, return results
+**| CHECKA..... CHECK DECB, return result
+**| https://tech.mikefulton.ca/CHECKMacro
 **| Input:
 **|   R1 -> pointer to DECB
 **| Output:
@@ -97,6 +98,7 @@ CHECKA_DECB    DS AL4
 CHECKA_DSAL    EQU 0         
 
 **| NOTEA..... NOTE DCB, return results
+**| https://tech.mikefulton.ca/NOTEMacro
 **| Input:
 **|   R1 -> pointer to DCB
 **| Output:
@@ -151,6 +153,7 @@ CLOSEA_OPTSANDDCB    DS  AL4
 CLOSEA_DSAL          EQU 0
 
 **| MALOC24A.... acquire storage below the line
+**| https://tech.mikefulton.ca/STORAGE-OBTAINMacro
 **| R1 -> Pointer to fullword allocation length
 **| R15 -> Pointer to allocated storage or 0 if failure
 
@@ -183,6 +186,7 @@ MALOC24A_LEN     DS  AL4
 MALOC24A_DSAL    EQU 0
 
 **| FREE24A.... free storage below the line
+**| https://tech.mikefulton.ca/STORAGE-RELEASEMacro
 **| R1 -> Fullword pointer and Fullword allocation length
 **| R15 -> 0 if successful, non-zero otherwise
 
