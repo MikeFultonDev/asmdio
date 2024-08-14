@@ -2,9 +2,6 @@
 # Basic script to compile / link code to test dataset listing services
 #
 
-# Use set -e to force failure if something doesn't build
-set -e
-
 MODE='64'
 MODE='31'
 
@@ -24,5 +21,7 @@ export CPPFLAGS="-DAMODE=${MODE}"
 export LD=xlc
 export LDFLAGS="-Wc,${DATA_MODEL}"
 
-(cd src && gmake)
-(cd test && gmake)
+set -e
+
+gmake -C src
+gmake -C test
