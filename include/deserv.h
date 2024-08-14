@@ -5,7 +5,7 @@ struct desl_name {
   char desl_name[8];
 };
 
-struct desl {
+struct deslx {
   unsigned char   desl_code;
   unsigned short  desl_errcode;
   unsigned char   _filler1;

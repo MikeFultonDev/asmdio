@@ -4,6 +4,7 @@
   #include "opencb.h"
   #include "s99.h"
   #include "ihadcb.h"
+  #include "deserv.h"
   #include "decb.h"
   #include "stow.h"
   #include "closecb.h"
