@@ -19,6 +19,7 @@
   struct ihadcb;
   struct decb;
   struct closecb;
+  struct desp;
 
   int S99A(struct s99rb* __ptr32 rb);
   int S99MSGA(struct s99_em* __ptr32 em);
@@ -50,8 +51,8 @@
   #pragma variable(OPENA,    NORENT)
   #pragma variable(WRITEA,   NORENT)
   #pragma variable(CHECKA,   NORENT)
-  #pragma variable(NOTEA,   NORENT)
-  #pragma variable(DESERVA,   NORENT)
+  #pragma variable(NOTEA,    NORENT)
+  #pragma variable(DESERVA,  NORENT)
   #pragma variable(STOWA,    NORENT)
   #pragma variable(CLOSEA,   NORENT)
   #pragma variable(MALOC24A, NORENT)

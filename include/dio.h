@@ -4,6 +4,7 @@
   #include "opencb.h"
   #include "s99.h"
   #include "ihadcb.h"
+  #include "smde.h"
   #include "deserv.h"
   #include "decb.h"
   #include "stow.h"
@@ -18,7 +19,7 @@
   int WRITE(struct decb* __ptr32 decb);
   int CHECK(struct decb* __ptr32 decb);
   unsigned int NOTE(struct ihadcb* __ptr32 dcb);
-  int DESERV(struct desp* __ptr32 desp);
+  unsigned int DESERV(struct desp* __ptr32 desp);
   int STOW(union stowlist* __ptr32 list, struct ihadcb* __ptr32 dcb, enum stowtype type);
   int CLOSE(struct closecb* __ptr32 closecb);
 

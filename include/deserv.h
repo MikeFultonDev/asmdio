@@ -15,15 +15,15 @@ struct deslx {
 
 struct desp {
   union {
-    unsigned char  desp_header[16]; /* Standard Header */
     struct {
       unsigned char  desp_id[8];      /* eyecatcher (IGWDES_P) */
       int            desp_len;        /* length of buffer      */
       unsigned int               : 7,
                      desp_lev_iv : 1; /* parm list level       */
       unsigned char  _filler1[3];     /* RESERVED              */
-      };
     };
+    unsigned char  desp_header[16]; /* Standard Header */
+  };
   unsigned char  desp_func;                 /* function type (GET_ALL, GET,     */
   unsigned char  _filler2[3];               /* RESERVED                         */
   void * __ptr32 desp_member_counts_ptr;    /* pointer to optional output  @08A */
@@ -53,18 +53,18 @@ struct desp {
       unsigned char  _filler3;                /* RESERVED                            */
       };
     };
-  struct dcb * __ptr32 desp_dcb_ptr;        /* DCB address                      */
+  struct ihadcb * __ptr32 desp_dcb_ptr;     /* DCB address                      */
   struct deb * __ptr32 desp_deb_ptr;        /* DEB address                      */
   void * __ptr32 desp_conn_id_ptr;          /* connect identifier address       */
-  void * __ptr32 desp_areaptr_ptr;          /* address for buffer address @L2A  */
-  void * __ptr32 desp_area_ptr;             /* buffer address                   */
+  void* __ptr32 desp_areaptr_ptr;           /* address for buffer address @L2A  */
+  struct desb* __ptr32 desp_area_ptr;       /* buffer address                   */
   int            desp_area2;                /* buffer length                    */
-  struct desl* __ptr32 desp_de_list_ptr;    /* DE_LIST address            @L2A  */
+  void* __ptr32 desp_de_list_ptr;           /* DE_LIST address            @L2A  */
   int            desp_de_list2;             /* DE_LIST entry count        @L2A  */
   int            desp_entry_gap;            /* entry gap size                   */
   void * __ptr32 desp_mem_data_ptr;         /* MEM_DATA address                 */
   int            desp_mem_data2;            /* MEM_DATA entry count             */
-  void * __ptr32 desp_name_list_ptr;        /* name list address                */
+  struct desl * __ptr32 desp_name_list_ptr; /* name list address                */
   int            desp_name_list2;           /* input list number of entries     */
   void * __ptr32 desp_name_ptr;             /* name address               @L2A  */
   union {
@@ -165,6 +165,7 @@ struct desl {
 #define desl_code_notfound       0x01 /* entry not found or entry not */
 #define desl_code_succ           0x00 /* entry successfully processed */
 
+#define SMDE_NAME_MAXLEN (1024)
 struct desb {
   union {
     unsigned char  desb_fixed[40];
@@ -415,5 +416,7 @@ struct desr {
 #define desrs_notfound                 0x3EA /* Some members not found        */
 #define desrs_module_buffered_lla      0x3E9 /* The module is buffered        */
 #define desrs_succ                     0x00  /* successful processing         */
+
+
 
 #pragma pack(reset)

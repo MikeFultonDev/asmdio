@@ -87,6 +87,10 @@ unsigned NOTE(struct ihadcb* __ptr32 dcb)
 {
   return NOTEA(dcb);
 }
+unsigned DESERV(struct desp* __ptr32 desp)
+{
+  return DESERVA(desp);
+}
 int CLOSE(struct closecb* __ptr32 closecb)
 {
   return CLOSEA(closecb);

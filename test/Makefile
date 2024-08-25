@@ -1,4 +1,4 @@
-all: basiccreate basicread basicalloc
+all: basiccreate basicread 
 
 clean:
 	rm -f basicreate basicread basicalloc *.o *.lst 
