@@ -15,6 +15,7 @@
 
   struct s99rb;
   struct opencb;
+  struct findcb;
   struct s99_em;
   struct ihadcb;
   struct decb;
@@ -24,6 +25,8 @@
   int S99A(struct s99rb* __ptr32 rb);
   int S99MSGA(struct s99_em* __ptr32 em);
   int OPENA(struct opencb* __ptr32 opencb);
+  int FINDA(struct findcb* __ptr32 findcb, struct ihadcb* __ptr32 dcb);
+  int READA(struct decb* __ptr32 decb);
   int WRITEA(struct decb* __ptr32 decb);
   int CHECKA(struct decb* __ptr32 decb);
   unsigned int NOTEA(struct ihadcb* __ptr32 dcb);
@@ -38,6 +41,8 @@
   extern int S99A;
   extern int S99MSGA;
   extern int OPENA;
+  extern int FINDA;
+  extern int READA;
   extern int WRITEA;
   extern int CHECKA;
   extern int NOTEA;
@@ -49,6 +54,8 @@
   #pragma variable(S99A,     NORENT)
   #pragma variable(S99MSGA,  NORENT)
   #pragma variable(OPENA,    NORENT)
+  #pragma variable(FINDA,    NORENT)
+  #pragma variable(READA,    NORENT)
   #pragma variable(WRITEA,   NORENT)
   #pragma variable(CHECKA,   NORENT)
   #pragma variable(NOTEA,    NORENT)
@@ -60,6 +67,8 @@
 	#define S99A(ptr)         call31asm("S99A", &S99A, 1, ptr)
 	#define S99MSGA(ptr)      call31asm("S99MSGA", &S99MSGA, 1, ptr)
 	#define OPENA(opencb)     call31asm("OPENA", &OPENA, 1, opencb)
+	#define FIND(findcb,dcb)  call31asm("FINDA", &FINDA, 2, findcb, dcb)
+	#define READA(decb)       call31asm("READA", &READA, 1, decb)
 	#define WRITEA(decb)      call31asm("WRITEA", &WRITEA, 1, decb)
 	#define CHECKA(decb)      call31asm("CHECKA", &CHECKA, 1, decb)
 	#define NOTEA(decb)       call31asm("NOTEA", &NOTEA, 1, decb)

@@ -3,6 +3,7 @@
 #include "ihadcb.h"
 #include "s99.h"
 #include "dio.h"
+#include "decb.h"
 #include "ioservices.h"
 
 #define MYDD "MYDD"
@@ -17,12 +18,15 @@
  * - Close DCB
  * - Free DDName 
  */
-const struct opencb opencb_template = { 1, 0, 0 };
-const struct closecb closecb_template = { 1, 0, 0 };
+const struct opencb opencb_template = { 1 };
+const struct findcb findcb_template = { "        " };
 const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
+const struct decb decb_template = { 0, 0x8080 };
+const struct closecb closecb_template = { 1 };
 
 int main(int argc, char* argv[]) {
   struct opencb* __ptr32 opencb;
+  struct findcb* __ptr32 findcb;
   struct closecb* __ptr32 closecb;
   struct ihadcb* __ptr32 dcb;
   struct desp* __ptr32 desp;
@@ -30,6 +34,8 @@ int main(int argc, char* argv[]) {
   struct desl_name* __ptr32 desl_name;
   struct desb* __ptr32 desb;
   struct smde* __ptr32 smde;
+  struct decb* __ptr32 decb;
+  void* __ptr32 block;
   int rc;
   char* ds;
   char* mem;
@@ -138,6 +144,8 @@ int main(int argc, char* argv[]) {
   fprintf(stdout, "DESP:%p\n", desp);
   dumpstg(stdout, desp, sizeof(struct desp));
   fprintf(stdout, "\n");
+
+  /* call DESERV and get extended attributes */
   rc = DESERV(desp);
   if (rc) {
     fprintf(stderr, "Unable to PERFORM DESERV. rc:0x%x\n", rc);
@@ -154,9 +162,88 @@ int main(int argc, char* argv[]) {
       ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
   }
 
-  /*
-   * add code to read the actual member data here
-   */
+  /* Call FIND to find the start of the member */
+  findcb = MALLOC31(sizeof(struct findcb));
+  if (!findcb) {
+    fprintf(stderr, "Unable to obtain storage for FIND macro\n");
+    return 4;
+  }
+  *findcb = findcb_template;
+  //findcb->mname_len = memlen;
+  memcpy(findcb->mname, mem, memlen);
+
+  rc = FIND(findcb, dcb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform FIND. rc:%d\n", rc);
+    return rc;
+  }
+
+  /* Establish DECB for call to READ */
+  decb = MALLOC24(sizeof(struct decb));
+  if (!decb) {
+    fprintf(stderr, "Unable to obtain storage for READ decb\n");
+    return 4;
+  }
+  block = MALLOC24(dcb->dcbblksi);
+  if (!block) {
+    fprintf(stderr, "Unable to obtain storage for READ block\n");
+    return 4;
+  }
+
+  *decb = decb_template;
+  SET_24BIT_PTR(decb->dcb24, dcb);
+  decb->area = block;
+
+  /* Read one block */
+  rc = READ(decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform READ. rc:%d\n", rc);
+    return rc;
+  }
+
+  rc = CHECK(decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform CHECK. rc:%d\n", rc);
+    return rc;
+  }
+
+  fprintf(stdout, "Block read:%p (%d bytes)\n", block, dcb->dcbblksi);
+  dumpstg(stdout, block, dcb->dcbblksi);
+  fprintf(stdout, "\n");
+ /*
+   00016C                             2284 MEM_READ  DS  0H
+ 00016C D213 A058 C0A0 00058 002B8  2285          MVC   READ_DECB(READLEN),DECBMODW
+                                    2286          READ READ_DECB,SF,LIB_DCB,READ_BUFFER,'S',MF=E
+ 000172 4110 A058            00058  2290+         LA    1,READ_DECB                       LOAD DECB ADDRESS      02-IHBRD
+ 000176 9280 1005      00005        2291+         MVI   5(1),X'80'               SET TYPE FIELD                  02-IHBRD
+ 00017A 41E0 8000            00000  2292+         LA    14,LIB_DCB                        LOAD DCB ADDRESS       02-IHBRD
+ 00017E 50E1 0008            00008  2293+         ST    14,8(1,0)                         STORE DCB ADDRESS      02-IHBRD
+ 000182 41E0 A06C            0006C  2294+         LA    14,READ_BUFFER      LOAD ADDR OF 64-BIT PTR         @L2C 02-IHBRD
+ 000186 50E1 000C            0000C  2295+         ST    14,12(1,0)          STORE ADDR OF 64-BIT PTR             02-IHBRD
+ 00018A 9280 1004      00004        2296+         MVI   4(1),X'80'                        SET TYPE FIELD         02-IHBRD
+ 00018E 58F0 1008            00008  2297+         L     15,8(,1)                     LOAD DCB ADDR          @01M 02-IHBRD
+ 000192 BFF7 F031            00031  2298+         ICM   15,B'0111',49(15)            LOAD RDWR ROUTINE ADDR @01M 02-IHBRD
+ 000196 05EF                        2299+         BALR  14,15                        LINK TO RDWR ROUTINE   @L1C 02-IHBRD
+0000198                             2301 MEM_CHECK  DS 0H
+                                    2302          CHECK READ_DECB           WAIT UNTIL COMPLETE
+ 000198 4110 A058            00058  2306+         LA    1,READ_DECB                       LOAD PARAMETER REG 1   02-IHBIN
+ 00019C 58E0 1008            00008  2307+         L     14,8(0,1)           PICK UP DCB ADDRESS                  01-CHECK
+ 0001A0 1BFF                        2308+         SR    15,15                                               @01A 01-CHECK
+00001A6 0DEF                        2310+         BASR  14,15               CALL THE CHECK ROUTINE          @L2C 01-CHECK
+.
+.
+                                    2457 READ    READ  DECBMODW,SF,0,0,'S',MF=L
+ 0002B8                             2461+READ     DS    0F                                                       02-IHBRD
+ 0002B8 00000000                    2462+DECBMODW DC    F'0'                              EVENT CONTROL BLOCK    02-IHBRD
+ 0002BC 80                          2463+         DC    X'80'                             TYPE FIELD             02-IHBRD
+ 0002BD 80                          2464+         DC    X'80'                             TYPE FIELD             02-IHBRD
+ 0002BE 0000                        2465+         DC    AL2(0)                            LENGTH                 02-IHBRD
+ 0002C0 00000000                    2466+         DC    A(0)                              DCB ADDRESS            02-IHBRD
+ 0002C4 00000000                    2467+         DC    A(0)                ADDRESS OF 64-BIT PTR           @L2A 02-IHBRD
+ 0002C8 00000000                    2468+         DC    A(0)                              RECORD POINTER WORD    02-IHBRD
+                       00014        2469 READLEN EQU   *-DECBMODW
+ */
+
 
   closecb = MALLOC31(sizeof(struct closecb));
   if (!closecb) {

@@ -75,6 +75,14 @@ int OPEN(struct opencb* __ptr32 opencb)
 {
   return OPENA(opencb);
 }
+int FIND(struct findcb* __ptr32 findcb, struct ihadcb* __ptr32 dcb)
+{
+  return FINDA(findcb, dcb);
+}
+int READ(struct decb* __ptr32 decb)
+{
+  return READA(decb);
+}
 int WRITE(struct decb* __ptr32 decb)
 {
   return WRITEA(decb);

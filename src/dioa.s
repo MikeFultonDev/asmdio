@@ -31,6 +31,79 @@ OPENA_PARMS        DSECT
 OPENA_OPTSANDDCB   DS AL4
 OPENA_DSAL         EQU 0         
 
+**| FINDA..... Find Start of PDS(E) Member
+**| https://tech.mikefulton.ca/FINDMacro
+**| https://tech.mikefulton.ca/SVC18-FIND
+**| Input:
+**|   R1 -> pointer to:
+**|     Name list Address
+**|     DCB Address
+**| Output:
+**|   R15 -> RC 0 if successful, non-zero otherwise
+**|   High order 2 bytes have reason code, 
+**|   Low order 2 bytes have return code
+
+DIOA     CSECT
+         ENTRY FINDA
+FINDA    ASDPRO BASE_REG=3,USR_DSAL=FINDA_DSAL
+         LR    R7,R1
+         USING FINDA_PARMS,R7
+
+* Call SVC18 with R0 pointing to PLIST and R1 (complement) 
+* containing DCB address
+
+         L   R0,FINDA_PLIST
+         L   R1,FINDA_DCB
+         LCR R1,R1
+         SVC 18
+         SLL R0,16
+         OR  R15,R0
+*
+FINDA_EXIT   DS    0H
+         ASDEPI
+
+         DROP
+         LTORG
+
+FINDA_PARMS   DSECT
+FINDA_PLIST   DS AL4
+FINDA_DCB     DS AL4
+FINDA_DSAL    EQU 0
+
+**| READA..... Read BLOCK, return results
+**| https://tech.mikefulton.ca/READMacro
+**| Input:
+**|   R1 -> pointer to DECB
+**| Output:
+**|   R15 -> RC 0 if successful, non-zero otherwise
+
+DIOA     CSECT
+         ENTRY READA
+READA    ASDPRO BASE_REG=3,USR_DSAL=READA_DSAL
+         LR    R7,R1
+         USING READA_PARMS,R7
+
+* Call Read function (found in DCB, which is 8(DECB))
+         L   R1,READA_DECB
+         L   R15,8(,R1)
+         ICM R15,B'0111',49(R15)
+         BALR R14,R15
+*
+* Does not seem to be a return code for READ?
+*
+         LA  R15,0
+*
+READA_EXIT   DS    0H
+         ASDEPI
+
+         DROP
+         LTORG
+
+READA_PARMS   DSECT
+READA_DECB    DS AL4
+READA_DSAL    EQU 0         
+
+**| CHECKA..... CHECK DECB, return result
 **| WRITEA..... Write BLOCK, return results
 **| https://tech.mikefulton.ca/WRITEMacro
 **| Input:

@@ -8,6 +8,7 @@
   #include "deserv.h"
   #include "decb.h"
   #include "stow.h"
+  #include "findcb.h"
   #include "closecb.h"
 
   #define SET_24BIT_PTR(ref,val) (ref) = ((int)(val))
@@ -16,6 +17,8 @@
   #define DS_MAX (44)
 
   int OPEN(struct opencb* __ptr32 opencb);
+  int FIND(struct findcb* __ptr32 findcb, struct ihadcb* __ptr32 dcb);
+  int READ(struct decb* __ptr32 decb);
   int WRITE(struct decb* __ptr32 decb);
   int CHECK(struct decb* __ptr32 decb);
   unsigned int NOTE(struct ihadcb* __ptr32 dcb);
