@@ -13,8 +13,8 @@
  * - Allocate DDName to PDS
  * - Establish DCB for DDName
  * - Perform OPEN on PDS
- * - Perform FIND on member (to be written)
- * - Read records of member (to be written)
+ * - Perform FIND on member
+ * - Read first block of member
  * - Close DCB
  * - Free DDName 
  */
