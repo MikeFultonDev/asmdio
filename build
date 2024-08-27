@@ -1,27 +1,31 @@
+#!/bin/sh
 #
 # Basic script to compile / link code to test dataset listing services
 #
 
-MODE='64'
-MODE='31'
+# Use set -e to force failure if something doesn't build
+set -e
 
-if [ "${MODE}" = "31" ]; then
-  DATA_MODEL="ilp32"
-else
+# Default build is 31-bit.  Use "MODE=64" envar to build a 64-bit version.
+if [ -z "${MODE}" ]; then
+  MODE='31'
+fi
+
+if [ "${MODE}" = "64" ]; then
   DATA_MODEL="lp64"
 fi
 
 ASAMODE="AMODE${MODE}"
+LIST="list'()',source,offset"
+INFO="info'(cmp,cnv,cns,enu,lan,por,pro,ret)'"
 
 export AS=as
-export ASFLAGS="--SYSPARM\(${ASAMODE}\),GOFF,LIST,SUPRWARN\(425,434\)"
+export ASFLAGS="--SYSPARM'(${ASAMODE})',GOFF,LIST,SUPRWARN'(425,434)'"
 export CC=xlc
-export CFLAGS="-Wc,${DATA_MODEL},SUPP\(CCN3764\),AGGR,LIST\(./\)"
+export CFLAGS="-Wc,debug,${DATA_MODEL},AGGR,${LIST},${INFO}"
 export CPPFLAGS="-DAMODE=${MODE}"
 export LD=xlc
-export LDFLAGS="-Wc,${DATA_MODEL}"
+export LDFLAGS="-Wl,${DATA_MODEL},edit=no"
 
-set -e
-
-gmake -C src
-gmake -C test
+gmake -j -C src
+gmake -j -C test
