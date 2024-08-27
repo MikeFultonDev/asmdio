@@ -28,7 +28,10 @@ For applications that need to perform common I/O operations, the Language Enviro
 - [STOW](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-stow-macro-update-directory) [Macro](https://tech.mikefulton.ca/STOWMacro): Modify (Add, Delete, Replace, Change) a member in the directory. [SVC 21](https://tech.mikefulton.ca/SVC21)
 - [DECB]() [Macro](https://tech.mikefulton.ca/DECBMacro): Input/Output for the READ and WRITE services.
 - [GETBUF]() [Macro](https://tech.mikefulton.ca/GETBufMacro): Obtain a buffer 
-- [READ/WRITE](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-read-write) [WRITE Macro](https://tech.mikefulton.ca/WRITEMacro): Read and Write BLOCKs, not records.
+- [READ/WRITE](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-read-write) 
+  - [READ Macro](https://tech.mikefulton.ca/READMacro): Read BLOCKs, not records.
+  - [WRITE Macro](https://tech.mikefulton.ca/WRITEMacro): Write BLOCKs, not records.
+  - [Non-VSAM I/O Exit Routines](https://tech.mikefulton.ca/NonVSAMIOExitRoutines): How to process end of data, synchronous error, etc.
 - [GET/PUT](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-get-put) Macros: Get and Put RECORDS, not blocks. 
 - [CLOSE](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMCLOSE), [SVC 20](https://tech.mikefulton.ca/SVC20-CLOSE): Close a DCB.
 

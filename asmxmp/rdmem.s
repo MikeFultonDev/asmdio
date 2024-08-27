@@ -1,11 +1,11 @@
          START , 
+         YREGS ,                  register equates, syslib SYS1.MACLIB 
+         IGWDES                   DSECTs for DESERV
+         IGWSMDE
 RDMEM    CSECT , 
 *
 * DSECTs for USING
 *
-         YREGS ,                  register equates, syslib SYS1.MACLIB 
-         IGWDES                   DSECTs for DESERV
-         IGWSMDE
 
 RDMEM    AMODE 31 
 RDMEM    RMODE ANY
@@ -72,6 +72,10 @@ OPEN_FAIL DS  0H
          LR  R9,R15                put err code in R9
          OR  R9,R8
          B   DONE
+
+EOM       DS  0H
+          LA  R2,1
+          BR  R14
 *
 OPEN_SUCCESS DS 0H
 
@@ -133,7 +137,27 @@ MEM_READ  DS  0H
          READ READ_DECB,SF,LIB_DCB,READ_BUFFER,'S',MF=E
 
 MEM_CHECK  DS 0H
+         XR R2,R2
          CHECK READ_DECB           WAIT UNTIL COMPLETE
+         LTR R2,R2
+         BZ  MEM_READ2
+RDERR1   DS 0H                   First read should work
+         LHI R9,CHECK_FAIL1_MASK
+         B  DONE  
+
+
+MEM_READ2  DS  0H
+         MVC   READ_DECB(READLEN),DECBMODW
+         READ READ_DECB,SF,LIB_DCB,READ_BUFFER,'S',MF=E
+
+MEM_CHECK2  DS 0H
+         XR R2,R2
+         CHECK READ_DECB           WAIT UNTIL COMPLETE
+         LTR R2,R2
+         BNZ  READ_SUCCESS
+RDERR2   DS 0H                   Second read should fail
+         LHI R9,CHECK_FAIL2_MASK
+         B  DONE  
 *
 READ_SUCCESS DS 0H
 
@@ -172,7 +196,7 @@ RLSE_WA  DS 0H
 DATCONST   DS    0D                 Doubleword alignment for LARL
 CONST_DCB  DCB   DSORG=PO,MACRF=(R),DDNAME=MYDD,DCBE=CONST_DCBE
 DCBLEN    EQU   *-CONST_DCB
-CONST_DCBE DCBE  RMODE31=BUFF
+CONST_DCBE DCBE  RMODE31=BUFF,EODAD=EOM
 CONST_OPEN OPEN (*-*,(INPUT)),MODE=31,MF=L
 OPENLEN   EQU   *-CONST_OPEN
 CONST_CLOSE CLOSE (*-*),MODE=31,MF=L
@@ -232,6 +256,8 @@ LIB_DCB     DS   CL(DCBLEN)
 OPEN_FAIL_MASK EQU   16
 DESERV_FAIL_MASK EQU 32
 CLOSE_FAIL_MASK EQU  64
+CHECK_FAIL1_MASK EQU 77
+CHECK_FAIL2_MASK EQU 99
 
 
          END   RDMEM    

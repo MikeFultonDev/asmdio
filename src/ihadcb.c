@@ -39,6 +39,8 @@ struct ihadcb* __ptr32 dcb_init(const char* ddname)
 
   dcb->dcbdcbe = dcbe;
 
+  dcbe->usrflags = 0x80; /* QSAM buffers may be above the line */
+
   if (ddname) {
     size_t ddname_len = strlen(ddname);
     if (ddname_len > 8 || ddname_len == 0) {
