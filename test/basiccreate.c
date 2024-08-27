@@ -8,6 +8,7 @@
 #include "ihadcb.h"
 #include "ioservices.h"
 #include "s99.h"
+#include "util.h"
 
 /*
  * Basic Create of a PDSE Member:
@@ -58,6 +59,9 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Member must be 1 to 8 characters long\n");
     return 4;
   }
+
+  rc = uppercase(argv[1]);
+  rc = uppercase(argv[2]);
 
   rc = init_dsnam_text_unit(argv[1], &dsn);
   if (rc) {
