@@ -53,6 +53,7 @@ struct ihadcb* __ptr32 dcb_init(const char* ddname)
   dcb->dcbbufcb.dcbbufca = DCB_ADDR24_UNSET; 
   dcb->dcbiobad.dcbicqe.dcbodeb.dcbodeba = DCB_ADDR24_UNSET; 
   dcb->dcbeodad.dcbeoda = DCB_ADDR24_UNSET; 
+  dcb->dcbeodad.dcbhiarc.dcbbftek.dcbbfaln = (dcbh0 | dcbh1);
   dcb->dcbeobr.dcbeobra = DCB_ADDR24_UNSET; 
   dcb->dcbgerr.dcbperr.dcbcheck.dcbchcka = DCB_ADDR24_UNSET;
   dcb->dcbsynad.dcbsyna = DCB_ADDR24_UNSET; 
