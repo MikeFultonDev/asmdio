@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "dio.h"
 #include "stow.h"
@@ -9,12 +10,12 @@
 int STOW(union stowlist* __ptr32 listp, struct ihadcb* __ptr32 dcbp, enum stowtype type)
 {
   /*
-   * Need to set the bits on the dcb and list pointers, so make 
+   * Need to set the bits on the dcb and list pointers, so make
    * them 32 bit to ensure C does not try to do anything 'fancy'
    *
-   * For the default case, the dcb should be NULL since it 
+   * For the default case, the dcb should be NULL since it
    * should have been stored into the list already
-   */ 
+   */
   unsigned int list = (unsigned int) listp;
   unsigned int dcb = (unsigned int) dcbp;
 
@@ -25,7 +26,7 @@ int STOW(union stowlist* __ptr32 listp, struct ihadcb* __ptr32 dcbp, enum stowty
   dcb  &= 0x7FFFFFFF;
 
   switch (type) {
-    case STOW_A: 
+    case STOW_A:
       /* list and dcb should be positive - nothing required */
       break;
     case STOW_R:
