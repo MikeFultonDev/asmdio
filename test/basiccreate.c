@@ -1,9 +1,13 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "ihadcb.h"
-#include "s99.h"
+#include <string.h>
+
 #include "decb.h"
 #include "dio.h"
+#include "ihadcb.h"
+#include "ioservices.h"
+#include "s99.h"
 
 /*
  * Basic Create of a PDSE Member:
@@ -14,7 +18,7 @@
  * - Perform CHECK and NOTE on PDSE
  * - Perform STOW to create PDSE member (member name passed in) (with CCSID 819 if STOW_IFF_ON) pointing to the block written
  * - Close DCB
- * - Free DDName 
+ * - Free DDName
  */
 
 const struct opencb opencb_template = { 1, 0, 0, 0, 0 };
@@ -73,7 +77,7 @@ int main(int argc, char* argv[]) {
   /*
    * DCB set to PO, BPAM WRITE and POINT
    */
-  dcb->dcbdsgpo = 1; 
+  dcb->dcbdsgpo = 1;
   dcb->dcbeodad.dcbhiarc.dcbbftek.dcbbfaln = 0x84;
   dcb->dcboflgs = dcbofuex;
   dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
@@ -139,7 +143,7 @@ int main(int argc, char* argv[]) {
   SET_24BIT_PTR(stowlist->iff.dcb24, dcb);
   stowlist->iff.type = STOW_IFF;
   stowlist->iff.direntry = stowlistadd;
-  stowlist->iff.ccsid = 819; 
+  stowlist->iff.ccsid = 819;
 
   rc = STOW(stowlist, NULL, STOW_IFF);
   if (rc != STOW_IFF_CC_CREATE_OK) {
