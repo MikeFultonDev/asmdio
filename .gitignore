@@ -1,5 +1,30 @@
-*.lst
+# Object and library archive files
 *.o
+*.a
+*.x
+*.so
+
+# Compiler listings
+*.lst
+*.map
+
+# Debug side files
+*.dbg
+
+# LE dump files
+CEEDUMP.*
+
+# Vim swap files
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Vim backup files
+*~
+
+# Compiled executable files
 basicread
 basicalloc
 basiccreate
