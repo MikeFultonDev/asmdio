@@ -1,6 +1,9 @@
+#!/bin/sh
 #
 # Basic script to clean built files
 #
+
+# Use set -e to force failure if something doesn't build
 set -e
 
 gmake -C src clean

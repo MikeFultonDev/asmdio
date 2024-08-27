@@ -1,14 +1,14 @@
-all: call31.o call31a.o dio.o s99.o dioa.o ihadcb.o
+all: call31.o call31a.o dio.o s99.o dioa.o ihadcb.o util.o
 
 clean:
-	rm -f *.o *.lst 
+	rm -f *.o *.lst
 
 IINCDIR=../intinclude
 INCDIR=../include
 MACDIR=../maclib
 
 call31.o: call31.c $(IINCDIR)/wrappers.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(IINCDIR) -c $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(IINCDIR) -I$(INCDIR) -c $<
 
 call31a.o: call31a.s
 	$(AS) $(ASFLAGS) -I$(MACDIR) $< >$*.lst
