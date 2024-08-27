@@ -13,7 +13,12 @@ For applications that need to perform common I/O operations, the Language Enviro
 
 ## References
 
-- [SVC99](https://www.ibm.com/docs/en/zos/3.1.0?topic=functions-example-dynamic-allocation-request) [Macro](): DYNALLOC aka SVC99
+### DSECT Layouts
+
+- [BPAM DCB](https://tech.mikefulton.ca/BPAMDCBLayout)
+- [DCBE](https://tech.mikefulton.ca/DCBELayout)
+
+- [SVC99](https://www.ibm.com/docs/en/zos/3.1.0?topic=functions-example-dynamic-allocation-request) [Macro](): DYNALLOC aka SVC99 
 - [DCBD](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-dcbdprovide-symbolic-reference-data-control-blocks-bdam-bisam-bpam-bsam-qisam-qsam) [Macro](): Data Control Block symbolic names.
 - [DCB BPAM]() [Macro](https://tech.mikefulton.ca/DCBBPAMMacro): DCB Macro for BPAM usage
 - [OPEN](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMOPEN), [SVC 19](https://tech.mikefulton.ca/SVC19-OPEN): Open a DCB.
