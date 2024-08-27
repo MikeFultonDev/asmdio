@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "ihadcb.h"
-#include "s99.h"
+#include <string.h>
+
 #include "dio.h"
-#include "decb.h"
+#include "ihadcb.h"
 #include "ioservices.h"
+#include "s99.h"
 
 #define MYDD "MYDD"
 
@@ -16,7 +17,7 @@
  * - Perform FIND on member
  * - Read first block of member
  * - Close DCB
- * - Free DDName 
+ * - Free DDName
  */
 const struct opencb opencb_template = { 1 };
 const struct findcb findcb_template = { "        " };
@@ -77,13 +78,13 @@ int main(int argc, char* argv[]) {
   /*
    * DCB set to PO, BPAM READ and POINT
    */
-  dcb->dcbdsgpo = 1; 
+  dcb->dcbdsgpo = 1;
   dcb->dcboflgs = dcbofuex;
   dcb->dcbmacr.dcbmacr1 = dcbmrrd|dcbmrpt1;
 
   *opencb = opencb_template;
   opencb->dcb24 = dcb;
-  
+
   rc = OPEN(opencb);
   if (rc) {
     fprintf(stderr, "Unable to perform OPEN. rc:%d\n", rc);
@@ -116,7 +117,7 @@ int main(int argc, char* argv[]) {
   *desp = desp_template;
   desp->desp_func = desp_func_get;
   desp->desp_bypass_lla = 1;
-  desp->desp_ext_attr = 1; 
+  desp->desp_ext_attr = 1;
   desp->desp_libtype = desp_libtype_dcb;
   desp->desp_gettype = desp_gettype_name_list;
   desp->desp_conn_intent = desp_conn_intent_hold;
@@ -158,7 +159,7 @@ int main(int argc, char* argv[]) {
     fprintf(stdout, "SMDE Address:%p SMDE Eye-catcher %8.8s\n", smde, smde->smde_id);
   } else {
     struct smde_ext_attr* __ptr32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
-    fprintf(stdout, "CCSID: 0x%x%x last change userid: %8.8s change timestamp: 0x%llx\n", 
+    fprintf(stdout, "CCSID: 0x%x%x last change userid: %8.8s change timestamp: 0x%llx\n",
       ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
   }
 
