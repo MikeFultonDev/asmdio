@@ -6,6 +6,7 @@
 #include "ihadcb.h"
 #include "ioservices.h"
 #include "s99.h"
+#include "util.h"
 
 #define MYDD "MYDD"
 
@@ -50,6 +51,9 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Syntax: %s <dataset> <member>\n", argv[0]);
     return 4;
   }
+
+  rc = uppercase(argv[1]);
+  rc = uppercase(argv[2]);
 
   ds = argv[1];
   rc = init_dsnam_text_unit(ds, &dsn);
