@@ -65,5 +65,3 @@ enum stowcc {
 #pragma pack(pop)
 
 #endif
-
-
