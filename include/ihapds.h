@@ -1,3 +1,6 @@
+#ifndef __IHAPDS_H__
+#define __IHAPDS_H__
+
 #pragma pack(packed)
 
 struct pds2 {
@@ -162,3 +165,5 @@ struct pds2 {
 #define pds2xattr_opt 0x4C /* Start of optional fields. Number of       */
 
 #pragma pack(reset)
+
+#endif // __IHAPDS_H__
