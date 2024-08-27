@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "ihadcb.h"
-#include "s99.h"
+#include <string.h>
+
 #include "dio.h"
+#include "ihadcb.h"
 #include "ioservices.h"
+#include "s99.h"
 
 const struct s99_rbx s99rbxtemplate = {"S99RBX",S99RBXVR,{0,1,0,0,0,0,0},0,0,0};
 
