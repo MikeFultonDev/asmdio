@@ -1,7 +1,7 @@
-all: basiccreate basicread 
+all: basiccreate basicread basicalloc
 
 clean:
-	rm -f basicreate basicread basicalloc *.o *.lst 
+	rm -f basicreate basicread basicalloc *.o *.lst
 
 INCDIR=../include
 TESTINCDIR=include
