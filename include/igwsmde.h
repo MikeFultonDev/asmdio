@@ -1,3 +1,6 @@
+#ifndef __IGWSMDE_H__
+#define __IGWSMDE_H__
+
 #pragma pack(packed)
 
 struct smde {
@@ -401,3 +404,5 @@ struct pmara {
 #define pmarl_lvl5len       0x6A /* @LAA */
 
 #pragma pack(reset)
+
+#endif // __IGWSMDE_H__

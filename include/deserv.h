@@ -1,3 +1,6 @@
+#ifndef __DESERV_H__
+#define __DESERV_H__
+
 #pragma pack(packed)
 
 struct desl_name {
@@ -417,6 +420,7 @@ struct desr {
 #define desrs_module_buffered_lla      0x3E9 /* The module is buffered        */
 #define desrs_succ                     0x00  /* successful processing         */
 
-
-
 #pragma pack(reset)
+
+#endif // __DESERV__H
+
