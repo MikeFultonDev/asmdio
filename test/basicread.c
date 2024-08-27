@@ -83,7 +83,15 @@ int main(int argc, char* argv[]) {
 
   *opencb = opencb_template;
   opencb->dcb24 = dcb;
-  
+
+printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eodad);
+
+  fprintf(stdout, "DCB:%p\n", dcb);
+  dumpstg(stdout, dcb, sizeof(struct ihadcb));
+  fprintf(stdout, "\nDCBE:%p\n", dcb->dcbdcbe);
+  dumpstg(stdout, dcb->dcbdcbe, sizeof(struct dcbe));
+  fprintf(stdout, "\n");
+
   rc = OPEN(opencb);
   if (rc) {
     fprintf(stderr, "Unable to perform OPEN. rc:%d\n", rc);
@@ -135,15 +143,10 @@ int main(int argc, char* argv[]) {
   desp->desp_area2 = desb_len;
 
   /* setup NAMELIST */
-
   /* set up DESL list of 1 entry for member to GET */
 
   desp->desp_name_list_ptr = desl;
   desp->desp_name_list2 = 1;
-
-  fprintf(stdout, "DESP:%p\n", desp);
-  dumpstg(stdout, desp, sizeof(struct desp));
-  fprintf(stdout, "\n");
 
   /* call DESERV and get extended attributes */
   rc = DESERV(desp);
@@ -169,7 +172,6 @@ int main(int argc, char* argv[]) {
     return 4;
   }
   *findcb = findcb_template;
-  //findcb->mname_len = memlen;
   memcpy(findcb->mname, mem, memlen);
 
   rc = FIND(findcb, dcb);
@@ -203,47 +205,26 @@ int main(int argc, char* argv[]) {
 
   rc = CHECK(decb);
   if (rc) {
-    fprintf(stderr, "Unable to perform CHECK. rc:%d\n", rc);
+    fprintf(stderr, "Read to end of member. rc:%d\n", rc);
     return rc;
   }
 
   fprintf(stdout, "Block read:%p (%d bytes)\n", block, dcb->dcbblksi);
   dumpstg(stdout, block, dcb->dcbblksi);
   fprintf(stdout, "\n");
- /*
-   00016C                             2284 MEM_READ  DS  0H
- 00016C D213 A058 C0A0 00058 002B8  2285          MVC   READ_DECB(READLEN),DECBMODW
-                                    2286          READ READ_DECB,SF,LIB_DCB,READ_BUFFER,'S',MF=E
- 000172 4110 A058            00058  2290+         LA    1,READ_DECB                       LOAD DECB ADDRESS      02-IHBRD
- 000176 9280 1005      00005        2291+         MVI   5(1),X'80'               SET TYPE FIELD                  02-IHBRD
- 00017A 41E0 8000            00000  2292+         LA    14,LIB_DCB                        LOAD DCB ADDRESS       02-IHBRD
- 00017E 50E1 0008            00008  2293+         ST    14,8(1,0)                         STORE DCB ADDRESS      02-IHBRD
- 000182 41E0 A06C            0006C  2294+         LA    14,READ_BUFFER      LOAD ADDR OF 64-BIT PTR         @L2C 02-IHBRD
- 000186 50E1 000C            0000C  2295+         ST    14,12(1,0)          STORE ADDR OF 64-BIT PTR             02-IHBRD
- 00018A 9280 1004      00004        2296+         MVI   4(1),X'80'                        SET TYPE FIELD         02-IHBRD
- 00018E 58F0 1008            00008  2297+         L     15,8(,1)                     LOAD DCB ADDR          @01M 02-IHBRD
- 000192 BFF7 F031            00031  2298+         ICM   15,B'0111',49(15)            LOAD RDWR ROUTINE ADDR @01M 02-IHBRD
- 000196 05EF                        2299+         BALR  14,15                        LINK TO RDWR ROUTINE   @L1C 02-IHBRD
-0000198                             2301 MEM_CHECK  DS 0H
-                                    2302          CHECK READ_DECB           WAIT UNTIL COMPLETE
- 000198 4110 A058            00058  2306+         LA    1,READ_DECB                       LOAD PARAMETER REG 1   02-IHBIN
- 00019C 58E0 1008            00008  2307+         L     14,8(0,1)           PICK UP DCB ADDRESS                  01-CHECK
- 0001A0 1BFF                        2308+         SR    15,15                                               @01A 01-CHECK
-00001A6 0DEF                        2310+         BASR  14,15               CALL THE CHECK ROUTINE          @L2C 01-CHECK
-.
-.
-                                    2457 READ    READ  DECBMODW,SF,0,0,'S',MF=L
- 0002B8                             2461+READ     DS    0F                                                       02-IHBRD
- 0002B8 00000000                    2462+DECBMODW DC    F'0'                              EVENT CONTROL BLOCK    02-IHBRD
- 0002BC 80                          2463+         DC    X'80'                             TYPE FIELD             02-IHBRD
- 0002BD 80                          2464+         DC    X'80'                             TYPE FIELD             02-IHBRD
- 0002BE 0000                        2465+         DC    AL2(0)                            LENGTH                 02-IHBRD
- 0002C0 00000000                    2466+         DC    A(0)                              DCB ADDRESS            02-IHBRD
- 0002C4 00000000                    2467+         DC    A(0)                ADDRESS OF 64-BIT PTR           @L2A 02-IHBRD
- 0002C8 00000000                    2468+         DC    A(0)                              RECORD POINTER WORD    02-IHBRD
-                       00014        2469 READLEN EQU   *-DECBMODW
- */
 
+  /* Read another block (should fail) */
+  rc = READ(decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform READ. rc:%d\n", rc);
+    return rc;
+  }
+
+  rc = CHECK(decb);
+  if (rc) {
+    fprintf(stderr, "Read to end of member. rc:%d\n", rc);
+    return rc;
+  }
 
   closecb = MALLOC31(sizeof(struct closecb));
   if (!closecb) {

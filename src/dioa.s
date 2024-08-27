@@ -14,15 +14,32 @@ DIOA     CSECT
          ENTRY OPENA
 OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
 
-* Call SVC19 (OPEN) with 24-bit DCB
          USING OPENA_PARMS,R1
          L   R0,OPENA_OPTSANDDCB
+         LR  R7,R0
+
+* Set up EODAD routine, which will just set R2 to non-zero
+         LA  R5,EODAD
+         L   R6,4(,R7)    # DCB
+         L   R8,0(,R6)    # DCBE
+         ST  R5,40(,R8)   # Update EODAD routine
+
+* Call SVC19 (OPEN) with 24-bit DCB
+
          SR  R1,R1
          SR  R15,R15
          SVC 19
 *
 OPENA_EXIT   DS    0H
          ASDEPI
+
+EODAD    DS 0H
+*
+* Set R2 to 1 indicating 'end of data'
+* and then return to caller (CHECKA or READA via SVC19)
+*
+         LA R2,1
+         BR R14
 
          DROP
          LTORG
@@ -103,7 +120,6 @@ READA_PARMS   DSECT
 READA_DECB    DS AL4
 READA_DSAL    EQU 0         
 
-**| CHECKA..... CHECK DECB, return result
 **| WRITEA..... Write BLOCK, return results
 **| https://tech.mikefulton.ca/WRITEMacro
 **| Input:
@@ -142,7 +158,11 @@ WRITEA_DSAL    EQU 0
 **| Input:
 **|   R1 -> pointer to DECB
 **| Output:
-**|   R15 -> RC 0 if successful, non-zero otherwise
+**|   R15 -> RC 0 if successful, non-zero if end-of-data
+**|
+**| In addition to standard CHECK processing, this code
+**| also will drive the EODAD set up on OPENA and set the
+**| return code appropriately.
 
 DIOA     CSECT
          ENTRY CHECKA
@@ -150,15 +170,21 @@ CHECKA   ASDPRO BASE_REG=3,USR_DSAL=CHECKA_DSAL
          LR    R7,R1
          USING CHECKA_PARMS,R7
 
-* Call CHECK function (found in DCB, which is 8(DECB))
+*
+* Set R2 to 0 indicating 'not end of data'
+*
+         SR  R2,R2
+
+* Call CHECK function which is 53(DCB)
          L   R1,CHECKA_DECB
-         L   R15,8(,R1)
-         ICM R15,B'0111',53(R15)
+         L   R3,8(,R1)
+         ICM R15,B'0111',53(R3)
          BALR R14,R15
+
 *
-* Does not seem to be a return code for CHECK?
+* Copy 'end of data' indicator into R15
 *
-         LA  R15,0
+         LR R15,R2
 *
 CHECKA_EXIT   DS    0H
          ASDEPI
