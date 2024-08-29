@@ -111,9 +111,10 @@ READA    ASDPRO BASE_REG=3,USR_DSAL=READA_DSAL
          LR    R7,R1
          USING READA_PARMS,R7
 
-* Call Read function (found in DCB, which is 8(DECB))
+* Call Read function, found in DCB
          L   R1,READA_DECB
-         L   R15,8(,R1)
+         USING DECB,R1
+         L   R15,DECDCBAD
          USING IHADCB,R15
          ICM R15,B'0111',DCBREADA
          BALR R14,R15
@@ -147,7 +148,8 @@ WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
 
 * Call Write function (found in DCB, which is 8(DECB))
          L   R1,WRITEA_DECB
-         L   R15,8(,R1)
+         USING DECB,R1
+         L   R15,DECDCBAD
          USING IHADCB,R15
          ICM R15,B'0111',DCBWRITA
          BALR R14,R15
@@ -186,7 +188,8 @@ CHECKA   ASDPRO BASE_REG=3,USR_DSAL=CHECKA_DSAL
 
 * Call CHECK function 
          L   R1,CHECKA_DECB
-         L   R15,8(,R1)
+         USING DECB,R1
+         L   R15,DECDCBAD
          USING IHADCB,R15
          ICM R15,B'0111',DCBCHCKA
          BALR R14,R15
@@ -458,6 +461,7 @@ S99MSGA_DSAL    EQU 0
 
     DCBD DSORG=PO,DEVD=DA
     IHADCBE
+    IHADECB
 
 **| Finish off the CSECT
 

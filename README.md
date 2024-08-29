@@ -16,29 +16,39 @@ For applications that need to perform common I/O operations, the Language Enviro
 
 - [BPAM DCB](https://tech.mikefulton.ca/BPAMDCBLayout)
 - [DCBE](https://tech.mikefulton.ca/DCBELayout)
+- [DECB?]()
 
-- [SVC99](https://www.ibm.com/docs/en/zos/3.1.0?topic=functions-example-dynamic-allocation-request) [Macro](): DYNALLOC aka SVC99 
+### I/O SVCs
+
+- [SVC 99](https://www.ibm.com/docs/en/zos/3.1.0?topic=functions-example-dynamic-allocation-request): Dynamic Allocation of DCB
+- [SVC 19](https://tech.mikefulton.ca/SVC19-OPEN): Open a DCB
+- [SVC 21](https://tech.mikefulton.ca/SVC21): STOW (update directory entry for member)
+- [SVC 20](https://tech.mikefulton.ca/SVC20-CLOSE): Close a DCB.
+
+### I/O Macros
+
 - [DCBD](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-dcbdprovide-symbolic-reference-data-control-blocks-bdam-bisam-bpam-bsam-qisam-qsam) [Macro](): Data Control Block symbolic names.
 - [DCB BPAM]() [Macro](https://tech.mikefulton.ca/DCBBPAMMacro): DCB Macro for BPAM usage
-- [OPEN](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMOPEN), [SVC 19](https://tech.mikefulton.ca/SVC19-OPEN): Open a DCB.
+- [OPEN](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMOPEN), 
+  - [Macro](https://tech.mikefulton.ca/DynallocMacro): DYNALLOC aka SVC99 
 - [BLDL](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-bldl-macro-construct-directory-entry-list) Macro: Read one or more directory entries into virtual storage.
 - [FIND](https://www.ibm.com/docs/en/zos/3.1.0?topic=descriptions-findestablish-beginning-data-set-member-bpam) Macro: Establish the beginning of a data set member using a BLDL list or directory.
 - [DESERV](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-directory-entry-services) [Macro](https://tech.mikefulton.ca/DESERV): Directory Entry Services for PDS and PDSE data sets.
   - [DESERV Parameters](https://tech.mikefulton.ca/DESERV_GET)
-- [SMDE] () [Macro](https://tech.mikefulton.ca/SMDEMacro): Directory Entry information returned from DESERV GET
+- [SMDE Macro](https://tech.mikefulton.ca/SMDEMacro): Directory Entry information returned from DESERV GET
 - [ISITMGD](https://www.ibm.com/docs/en/zos/3.1.0?topic=pmp-using-isitmgd-determine-whether-data-set-is-system-managed) Macro: Determine if data set is SMS managed and info about a PDSE.
 - [NOTE](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-note-macro-provide-relative-position) Macro: Return the TTRz that can subsequently be used by POINT.
 - [POINT](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-point-macro-position-block) Macro: Cause the next READ or WRITE to be from the TTRz specified.
-- [IHAPDS]() [Macro](https://tech.mikefulton.ca/IHAPDSMacro) PDSD2 Directory Entry for input to STOW.
-- [STOW](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-stow-macro-update-directory) [Macro](https://tech.mikefulton.ca/STOWMacro): Modify (Add, Delete, Replace, Change) a member in the directory. [SVC 21](https://tech.mikefulton.ca/SVC21)
-- [DECB]() [Macro](https://tech.mikefulton.ca/DECBMacro): Input/Output for the READ and WRITE services.
-- [GETBUF]() [Macro](https://tech.mikefulton.ca/GETBufMacro): Obtain a buffer 
+- [IHAPDS Macro](https://tech.mikefulton.ca/IHAPDSMacro) PDSD2 Directory Entry for input to STOW.
+- [STOW](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-stow-macro-update-directory) [Macro](https://tech.mikefulton.ca/STOWMacro): Modify (Add, Delete, Replace, Change) a member in the directory.
+- [DECB Macro](https://tech.mikefulton.ca/DECBMacro): Input/Output for the READ and WRITE services.
+- [GETBUF Macro](https://tech.mikefulton.ca/GETBufMacro): Obtain a buffer 
 - [READ/WRITE](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-read-write) 
   - [READ Macro](https://tech.mikefulton.ca/READMacro): Read BLOCKs, not records.
   - [WRITE Macro](https://tech.mikefulton.ca/WRITEMacro): Write BLOCKs, not records.
   - [Non-VSAM I/O Exit Routines](https://tech.mikefulton.ca/NonVSAMIOExitRoutines): How to process end of data, synchronous error, etc.
 - [GET/PUT](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-get-put) Macros: Get and Put RECORDS, not blocks. 
-- [CLOSE](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMCLOSE), [SVC 20](https://tech.mikefulton.ca/SVC20-CLOSE): Close a DCB.
+- [CLOSE](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMCLOSE)
 
 ## Key Points
 
