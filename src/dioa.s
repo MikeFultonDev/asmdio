@@ -5,6 +5,17 @@ DIOA     ASDSECT
 DIOA     CSECT
          YREGS
 
+*
+* The following settings prevent DESERV macro
+* from including all the DSECTs inline in the code
+* below and instead the expansion happens at the
+* end where the other DSECTs are
+*
+         GBLB &SYSIGWDES
+         GBLC &SYSIGWDESLIST
+&SYSIGWDES SETB 1
+&SYSIGWDESLIST SETC 'OFF'
+
 **| OPENA..... SVC 19, return results
 **| https://tech.mikefulton.ca/SVC19-OPEN
 **| Input:
@@ -30,7 +41,7 @@ OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
          USING DCBE,R8
          ST  R5,DCBEEODA
 
-* Call SVC19 (OPEN) with 24-bit DCB in 31-bit MODE
+* Call OPEN with 24-bit DCB in 31-bit MODE
          OPEN MODE=31,MF=(E,(7))
 
 OPENA_EXIT   DS    0H
@@ -240,16 +251,13 @@ NOTEA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY DESERVA
 DESERVA  ASDPRO BASE_REG=3,USR_DSAL=DESERVA_DSAL
-         LR    R7,R1
-         USING DESERVA_PARMS,R7
 
-* Do Program Call to DESERV Function
-         L   R1,DESERVA_DESP
-         L   R15,16(,0)          CVT
-         L   R15,1216(,R15)      DFA
-         L   R15,44(,R15)
-         L   R15,84(,R15)        DESERV PC
-         PC  0(R15)              Do Program Call
+         USING DESERVA_PARMS,R1
+         L R1,DESERVA_DESP
+
+* Call DESERV
+
+         DESERV MF=(E,(1),NOCHECK)
 *
 * Return code in R15
 *
@@ -273,10 +281,12 @@ DESERVA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY CLOSEA
 CLOSEA   ASDPRO BASE_REG=3,USR_DSAL=CLOSEA_DSAL
-         USING CLOSEA_PARMS,R1
-         L  R0,CLOSEA_OPTSANDDCB
-         SR R1,R1
-         SVC 20
+
+         USING CLOSEA_PARMLIST,R1
+         L R7,CLOSEA_PARMSA
+         USING CLOSEA_PARMS,R7
+
+         CLOSE MODE=31,MF=(E,(7))
 
 CLOSEA_EXIT    DS    0H
          ASDEPI
@@ -284,9 +294,13 @@ CLOSEA_EXIT    DS    0H
          DROP
          LTORG
 
-CLOSEA_PARMS         DSECT
-CLOSEA_OPTSANDDCB    DS  AL4
-CLOSEA_DSAL          EQU 0
+CLOSEA_PARMLIST     DSECT
+CLOSEA_PARMSA       DS AL4
+CLOSEA_DSAL         EQU 0
+
+CLOSEA_PARMS        DSECT
+CLOSEA_OPTS         DS AL4
+CLOSEA_DCB          DS AL4
 
 **| MALOC24A.... acquire storage below the line
 **| https://tech.mikefulton.ca/STORAGE-OBTAINMacro
@@ -452,6 +466,9 @@ S99MSGA_DSAL    EQU 0
     DCBD DSORG=PO,DEVD=DA
     IHADCBE
     IHADECB
+&SYSIGWDES SETB 0
+&SYSIGWDESLIST SETC 'OFF'
+    IGWDES
 
 **| Finish off the CSECT
 
