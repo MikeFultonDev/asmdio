@@ -30,13 +30,9 @@ OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
          USING DCBE,R8
          ST  R5,DCBEEODA
 
-* Call SVC19 (OPEN) with 24-bit DCB
+* Call SVC19 (OPEN) with 24-bit DCB in 31-bit MODE
+         OPEN MODE=31,MF=(E,(7))
 
-         LR  R0,R7
-         SR  R1,R1
-         SR  R15,R15
-         SVC 19
-*
 OPENA_EXIT   DS    0H
          ASDEPI
 

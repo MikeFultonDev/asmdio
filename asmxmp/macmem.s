@@ -51,6 +51,7 @@ STG_WA_CLEAR DS 0H
 
 STG_DCB_CLEAR DS 0H
 
+         OPEN MODE=31,MF=(E,(7))
 *
 * Body of Code
 *
