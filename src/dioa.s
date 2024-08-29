@@ -174,21 +174,18 @@ WRITEA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY CHECKA
 CHECKA   ASDPRO BASE_REG=3,USR_DSAL=CHECKA_DSAL
-         LR    R7,R1
-         USING CHECKA_PARMS,R7
 
 *
 * Set R2 to 0 indicating 'not end of data'
+* EODAD exit may be called as side effect of CHECK
 *
          SR  R2,R2
 
 * Call CHECK function 
+
+         USING CHECKA_PARMS,R1
          L   R1,CHECKA_DECB
-         USING DECB,R1
-         L   R15,DECDCBAD
-         USING IHADCB,R15
-         ICM R15,B'0111',DCBCHCKA
-         BALR R14,R15
+         CHECK (1)
 
 *
 * Copy 'end of data' indicator into R15
@@ -215,16 +212,13 @@ CHECKA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY NOTEA
 NOTEA    ASDPRO BASE_REG=3,USR_DSAL=NOTEA_DSAL
-         LR    R7,R1
-         USING NOTEA_PARMS,R7
 
-* Call NOTE function (found in DCB)
+* Call NOTE function 
+
+         USING NOTEA_PARMS,R1
          L   R1,NOTEA_DCB
-         XR  R15,R15
-         USING IHADCB,R1
-         ICM R15,B'0111',DCBNOTE+1
-         BASR R14,R15
-         LR  R15,R1
+         NOTE (1)
+
 *
 NOTEA_EXIT   DS    0H
          ASDEPI
