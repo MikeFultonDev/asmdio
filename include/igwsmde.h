@@ -114,10 +114,10 @@ struct smde_gene {
       unsigned char  smde_gene_cnct;   /* CONCATENATION NUMBER */
       };
     };
-  short int      smde_gene_ccsid;           /* CCSID or '0000'x if not      */
+  short int      smde_gene_ccsid;           /* CCSID or '0000'x if not defined */
   unsigned char  _filler1[2];               /* Reserved                     */
-  unsigned char  smde_gene_userid[8];       /* Userid of creator or last    */
-  unsigned char  smde_gene_timestamp[8];    /* Last member update or create */
+  unsigned char  smde_gene_userid[8];       /* Userid of creator or last updater */
+  unsigned char  smde_gene_timestamp[8];    /* Last member update or create timestamp */
   unsigned char  smde_gene_gentimestamp[8]; /* Last generation update       */
   __extension__ unsigned char  smde_gene_end[0]; /* @03A                         */
   };
