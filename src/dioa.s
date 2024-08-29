@@ -75,11 +75,17 @@ FINDA    ASDPRO BASE_REG=3,USR_DSAL=FINDA_DSAL
 
 * Call SVC18 with R0 pointing to PLIST and R1 (complement) 
 * containing DCB address
+*
+* The FIND macro is not used - it generates 'fluff' tests that
+* are unnecessary and so a direct call to the SVC is used
+
+*        FIND FINDA_DCB,FINDA_PLIST,D
 
          L   R0,FINDA_PLIST
          L   R1,FINDA_DCB
          LCR R1,R1
          SVC 18
+
          SLL R0,16
          OR  R15,R0
 *
@@ -104,18 +110,15 @@ FINDA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY READA
 READA    ASDPRO BASE_REG=3,USR_DSAL=READA_DSAL
-         LR    R7,R1
-         USING READA_PARMS,R7
 
-* Call Read function, found in DCB
-         L   R1,READA_DECB
-         USING DECB,R1
-         L   R15,DECDCBAD
-         USING IHADCB,R15
-         ICM R15,B'0111',DCBREADA
-         BALR R14,R15
+* Call Read function
+
+         USING READA_PARMS,R1
+         L    R1,READA_DECB
+         READ (1),SF,MF=E
+
 *
-* Does not seem to be a return code for READ?
+* No return code for READ. Use CHECK
 *
          LA  R15,0
 *
@@ -139,18 +142,15 @@ READA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY WRITEA
 WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
-         LR    R7,R1
-         USING WRITEA_PARMS,R7
 
-* Call Write function (found in DCB, which is 8(DECB))
-         L   R1,WRITEA_DECB
-         USING DECB,R1
-         L   R15,DECDCBAD
-         USING IHADCB,R15
-         ICM R15,B'0111',DCBWRITA
-         BALR R14,R15
+* Call Write Function
+
+         USING WRITEA_PARMS,R1
+         L    R1,WRITEA_DECB
+         WRITE (1),SF,MF=E
+
 *
-* Does not seem to be a return code for WRITE?
+* No return code for WRITE. Use CHECK
 *
          LA  R15,0
 *
