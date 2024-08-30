@@ -27,8 +27,9 @@ For applications that need to perform common I/O operations, the Language Enviro
 
 ### I/O Macros
 
-- [DCBD](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-dcbdprovide-symbolic-reference-data-control-blocks-bdam-bisam-bpam-bsam-qisam-qsam) [Macro](): Data Control Block symbolic names.
-- [DCB BPAM]() [Macro](https://tech.mikefulton.ca/DCBBPAMMacro): DCB Macro for BPAM usage
+- [DCBD Macro](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-dcbdprovide-symbolic-reference-data-control-blocks-bdam-bisam-bpam-bsam-qisam-qsam): Data Control Block symbolic names.
+- [DCB BPAM Macro](https://tech.mikefulton.ca/DCBBPAMMacro): DCB Macro for BPAM usage
+- [Dynalloc Macro](https://tech.mikefulton.ca/DynallocMacro): Dynamic Allocation of DCB
 - [OPEN](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMOPEN), 
   - [Macro](https://tech.mikefulton.ca/DynallocMacro): DYNALLOC aka SVC99 
 - [BLDL](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-bldl-macro-construct-directory-entry-list) Macro: Read one or more directory entries into virtual storage.

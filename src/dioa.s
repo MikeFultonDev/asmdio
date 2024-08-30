@@ -379,8 +379,8 @@ S99A     ASDPRO BASE_REG=3,USR_DSAL=S99A_DSAL
          L   R2,S99ARBP
          OILH R2,X'8000'
          ST  R2,0(,R1)
-* Call SVC99 (DYNALLOC) with S99RBP
-         SVC 99
+* Call DYNALLOC (SVC99) with S99RBP
+         DYNALLOC 
 *
 S99A_EXIT   DS    0H
          ASDEPI
@@ -410,12 +410,14 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
 *  R15 is also the list address
 
          USING STOWA_PARMS,R1
+
          L   R3,STOWA_LST
          L   R4,STOWA_DCB
          L   R0,0(,R3)
          L   R1,0(,R4)
-         LR  R15,R0
-         SVC 21
+         LR  R15,R0          # R15 also needs to be set
+         STOW (1),(0)
+
 *
 * For the return, put low halfword of R0 
 * into high halfword of R15 and return R15
