@@ -1,0 +1,8 @@
+# These files are text and should be normalized (convert crlf to lf)
+*.c text
+*.h text
+*.s text
+*.mac text
+
+# Encode all files as ASCII unless mentioned elsewhere.
+* zos-working-tree-encoding=iso8859-1
