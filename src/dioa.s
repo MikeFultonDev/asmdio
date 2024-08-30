@@ -8,24 +8,31 @@ DIOA     CSECT
 **| OPENA..... SVC 19, return results
 **| https://tech.mikefulton.ca/SVC19-OPEN
 **| Input:
-**|   R1 -> pointer to 8 byte OPT/DCB array
+**|   R1 -> pointer to 8 byte OPT/DCB parmlist
 **| Output:
 **|   R15 -> RC 0 if successful, non-zero otherwise
          ENTRY OPENA
 OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
 
-         USING OPENA_PARMS,R1
-         L   R0,OPENA_OPTSANDDCB
-         LR  R7,R0
+         USING OPENA_PARMLIST,R1
+         L   R7,OPENA_PARMSA
 
+*
 * Set up EODAD routine, which will just set R2 to non-zero
+* R2 will be checked in the CHECKA code where it is 
+* expected to be triggered
+*
          LA  R5,EODAD
-         L   R6,4(,R7)    # DCB
-         L   R8,0(,R6)    # DCBE
-         ST  R5,40(,R8)   # Update EODAD routine
+         USING OPENA_PARMS,R7
+         L   R6,OPENA_DCB
+         USING IHADCB,R6
+         L   R8,DCBDCBE
+         USING DCBE,R8
+         ST  R5,DCBEEODA
 
 * Call SVC19 (OPEN) with 24-bit DCB
 
+         LR  R0,R7
          SR  R1,R1
          SR  R15,R15
          SVC 19
@@ -44,9 +51,13 @@ EODAD    DS 0H
          DROP
          LTORG
 
+OPENA_PARMLIST     DSECT
+OPENA_PARMSA       DS AL4
+OPENA_DSAL         EQU 0
+
 OPENA_PARMS        DSECT
-OPENA_OPTSANDDCB   DS AL4
-OPENA_DSAL         EQU 0         
+OPENA_OPTS         DS AL4
+OPENA_DCB          DS AL4
 
 **| FINDA..... Find Start of PDS(E) Member
 **| https://tech.mikefulton.ca/FINDMacro
@@ -100,10 +111,12 @@ READA    ASDPRO BASE_REG=3,USR_DSAL=READA_DSAL
          LR    R7,R1
          USING READA_PARMS,R7
 
-* Call Read function (found in DCB, which is 8(DECB))
+* Call Read function, found in DCB
          L   R1,READA_DECB
-         L   R15,8(,R1)
-         ICM R15,B'0111',49(R15)
+         USING DECB,R1
+         L   R15,DECDCBAD
+         USING IHADCB,R15
+         ICM R15,B'0111',DCBREADA
          BALR R14,R15
 *
 * Does not seem to be a return code for READ?
@@ -135,8 +148,10 @@ WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
 
 * Call Write function (found in DCB, which is 8(DECB))
          L   R1,WRITEA_DECB
-         L   R15,8(,R1)
-         ICM R15,B'0111',49(R15)
+         USING DECB,R1
+         L   R15,DECDCBAD
+         USING IHADCB,R15
+         ICM R15,B'0111',DCBWRITA
          BALR R14,R15
 *
 * Does not seem to be a return code for WRITE?
@@ -159,10 +174,6 @@ WRITEA_DSAL    EQU 0
 **|   R1 -> pointer to DECB
 **| Output:
 **|   R15 -> RC 0 if successful, non-zero if end-of-data
-**|
-**| In addition to standard CHECK processing, this code
-**| also will drive the EODAD set up on OPENA and set the
-**| return code appropriately.
 
 DIOA     CSECT
          ENTRY CHECKA
@@ -175,10 +186,12 @@ CHECKA   ASDPRO BASE_REG=3,USR_DSAL=CHECKA_DSAL
 *
          SR  R2,R2
 
-* Call CHECK function which is 53(DCB)
+* Call CHECK function 
          L   R1,CHECKA_DECB
-         L   R3,8(,R1)
-         ICM R15,B'0111',53(R3)
+         USING DECB,R1
+         L   R15,DECDCBAD
+         USING IHADCB,R15
+         ICM R15,B'0111',DCBCHCKA
          BALR R14,R15
 
 *
@@ -212,7 +225,8 @@ NOTEA    ASDPRO BASE_REG=3,USR_DSAL=NOTEA_DSAL
 * Call NOTE function (found in DCB)
          L   R1,NOTEA_DCB
          XR  R15,R15
-         ICM R15,B'0111',85(R1)
+         USING IHADCB,R1
+         ICM R15,B'0111',DCBNOTE+1
          BASR R14,R15
          LR  R15,R1
 *
@@ -440,6 +454,14 @@ S99MSGA_EXIT   DS    0H
 S99MSGA_PARMS   DSECT
 S99MSGAP DS     AL4
 S99MSGA_DSAL    EQU 0
+
+**|
+**| Addressability DSECTs
+**|
+
+    DCBD DSORG=PO,DEVD=DA
+    IHADCBE
+    IHADECB
 
 **| Finish off the CSECT
 
