@@ -138,7 +138,7 @@ struct smde_ext_attr {
   short int      smde_ext_attr_len;          /* length of this section        @L3a */
   unsigned char  smde_ccsid[2];              /* CCSID, or x'0000' if CCSID was     */
   unsigned char  smde_type_descriptor[16];   /* type descriptor               @L3a */
-  unsigned char  smde_userid_last_change[8]; /* userid of creater or last updater  */
+  unsigned char  smde_userid_last_change[8]; /* userid of creator or last updater  */
   unsigned char  smde_change_timestamp[8];   /* last member update or creation@L3a */
   };
 
