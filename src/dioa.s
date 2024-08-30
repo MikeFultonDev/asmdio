@@ -87,15 +87,12 @@ FINDA    ASDPRO BASE_REG=3,USR_DSAL=FINDA_DSAL
 * Call SVC18 with R0 pointing to PLIST and R1 (complement) 
 * containing DCB address
 *
-* The FIND macro is not used - it generates 'fluff' tests that
-* are unnecessary and so a direct call to the SVC is used
-
-*        FIND FINDA_DCB,FINDA_PLIST,D
+* The FIND macro generates 'fluff' tests that
+* are unnecessary, but it is cleaner than calling SVC 18 directly
 
          L   R0,FINDA_PLIST
          L   R1,FINDA_DCB
-         LCR R1,R1
-         SVC 18
+         FIND (1),(0),D
 
          SLL R0,16
          OR  R15,R0
