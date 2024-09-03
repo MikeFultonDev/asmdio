@@ -5,6 +5,17 @@ DIOA     ASDSECT
 DIOA     CSECT
          YREGS
 
+*
+* The following settings prevent DESERV macro
+* from including all the DSECTs inline in the code
+* below and instead the expansion happens at the
+* end where the other DSECTs are
+*
+         GBLB &SYSIGWDES
+         GBLC &SYSIGWDESLIST
+&SYSIGWDES SETB 1
+&SYSIGWDESLIST SETC 'OFF'
+
 **| OPENA..... SVC 19, return results
 **| https://tech.mikefulton.ca/SVC19-OPEN
 **| Input:
@@ -30,13 +41,9 @@ OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
          USING DCBE,R8
          ST  R5,DCBEEODA
 
-* Call SVC19 (OPEN) with 24-bit DCB
+* Call OPEN with 24-bit DCB in 31-bit MODE
+         OPEN MODE=31,MF=(E,(7))
 
-         LR  R0,R7
-         SR  R1,R1
-         SR  R15,R15
-         SVC 19
-*
 OPENA_EXIT   DS    0H
          ASDEPI
 
@@ -79,11 +86,14 @@ FINDA    ASDPRO BASE_REG=3,USR_DSAL=FINDA_DSAL
 
 * Call SVC18 with R0 pointing to PLIST and R1 (complement) 
 * containing DCB address
+*
+* The FIND macro generates 'fluff' tests that
+* are unnecessary, but it is cleaner than calling SVC 18 directly
 
          L   R0,FINDA_PLIST
          L   R1,FINDA_DCB
-         LCR R1,R1
-         SVC 18
+         FIND (1),(0),D
+
          SLL R0,16
          OR  R15,R0
 *
@@ -108,18 +118,15 @@ FINDA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY READA
 READA    ASDPRO BASE_REG=3,USR_DSAL=READA_DSAL
-         LR    R7,R1
-         USING READA_PARMS,R7
 
-* Call Read function, found in DCB
-         L   R1,READA_DECB
-         USING DECB,R1
-         L   R15,DECDCBAD
-         USING IHADCB,R15
-         ICM R15,B'0111',DCBREADA
-         BALR R14,R15
+* Call Read function
+
+         USING READA_PARMS,R1
+         L    R1,READA_DECB
+         READ (1),SF,MF=E
+
 *
-* Does not seem to be a return code for READ?
+* No return code for READ. Use CHECK
 *
          LA  R15,0
 *
@@ -143,18 +150,15 @@ READA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY WRITEA
 WRITEA   ASDPRO BASE_REG=3,USR_DSAL=WRITEA_DSAL
-         LR    R7,R1
-         USING WRITEA_PARMS,R7
 
-* Call Write function (found in DCB, which is 8(DECB))
-         L   R1,WRITEA_DECB
-         USING DECB,R1
-         L   R15,DECDCBAD
-         USING IHADCB,R15
-         ICM R15,B'0111',DCBWRITA
-         BALR R14,R15
+* Call Write Function
+
+         USING WRITEA_PARMS,R1
+         L    R1,WRITEA_DECB
+         WRITE (1),SF,MF=E
+
 *
-* Does not seem to be a return code for WRITE?
+* No return code for WRITE. Use CHECK
 *
          LA  R15,0
 *
@@ -178,21 +182,18 @@ WRITEA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY CHECKA
 CHECKA   ASDPRO BASE_REG=3,USR_DSAL=CHECKA_DSAL
-         LR    R7,R1
-         USING CHECKA_PARMS,R7
 
 *
 * Set R2 to 0 indicating 'not end of data'
+* EODAD exit may be called as side effect of CHECK
 *
          SR  R2,R2
 
 * Call CHECK function 
+
+         USING CHECKA_PARMS,R1
          L   R1,CHECKA_DECB
-         USING DECB,R1
-         L   R15,DECDCBAD
-         USING IHADCB,R15
-         ICM R15,B'0111',DCBCHCKA
-         BALR R14,R15
+         CHECK (1)
 
 *
 * Copy 'end of data' indicator into R15
@@ -219,16 +220,13 @@ CHECKA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY NOTEA
 NOTEA    ASDPRO BASE_REG=3,USR_DSAL=NOTEA_DSAL
-         LR    R7,R1
-         USING NOTEA_PARMS,R7
 
-* Call NOTE function (found in DCB)
+* Call NOTE function 
+
+         USING NOTEA_PARMS,R1
          L   R1,NOTEA_DCB
-         XR  R15,R15
-         USING IHADCB,R1
-         ICM R15,B'0111',DCBNOTE+1
-         BASR R14,R15
-         LR  R15,R1
+         NOTE (1)
+
 *
 NOTEA_EXIT   DS    0H
          ASDEPI
@@ -250,16 +248,13 @@ NOTEA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY DESERVA
 DESERVA  ASDPRO BASE_REG=3,USR_DSAL=DESERVA_DSAL
-         LR    R7,R1
-         USING DESERVA_PARMS,R7
 
-* Do Program Call to DESERV Function
-         L   R1,DESERVA_DESP
-         L   R15,16(,0)          CVT
-         L   R15,1216(,R15)      DFA
-         L   R15,44(,R15)
-         L   R15,84(,R15)        DESERV PC
-         PC  0(R15)              Do Program Call
+         USING DESERVA_PARMS,R1
+         L R1,DESERVA_DESP
+
+* Call DESERV
+
+         DESERV MF=(E,(1),NOCHECK)
 *
 * Return code in R15
 *
@@ -283,10 +278,12 @@ DESERVA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY CLOSEA
 CLOSEA   ASDPRO BASE_REG=3,USR_DSAL=CLOSEA_DSAL
-         USING CLOSEA_PARMS,R1
-         L  R0,CLOSEA_OPTSANDDCB
-         SR R1,R1
-         SVC 20
+
+         USING CLOSEA_PARMLIST,R1
+         L R7,CLOSEA_PARMSA
+         USING CLOSEA_PARMS,R7
+
+         CLOSE MODE=31,MF=(E,(7))
 
 CLOSEA_EXIT    DS    0H
          ASDEPI
@@ -294,9 +291,13 @@ CLOSEA_EXIT    DS    0H
          DROP
          LTORG
 
-CLOSEA_PARMS         DSECT
-CLOSEA_OPTSANDDCB    DS  AL4
-CLOSEA_DSAL          EQU 0
+CLOSEA_PARMLIST     DSECT
+CLOSEA_PARMSA       DS AL4
+CLOSEA_DSAL         EQU 0
+
+CLOSEA_PARMS        DSECT
+CLOSEA_OPTS         DS AL4
+CLOSEA_DCB          DS AL4
 
 **| MALOC24A.... acquire storage below the line
 **| https://tech.mikefulton.ca/STORAGE-OBTAINMacro
@@ -375,8 +376,8 @@ S99A     ASDPRO BASE_REG=3,USR_DSAL=S99A_DSAL
          L   R2,S99ARBP
          OILH R2,X'8000'
          ST  R2,0(,R1)
-* Call SVC99 (DYNALLOC) with S99RBP
-         SVC 99
+* Call DYNALLOC (SVC99) with S99RBP
+         DYNALLOC 
 *
 S99A_EXIT   DS    0H
          ASDEPI
@@ -406,12 +407,14 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
 *  R15 is also the list address
 
          USING STOWA_PARMS,R1
+
          L   R3,STOWA_LST
          L   R4,STOWA_DCB
          L   R0,0(,R3)
          L   R1,0(,R4)
-         LR  R15,R0
-         SVC 21
+         LR  R15,R0          # R15 also needs to be set
+         STOW (1),(0)
+
 *
 * For the return, put low halfword of R0 
 * into high halfword of R15 and return R15
@@ -462,6 +465,9 @@ S99MSGA_DSAL    EQU 0
     DCBD DSORG=PO,DEVD=DA
     IHADCBE
     IHADECB
+&SYSIGWDES SETB 0
+&SYSIGWDESLIST SETC 'OFF'
+    IGWDES
 
 **| Finish off the CSECT
 
