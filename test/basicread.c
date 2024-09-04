@@ -6,6 +6,7 @@
 #include "ihadcb.h"
 #include "ioservices.h"
 #include "s99.h"
+#include "iob.h"
 #include "util.h"
 
 #define MYDD "MYDD"
@@ -37,6 +38,7 @@ int main(int argc, char* argv[]) {
   struct desb* __ptr32 desb;
   struct smde* __ptr32 smde;
   struct decb* __ptr32 decb;
+  struct iob* __ptr32 iob;
   void* __ptr32 block;
   int rc;
   char* ds;
@@ -208,6 +210,7 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
     return rc;
   }
 
+
   rc = CHECK(decb);
   if (rc) {
     fprintf(stderr, "Read to end of member. rc:%d\n", rc);
@@ -217,6 +220,9 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
   fprintf(stdout, "Block read:%p (%d bytes)\n", block, dcb->dcbblksi);
   dumpstg(stdout, block, dcb->dcbblksi);
   fprintf(stdout, "\n");
+
+  iob = (struct iob* __ptr32) decb->stat_addr;
+  fprintf(stdout, "Residual count:%d\n", iob->iobcsw.iobresct);
 
   /* Read another block (should fail) */
   rc = READ(decb);

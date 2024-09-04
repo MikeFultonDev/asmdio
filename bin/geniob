@@ -1,0 +1,10 @@
+#!/bin/sh
+
+#
+# Note that this generates the IOB including the stuff from before 0.
+# I manually deleted the stuff before 0 from the structure.
+#
+echo '*
+  IEZIOB
+  END
+' | ./edcdsect
