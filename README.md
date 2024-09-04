@@ -17,6 +17,7 @@ For applications that need to perform common I/O operations, the Language Enviro
 
 - [BPAM DCB](https://tech.mikefulton.ca/BPAMDCBLayout)
 - [DCBE](https://tech.mikefulton.ca/DCBELayout)  
+- [IOB](https://tech.mikefulton.ca/IOBLayout)
 - [DECB?]()
 
 ### I/O SVCs
@@ -59,6 +60,8 @@ For applications that need to perform common I/O operations, the Language Enviro
 - You can _not_ [extend a PDSE member](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-extending-member), although you _can_ [update in place](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-extending-member).
 - A record must be [read before it can be updated](https://www.ibm.com/docs/en/zos/3.1.0?topic=uip-bsam-bpam).
 - When a PDSE member is deleted, all aliases to that member are also deleted.
+- When reading a block, the block may not be a complete block (e.g. it is the last block of a dataset). You can [determine the length](https://tech.mikefulton.ca/BlockLengthReadDetermination) after a CHECK macro is issued.
+- When writing a block, the block may not be a complete block (e.g. it is the last block of a dataset). You can [specify the length](https://tech.mikefulton.ca/BlockLengthWriteDetermination) on the WRITE DCBBLKSI.
 
 ## CCSID for PDSE Members
 
