@@ -113,6 +113,13 @@ int main(int argc, char* argv[]) {
   }
   memset(block, ASCII_A, dcb->dcbblksi);
 
+  /*
+   * Write out a 'short' block (one record less than a full block of ASCII A's)
+   * by setting the dcbblksi accordingly. 
+   * This is normally only on the last block being written out which
+   * may be a short block.
+   */
+  dcb->dcbblksi -= dcb->dcblrecl;
   *decb = decb_template;
   SET_24BIT_PTR(decb->dcb24, dcb);
   decb->area = block;
