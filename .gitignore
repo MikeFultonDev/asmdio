@@ -28,4 +28,5 @@ CEEDUMP.*
 basicread
 basicalloc
 basiccreate
+basicenq
 crtmem

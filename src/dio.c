@@ -71,6 +71,10 @@ int S99MSG(struct s99_em* __ptr32 s99em)
 {
   return S99MSGA(s99em);
 }
+int SYEXENQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len)
+{
+  return SYEXENQA(qname, rname, rname_len);
+}
 
 int OPEN(struct opencb* __ptr32 opencb)
 {

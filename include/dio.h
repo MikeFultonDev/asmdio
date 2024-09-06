@@ -31,6 +31,7 @@ int FREE24(void* __ptr32 addr, size_t len);
 
 int S99(struct s99rb* __ptr32 s99rbp);
 int S99MSG(struct s99_em* __ptr32 s99em);
+int SYEXENQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
 
 void dumpstg(FILE* stream, void* p, size_t len);
 
