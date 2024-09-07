@@ -5,24 +5,20 @@ clean:
 
 INCDIR=../include
 
-basicread: basicread.o ioservices.o ../src/*.o
-	$(LD) $(LDFLAGS) -o $@ $< ioservices.o ../src/*.o
+f2m: f2m.o
+	$(LD) $(LDFLAGS) -o $@ $<
 
-basiccreate: basiccreate.o ioservices.o ../src/*.o
-	$(LD) $(LDFLAGS) -o $@ $< ioservices.o ../src/*.o
+m2f: m2f.o
+	$(LD) $(LDFLAGS) -o $@ $<
 
-basicalloc: basicalloc.o ioservices.o ../src/*.o
-	$(LD) $(LDFLAGS) -o $@ $< ioservices.o ../src/*.o
+mchtag: mchtag.o
+	$(LD) $(LDFLAGS) -o $@ $<
 
-basicread.o: basicread.c $(TESTINCDIR)/ioservices.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(TESTINCDIR) -c $<
+f2m.o: f2m.c $(INCDIR)/*.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
-basiccreate.o: basiccreate.c $(TESTINCDIR)/ioservices.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(TESTINCDIR) -c $<
+m2f.o: m2f.c $(INCDIR)/*.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
-basicalloc.o: basicalloc.c $(TESTINCDIR)/ioservices.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(TESTINCDIR) -c $<
-
-ioservices.o: ioservices.c $(TESTINCDIR)/ioservices.h $(INCDIR)/dio.h $(INCDIR)/s99.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(TESTINCDIR) -c $<
-
+mchtag.o: mchtag.c $(INCDIR)/*.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<

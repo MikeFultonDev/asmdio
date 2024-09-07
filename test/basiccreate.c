@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
 
   rc = STOW(stowlist, NULL, STOW_IFF);
   if (rc != STOW_IFF_CC_CREATE_OK) {
-    fprintf(stderr, "Unable to perform STOW. rc:%d\n", rc);
+    fprintf(stderr, "Unable to perform STOW (Does the member already exist?). rc:%d\n", rc);
     return rc;
   }
 #else
