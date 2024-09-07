@@ -4,8 +4,13 @@
 
 #include "dio.h"
 #include "stow.h"
+#include "util.h"
 #include "s99.h"
 #include "wrappers.h"
+
+//#define DEBUG 1
+
+const struct s99_rbx s99rbxtemplate = {"S99RBX",S99RBXVR,{0,1,0,0,0,0,0},0,0,0};
 
 int STOW(union stowlist* __ptr32 listp, struct ihadcb* __ptr32 dcbp, enum stowtype type)
 {
