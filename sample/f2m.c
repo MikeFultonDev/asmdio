@@ -278,7 +278,7 @@ static int copy_files_to_members(F2M_Table* table, const char* dataset_pattern, 
     for (file=0; file < table->entry[ext].count; ++file) {
       const char* filename = table->entry[ext].table->values[file];
       if (map_file_to_member(filename, member, opts)) {
-        fprintf(stderr, "File %s could not be mapped to a valid member. File skipped\n", file);
+        fprintf(stderr, "File %s could not be mapped to a valid member. File skipped\n", filename);
         rc |= 1;
       } else {
         const char* extname = table->entry[ext].key;
