@@ -5,8 +5,8 @@ clean:
 
 INCDIR=../include
 
-f2m: f2m.o
-	$(LD) $(LDFLAGS) -o $@ $<
+f2m: f2m.o ../src/*.o
+	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o
 
 m2f: m2f.o
 	$(LD) $(LDFLAGS) -o $@ $<
