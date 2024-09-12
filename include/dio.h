@@ -16,6 +16,7 @@
 #define DD_SYSTEM "????????"
 #define DS_MAX (44)
 #define MEM_MAX (8)
+#define DD_MAX (8)
 
 int OPEN(struct opencb* __ptr32 opencb);
 int FIND(struct findcb* __ptr32 findcb, struct ihadcb* __ptr32 dcb);

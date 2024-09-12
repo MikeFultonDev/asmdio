@@ -16,7 +16,9 @@ static void syntax(FILE* stream)
 Options:\n\
   -h, --help          Print out this help.\n\
   -m, --mapexttollq   Treat the dataset name as a dataset prefix and\n\
-                      map the extension to a a low-level qualifier.\n\
+                      map the extension to a a low-level qualifier (default).\n\
+  -i, --ignoreext     Do not perform any mapping with the extension\n\
+                      and copy all files to the dataset as specified..\n\
 \n\
 <directory>           The directory to copy files from.\n\
 <dataset>             The dataset (or dataset prefix, if -m specified)\n\
@@ -50,13 +52,31 @@ typedef struct {
   F2M_Entry* entry;
 } F2M_Table;
 
+typedef struct {
+  char ddname[DD_MAX+1];
+} F2M_DD;
+
+typedef struct {
+  char member[MEM_MAX+1];
+  char* filename;
+} F2M_MemFilePair;
+
 static void init_opts(F2M_Opts* opts) {
   opts->help = 0;
-  opts->map  = 0;
+  opts->map  = 1;
 }
 
 static int process_opt(F2M_Opts* opts, char* argv[], int entry)
 {
+  if (!strcmp(argv[entry], "-h") || !strcmp(argv[entry], "--help")) {
+    opts->help = 1;
+  } else if (!strcmp(argv[entry], "-m") || !strcmp(argv[entry], "--mapexttollq")) {
+    opts->map = 1;
+  } else if (!strcmp(argv[entry], "-i") || !strcmp(argv[entry], "--ignoreext")) {
+    opts->map = 0;
+  } else {
+    fprintf(stderr, "Option %s not recognized. Option ignored.\n", argv[entry]);
+  }
   return 0;
 }
 
@@ -222,11 +242,11 @@ static F2M_Table* fill_table(glob_t* globset, F2M_Table* table)
   return table;
 }
 
-static int map_file_to_member(const char* file, char* member, const F2M_Opts* opts)
+static const char* map_file_to_member(const char* file, char* member, const F2M_Opts* opts)
 {
   const char* slash = strrchr(file, '/');
   if (!slash || slash[1] == '\0') {
-    return 1;
+    return NULL;
   }
 
   /*
@@ -239,59 +259,181 @@ static int map_file_to_member(const char* file, char* member, const F2M_Opts* op
   }
   size_t memlen = dot-slash-1;
   if (memlen > MEM_MAX) {
-    return 8;
+    return NULL;
   }
 
   memcpy(member, &slash[1], memlen);
   member[memlen] = 0;
   uppercase(member);
 
-  return 0;
+  return member;
 }
 
-static int map_ext_to_dataset(const char* dataset_pattern, const char* ext, char* dataset, const F2M_Opts* opts)
+static const char* map_ext_to_dataset(const char* dataset_pattern, const char* ext, char* dataset, const F2M_Opts* opts)
 {
   /*
    * msf - add in length checks (truncate if option to truncate specified)
    * msf - add in checks to map invalid characters if option specified to do so
-   * msf - if option not specified to incorporate extension into llq, then don't
    */
 
   if (strlen(dataset_pattern) + 1 + strlen(ext) > DS_MAX) {
-    return 8;
+    return NULL;
   }
 
   sprintf(dataset, "%s.%s", dataset_pattern, ext);
   uppercase(dataset);
 
+  return dataset;
+}
+
+static int copy_file_to_member(const F2M_DD* dd, const char* filename, const char* member)
+{
   return 0;
 }
 
-static int copy_files_to_members(F2M_Table* table, const char* dataset_pattern, const F2M_Opts* opts)
+static int copy_files(const F2M_Table* table, int entries, const F2M_FileTable* ext_entry, const F2M_DD* dd, const char* dataset, const F2M_Opts* opts)
 {
-  int rc = 0;
-  int ext;
   int file;
-  char member[MEM_MAX+1];
-  char dataset[DS_MAX+1];
-  for (ext=0; ext < table->size; ext++) {
-    for (file=0; file < table->entry[ext].count; ++file) {
-      const char* filename = table->entry[ext].table->values[file];
-      if (map_file_to_member(filename, member, opts)) {
-        fprintf(stderr, "File %s could not be mapped to a valid member. File skipped\n", filename);
+  int rc = 0;
+  char member_buffer[MEM_MAX+1];
+  const char* member;
+  for (file=0; file < entries; ++file) {
+    const char* filename = ext_entry->values[file];
+    const char* member = map_file_to_member(filename, member_buffer, opts);
+    if (!member) {
+      fprintf(stderr, "File %s could not be mapped to a valid member. File skipped\n", filename);
+      rc |= 1;
+    } else {
+      printf("Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
+      if (copy_file_to_member(dd, filename, member)) {
+        fprintf(stderr, "File %s could not be copied to %s(%s)\n", filename, dataset, member);
         rc |= 1;
-      } else {
-        const char* extname = table->entry[ext].key;
-        if (map_ext_to_dataset(dataset_pattern, extname, dataset, opts)) {
-          fprintf(stderr, "File %s, dataset pattern %s, and extension %s could not be mapped to a valid dataset. File skipped\n", filename, dataset_pattern, extname);
-          rc |= 2;
-        } else {
-          printf("Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
-        }
       }
     }
   }
   return rc;
+}
+
+static int allocate_dd_to_pds(const char* dataset, const F2M_DD* dd)
+{
+  return 0;
+}
+static int free_dd_from_pds(const char* dataset, const F2M_DD* dd)
+{
+  return 0;
+}
+
+static int copy_files_to_multiple_dataset_members(const F2M_Table* table, const char* dataset_pattern, const F2M_Opts* opts)
+{
+  int rc = 0;
+  int ext;
+  char dataset_buffer[DS_MAX+1];
+  const char* dataset;
+  F2M_DD dd;
+
+  for (ext=0; ext < table->size; ext++) {
+    const char* extname = table->entry[ext].key;
+    dataset = map_ext_to_dataset(dataset_pattern, extname, dataset_buffer, opts);
+    if (!dataset) {
+      fprintf(stderr, "Dataset pattern %s, and extension %s could not be mapped to a valid dataset. Extension skipped\n", dataset_pattern, extname);
+      rc |= 2;
+      continue;
+    }
+    if (allocate_dd_to_pds(dataset, &dd)) {
+      fprintf(stderr, "Unable to allocate DDName for dataset %s. Extension skipped\n", dataset);
+      rc |= 4;
+      continue;
+    }
+    rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
+
+    if (free_dd_from_pds(dataset, &dd)) {
+      fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
+      rc |= 8;
+      continue;
+    }
+  }
+  return rc;
+}
+
+static int cmp_mem_file_pair(const void* l, const void* r)
+{
+  F2M_MemFilePair* lpair = (F2M_MemFilePair*) l;
+  F2M_MemFilePair* rpair = (F2M_MemFilePair*) r;
+
+  return (strcmp(lpair->member, rpair->member));
+}
+
+static int check_for_duplicate_members(glob_t* globset, const F2M_Table* table, const F2M_Opts* opts)
+{
+  F2M_MemFilePair* mem_file_pair = calloc(globset->gl_pathc, sizeof(F2M_MemFilePair));
+  char member_buffer[MEM_MAX+1];
+  const char* member;
+  int i;
+  int num_members = 0;
+  int rc = 0;
+
+  /*
+   * Create an array of member/file pairs, then sort it by member
+   * and then loop through the sorted array and see if there are any
+   * duplicates (same member name)
+   */
+  for (i=0; i<globset->gl_pathc; ++i) {
+    member = map_file_to_member(globset->gl_pathv[i], member_buffer, opts);
+    if (member) {
+      strcpy(mem_file_pair[num_members].member, member);
+      mem_file_pair[num_members].filename = globset->gl_pathv[i];
+      num_members++;
+    }
+  }
+  qsort(mem_file_pair, num_members, sizeof(F2M_MemFilePair), cmp_mem_file_pair);
+  for (i=0; i<num_members-1; ++i) {
+    if (!strcmp(mem_file_pair[i].member, mem_file_pair[i+1].member)) {
+      fprintf(stderr, "Error. File %s and file %s would both be copied to the same member %s\n", 
+        mem_file_pair[i].filename, mem_file_pair[i+1].filename, mem_file_pair[i].member); 
+      rc = 1;
+    }
+  }
+  return rc;
+}
+
+static int copy_files_to_one_dataset_members(glob_t* glob_set, const F2M_Table* table, const char* dataset_pattern, const F2M_Opts* opts)
+{
+  int rc = 0;
+  int ext;
+  F2M_DD dd;
+
+  char dataset_buffer[DS_MAX+1];
+  const char* dataset;
+
+  strcpy(dataset_buffer, dataset_pattern);
+  uppercase(dataset_buffer);
+  dataset = dataset_buffer;
+
+  if (check_for_duplicate_members(glob_set, table, opts)) {
+    fprintf(stderr, "Copy not performed.\n");
+    return 8;
+  }
+  if (allocate_dd_to_pds(dataset, &dd)) {
+    fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
+    return 4;
+  }
+  for (ext=0; ext < table->size; ext++) {
+    rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
+  }
+  if (free_dd_from_pds(dataset, &dd)) {
+    fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
+    rc |= 8;
+  }
+  return rc;
+}
+
+static int copy_files_to_members(glob_t* globset, const F2M_Table* table, const char* dataset_pattern, const F2M_Opts* opts)
+{
+  if (opts->map) {
+    return copy_files_to_multiple_dataset_members(table, dataset_pattern, opts);
+  } else {
+    return copy_files_to_one_dataset_members(globset, table, dataset_pattern, opts);
+  }
 }
 
 int main(int argc, char* argv[])
@@ -317,6 +459,11 @@ int main(int argc, char* argv[])
       break;
     }
   }
+  if (opts.help) {
+    syntax(stdout);
+    return 0;
+  }
+
   first_arg = i;
 
   if (argc - first_arg < 3) {
@@ -353,6 +500,6 @@ int main(int argc, char* argv[])
   /*
    * Copy files to members
    */
-  rc = copy_files_to_members(table, dataset_pattern, &opts);
+  rc = copy_files_to_members(&globset, table, dataset_pattern, &opts);
   return 0;
 }
