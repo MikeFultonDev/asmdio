@@ -1,7 +1,7 @@
-all: call31.o call31a.o dio.o s99.o dioa.o ihadcb.o util.o ioservices.o
+all: call31.o call31a.o dio.o s99.o dioa.o ihadcb.o util.o iosvcs.o
 
 clean:
-	rm -f *.o *.lst
+	rm -f *.o *.lst *.dbg
 
 IINCDIR=../intinclude
 INCDIR=../include
@@ -19,7 +19,7 @@ dio.o: dio.c $(IINCDIR)/wrappers.h $(INCDIR)/*.h
 s99.o: s99.c $(IINCDIR)/wrappers.h $(INCDIR)/dio.h $(INCDIR)/s99.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(IINCDIR) -c $<
 
-ioservices.o: ioservices.c $(INCDIR)/ioservices.h $(INCDIR)/dio.h $(INCDIR)/s99.h
+iosvcs.o: iosvcs.c $(INCDIR)/iosvcs.h $(INCDIR)/dio.h $(INCDIR)/s99.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 ihadcb.o: ihadcb.c $(IINCDIR)/wrappers.h $(INCDIR)/dio.h $(INCDIR)/ihadcb.h

@@ -1,7 +1,7 @@
 all: f2m m2f mchtag
 
 clean:
-	rm -f f2m m2f mchtag *.o *.lst
+	rm -f f2m m2f mchtag *.o *.lst *.dbg
 
 INCDIR=../include
 

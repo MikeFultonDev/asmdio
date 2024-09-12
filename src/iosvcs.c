@@ -4,7 +4,7 @@
 
 #include "dio.h"
 #include "ihadcb.h"
-#include "ioservices.h"
+#include "iosvcs.h"
 #include "s99.h"
 
 #define DD_SYSTEM "????????"

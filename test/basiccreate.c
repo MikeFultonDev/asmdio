@@ -6,7 +6,7 @@
 #include "decb.h"
 #include "dio.h"
 #include "ihadcb.h"
-#include "ioservices.h"
+#include "iosvcs.h"
 #include "s99.h"
 #include "util.h"
 

@@ -3,7 +3,7 @@
 #include <string.h>
 #include "dio.h"
 #include "s99.h"
-#include "ioservices.h"
+#include "iosvcs.h"
 
 /*
  * BasicAllocate of a DD name (DDPASS) to a PDS (SYS1.MACLIB) DISP=SHR
