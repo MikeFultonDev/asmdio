@@ -1,0 +1,20 @@
+#!/bin/sh
+
+#
+# Test will copy files from a couple directories
+# to a mapped set of datasets.
+# Need to allocate datasets first
+#
+
+hlq=$(hlq)
+mlq="DIO.F2M"
+drm -f "${hlq}.${mlq}.*"
+
+dtouch "${hlq}.${mlq}.c"
+dtouch "${hlq}.${mlq}.h"
+dtouch "${hlq}.${mlq}.s"
+dtouch "${hlq}.${mlq}.dbg"
+dtouch "${hlq}.${mlq}.o"
+dtouch -l 132 -r vba "${hlq}.${mlq}.lst"
+
+

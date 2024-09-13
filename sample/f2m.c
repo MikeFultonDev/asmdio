@@ -7,6 +7,7 @@
 
 #include "util.h"
 #include "dio.h"
+#include "iosvcs.h"
 
 static void syntax(FILE* stream)
 {
@@ -54,7 +55,12 @@ typedef struct {
 
 typedef struct {
   char ddname[DD_MAX+1];
-} F2M_DD;
+  struct ihadcb* __ptr32 dcb;
+  struct opencb* __ptr32 opencb;
+  struct decb* __ptr32 decb;
+  void* __ptr32 block;
+  size_t block_size;
+} F2M_BPAMHandle;
 
 typedef struct {
   char member[MEM_MAX+1];
@@ -286,12 +292,146 @@ static const char* map_ext_to_dataset(const char* dataset_pattern, const char* e
   return dataset;
 }
 
-static int copy_file_to_member(const F2M_DD* dd, const char* filename, const char* member)
+static int bpam_open_write(F2M_BPAMHandle* handle)
 {
+  struct ihadcb* __ptr32 dcb;
+  struct opencb* __ptr32 opencb;
+  struct decb* __ptr32 decb;
+  void* __ptr32 block;
+
+  const struct opencb opencb_template = { 1, 0, 0, 0, 0 };
+  int rc;
+
+  dcb = dcb_init(handle->ddname);
+  if (!dcb) {
+    fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
+    return 4;
+  }
+
+  /*
+   * DCB set to PO, BPAM WRITE and POINT
+   */
+  dcb->dcbdsgpo = 1;
+  dcb->dcbeodad.dcbhiarc.dcbbftek.dcbbfaln = 0x84;
+  dcb->dcboflgs = dcbofuex;
+  dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
+
+  opencb = MALLOC31(sizeof(struct opencb));
+  if (!opencb) {
+    fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
+    return 4;
+  }
+  *opencb = opencb_template;
+  opencb->dcb24 = dcb;
+  opencb->mode = OPEN_OUTPUT;
+
+  rc = OPEN(opencb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform OPEN. rc:%d\n", rc);
+    return rc;
+  }
+
+  decb = MALLOC24(sizeof(struct decb));
+  if (!decb) {
+    fprintf(stderr, "Unable to obtain storage for WRITE decb\n");
+    return 4;
+  }
+  block = MALLOC24(dcb->dcbblksi);
+  if (!block) {
+    fprintf(stderr, "Unable to obtain storage for WRITE block\n");
+    return 4;
+  }
+
+  handle->dcb = dcb;
+  handle->opencb = opencb;
+  handle->decb = decb;
+  handle->block = block;
+  handle->block_size = dcb->dcbblksi;
+
   return 0;
 }
 
-static int copy_files(const F2M_Table* table, int entries, const F2M_FileTable* ext_entry, const F2M_DD* dd, const char* dataset, const F2M_Opts* opts)
+#define ASCII_A 0x61
+
+static int write_member(const F2M_BPAMHandle* bh, const char* member)
+{
+  const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
+  const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
+  const struct decb decb_template = { 0, 0x8020 };
+  union stowlist* stowlist;
+  struct stowlist_add* stowlistadd;
+  unsigned int ttr;
+  size_t memlen = strlen(member);
+  int rc;
+
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    /*
+     * write out a variable length record
+     */
+    memset(bh->block, 0, bh->block_size);
+    int* firstword = (int*) (bh->block);
+    *firstword = 4;  
+    bh->dcb->dcbblksi = 4;
+  } else {
+    /*
+     * write out a record of A's
+     */
+    bh->dcb->dcbblksi = bh->dcb->dcblrecl;;
+    memset(bh->block, ASCII_A, bh->dcb->dcbblksi);
+  }
+
+  /*
+   * Write out a block 
+   */
+  *(bh->decb) = decb_template;
+  SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
+  bh->decb->area = bh->block;
+
+  rc = WRITE(bh->decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform WRITE. rc:%d\n", rc);
+    return rc;
+  }
+
+  rc = CHECK(bh->decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform CHECK. rc:%d\n", rc);
+    return rc;
+  }
+
+  ttr = NOTE(bh->dcb);
+
+  stowlist = MALLOC24(sizeof(struct stowlist_iff));
+  stowlistadd = MALLOC24(sizeof(struct stowlist_add));
+  if ((!stowlist) || (!stowlistadd)) {
+    fprintf(stderr, "Unable to obtain storage for STOW\n");
+    return 4;
+  }
+  stowlist->iff = stowlistiff_template;
+  *stowlistadd = stowlistadd_template;
+  memcpy(stowlistadd->mem_name, member, memlen);
+  STOW_SET_TTR((*stowlistadd), ttr);
+
+  SET_24BIT_PTR(stowlist->iff.dcb24, bh->dcb);
+  stowlist->iff.type = STOW_IFF;
+  stowlist->iff.direntry = stowlistadd;
+  stowlist->iff.ccsid = 819;
+
+  rc = STOW(stowlist, NULL, STOW_IFF);
+  if (rc != STOW_IFF_CC_CREATE_OK) {
+    fprintf(stderr, "Unable to perform STOW (Does the member already exist?). rc:%d\n", rc);
+  }
+  return rc;
+}
+
+static int copy_file_to_member(const F2M_BPAMHandle* bh, const char* filename, const char* member)
+{
+  int rc;
+  rc = write_member(bh, member);
+  return rc;
+}
+
+static int copy_files(const F2M_Table* table, int entries, const F2M_FileTable* ext_entry, const F2M_BPAMHandle* bh, const char* dataset, const F2M_Opts* opts)
 {
   int file;
   int rc = 0;
@@ -305,7 +445,7 @@ static int copy_files(const F2M_Table* table, int entries, const F2M_FileTable* 
       rc |= 1;
     } else {
       printf("Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
-      if (copy_file_to_member(dd, filename, member)) {
+      if (copy_file_to_member(bh, filename, member)) {
         fprintf(stderr, "File %s could not be copied to %s(%s)\n", filename, dataset, member);
         rc |= 1;
       }
@@ -314,13 +454,69 @@ static int copy_files(const F2M_Table* table, int entries, const F2M_FileTable* 
   return rc;
 }
 
-static int allocate_dd_to_pds(const char* dataset, const F2M_DD* dd)
+static int open_pds_for_write(const char* dataset, F2M_BPAMHandle* bpam_handle)
 {
-  return 0;
+  struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
+  struct s99_common_text_unit dd = { DALRTDDN, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
+  struct s99_common_text_unit stats = { DALSTATS, 1, 1, { DALSTATS_SHR } };
+
+  int rc = init_dsnam_text_unit(dataset, &dsn);
+  if (rc) {
+    return rc;
+  }
+  rc = dsdd_alloc(&dsn, &dd, &stats);
+  if (rc) {
+    return rc;
+  }
+  rc = init_dsnam_text_unit(dataset, &dsn);
+  if (rc) {
+    return 4;
+  }
+  rc = dsdd_alloc(&dsn, &dd, &stats);
+  if (rc) {
+    return 4;
+  }
+
+  /*
+   * Copy system generated DD name into passed in handle
+   */
+  memcpy(bpam_handle->ddname, dd.s99tupar, dd.s99tulng);
+  bpam_handle->ddname[dd.s99tulng] = '\0';
+
+  printf("Allocated DD:%s to %s\n", bpam_handle->ddname, dataset);
+
+  return bpam_open_write(bpam_handle);
 }
-static int free_dd_from_pds(const char* dataset, const F2M_DD* dd)
+
+static int close_pds(const char* dataset, const F2M_BPAMHandle* bpam_handle)
 {
-  return 0;
+  const struct closecb closecb_template = { 1, 0, 0 };
+  struct closecb* __ptr32 closecb;
+  int rc;
+
+  struct s99_common_text_unit dd = { DUNDDNAM, 1, 0, 0 };
+  int ddname_len = strlen(bpam_handle->ddname);
+  dd.s99tulng = ddname_len;
+  memcpy(dd.s99tupar, bpam_handle->ddname, ddname_len);
+
+  closecb = MALLOC31(sizeof(struct closecb));
+  if (!closecb) {
+    fprintf(stderr, "Unable to obtain storage for CLOSE cb\n");
+    return 4;
+  }
+  *closecb = closecb_template;
+  closecb->dcb24 = bpam_handle->dcb;
+
+  rc = CLOSE(closecb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform CLOSE. rc:%d\n", rc);
+    return rc;
+  }
+
+  rc = ddfree(&dd);
+  printf("Free DD:%s\n", bpam_handle->ddname);
+
+  return rc;
 }
 
 static int copy_files_to_multiple_dataset_members(const F2M_Table* table, const char* dataset_pattern, const F2M_Opts* opts)
@@ -329,7 +525,7 @@ static int copy_files_to_multiple_dataset_members(const F2M_Table* table, const 
   int ext;
   char dataset_buffer[DS_MAX+1];
   const char* dataset;
-  F2M_DD dd;
+  F2M_BPAMHandle dd;
 
   for (ext=0; ext < table->size; ext++) {
     const char* extname = table->entry[ext].key;
@@ -339,14 +535,14 @@ static int copy_files_to_multiple_dataset_members(const F2M_Table* table, const 
       rc |= 2;
       continue;
     }
-    if (allocate_dd_to_pds(dataset, &dd)) {
+    if (open_pds_for_write(dataset, &dd)) {
       fprintf(stderr, "Unable to allocate DDName for dataset %s. Extension skipped\n", dataset);
       rc |= 4;
       continue;
     }
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
 
-    if (free_dd_from_pds(dataset, &dd)) {
+    if (close_pds(dataset, &dd)) {
       fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
       rc |= 8;
       continue;
@@ -400,7 +596,7 @@ static int copy_files_to_one_dataset_members(glob_t* glob_set, const F2M_Table* 
 {
   int rc = 0;
   int ext;
-  F2M_DD dd;
+  F2M_BPAMHandle dd;
 
   char dataset_buffer[DS_MAX+1];
   const char* dataset;
@@ -413,14 +609,14 @@ static int copy_files_to_one_dataset_members(glob_t* glob_set, const F2M_Table* 
     fprintf(stderr, "Copy not performed.\n");
     return 8;
   }
-  if (allocate_dd_to_pds(dataset, &dd)) {
+  if (open_pds_for_write(dataset, &dd)) {
     fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
     return 4;
   }
   for (ext=0; ext < table->size; ext++) {
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
   }
-  if (free_dd_from_pds(dataset, &dd)) {
+  if (close_pds(dataset, &dd)) {
     fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
     rc |= 8;
   }
