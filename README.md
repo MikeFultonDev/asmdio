@@ -56,6 +56,7 @@ For applications that need to perform common I/O operations, the Language Enviro
 ## Other References
 
 - [Abend Codes](https://tech.mikefulton.ca/ZOSAbendCodes)
+- [EBCDIC](https://tech.mikefulton.ca/EBCDICReference)
 
 ## Key Points
 

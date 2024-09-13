@@ -369,14 +369,15 @@ static int write_member(const F2M_BPAMHandle* bh, const char* member)
      * write out a variable length record
      */
     memset(bh->block, 0, bh->block_size);
-    int* firstword = (int*) (bh->block);
-    *firstword = 4;  
-    bh->dcb->dcbblksi = 4;
+    unsigned short* halfword = (unsigned short*) (bh->block);
+    halfword[0] = 8;  /* size of block */
+    halfword[2] = 4;  /* size of record */
+    bh->dcb->dcbblksi = bh->block_size;
   } else {
     /*
      * write out a record of A's
      */
-    bh->dcb->dcbblksi = bh->dcb->dcblrecl;;
+    bh->dcb->dcbblksi = bh->dcb->dcblrecl;
     memset(bh->block, ASCII_A, bh->dcb->dcbblksi);
   }
 
@@ -420,8 +421,10 @@ static int write_member(const F2M_BPAMHandle* bh, const char* member)
   rc = STOW(stowlist, NULL, STOW_IFF);
   if (rc != STOW_IFF_CC_CREATE_OK) {
     fprintf(stderr, "Unable to perform STOW (Does the member already exist?). rc:%d\n", rc);
+    return rc;
+  } else {
+    return 0;
   }
-  return rc;
 }
 
 static int copy_file_to_member(const F2M_BPAMHandle* bh, const char* filename, const char* member)
