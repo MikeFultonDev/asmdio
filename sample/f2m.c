@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "util.h"
 #include "dio.h"
@@ -16,6 +17,7 @@ static void syntax(FILE* stream)
 \n\
 Options:\n\
   -h, --help          Print out this help.\n\
+  -v, --verbose       Provide verbose output.\n\
   -m, --mapexttollq   Treat the dataset name as a dataset prefix and\n\
                       map the extension to a a low-level qualifier (default).\n\
   -i, --ignoreext     Do not perform any mapping with the extension\n\
@@ -30,28 +32,29 @@ Options:\n\
 ");
   return;
 }
-  
+
 typedef struct {
   int help:1;
+  int verbose:1;
   int map:1;
-} F2M_Opts;
+} FM_Opts;
 
 typedef struct {
   int cur_value;
   char* values[0];
-} F2M_FileTable;
+} FM_FileTable;
 
 typedef struct {
   const char* key;
-  F2M_FileTable* table;
+  FM_FileTable* table;
   int count;
-} F2M_Entry;
+} FM_Entry;
 
 typedef struct {
   size_t max_size;
   size_t size;
-  F2M_Entry* entry;
-} F2M_Table;
+  FM_Entry* entry;
+} FM_Table;
 
 typedef struct {
   char ddname[DD_MAX+1];
@@ -60,22 +63,39 @@ typedef struct {
   struct decb* __ptr32 decb;
   void* __ptr32 block;
   size_t block_size;
-} F2M_BPAMHandle;
+} FM_BPAMHandle;
 
 typedef struct {
   char member[MEM_MAX+1];
   char* filename;
-} F2M_MemFilePair;
+} FM_MemFilePair;
 
-static void init_opts(F2M_Opts* opts) {
+static void init_opts(FM_Opts* opts) {
   opts->help = 0;
+  opts->verbose = 0;
   opts->map  = 1;
 }
 
-static int process_opt(F2M_Opts* opts, char* argv[], int entry)
+static int info(const FM_Opts* opts, const char* fmt, ...)
+{
+  va_list arg_ptr;
+  int rc;
+  va_start(arg_ptr, fmt);
+  if (opts->verbose) {
+    rc = vfprintf(stdout, fmt, arg_ptr);
+  } else {
+    rc = 0;
+  }
+  va_end(arg_ptr);
+  return rc;
+}
+
+static int process_opt(FM_Opts* opts, char* argv[], int entry)
 {
   if (!strcmp(argv[entry], "-h") || !strcmp(argv[entry], "--help")) {
     opts->help = 1;
+  } else if (!strcmp(argv[entry], "-v") || !strcmp(argv[entry], "--verbose")) {
+    opts->verbose = 1;
   } else if (!strcmp(argv[entry], "-m") || !strcmp(argv[entry], "--mapexttollq")) {
     opts->map = 1;
   } else if (!strcmp(argv[entry], "-i") || !strcmp(argv[entry], "--ignoreext")) {
@@ -93,17 +113,17 @@ static int errfunc(const char *epath, int eerrno)
   return -1;
 }
 
-static F2M_Table* allocate_table(size_t num_entries)
+static FM_Table* allocate_table(size_t num_entries)
 {
   /* 
    * This is inefficient, but allocate the table assuming one entry
    * for each extension, so guaranteed to be big enough
    */
-  F2M_Table* table = malloc(sizeof(F2M_Table));
+  FM_Table* table = malloc(sizeof(FM_Table));
   if (!table) {
     return NULL;
   }
-  F2M_Entry* entry = calloc(num_entries, sizeof(F2M_Entry));
+  FM_Entry* entry = calloc(num_entries, sizeof(FM_Entry));
   if (!entry) {
     free(table);
     return NULL;
@@ -116,15 +136,15 @@ static F2M_Table* allocate_table(size_t num_entries)
 
 static int cmpfn(const void* l, const void* r)
 {
-  F2M_Entry* le = (F2M_Entry*) l;
-  F2M_Entry* re = (F2M_Entry*) r;
+  FM_Entry* le = (FM_Entry*) l;
+  FM_Entry* re = (FM_Entry*) r;
   return (strcmp(le->key, re->key));
 }
 
-static F2M_Entry* find(const char* key, F2M_Table* table)
+static FM_Entry* find(const char* key, FM_Table* table)
 {
-  F2M_Entry key_entry = { key, 0, 0 };
-  F2M_Entry* entry = (F2M_Entry*) bsearch(&key_entry, table->entry, table->size, sizeof(F2M_Entry), cmpfn);
+  FM_Entry key_entry = { key, 0, 0 };
+  FM_Entry* entry = (FM_Entry*) bsearch(&key_entry, table->entry, table->size, sizeof(FM_Entry), cmpfn);
   return entry;
 }
 
@@ -132,7 +152,7 @@ static F2M_Entry* find(const char* key, F2M_Table* table)
  * add: low perf implementation - should use hand-written bsearch if this is 
  * important to find the spot to insert.
  */
-static F2M_Entry* add(F2M_Entry* entry, F2M_Table* table)
+static FM_Entry* add(FM_Entry* entry, FM_Table* table)
 {
   int i;
   for (i=0; i<table->size; ++i) {
@@ -140,8 +160,8 @@ static F2M_Entry* add(F2M_Entry* entry, F2M_Table* table)
       break;
     }
   }
-  memmove(&table->entry[i+1], &table->entry[i], (table->size-i)*sizeof(F2M_Entry));
-  memcpy(&table->entry[i], entry, sizeof(F2M_Entry));
+  memmove(&table->entry[i+1], &table->entry[i], (table->size-i)*sizeof(FM_Entry));
+  memcpy(&table->entry[i], entry, sizeof(FM_Entry));
   table->size++;
 
   return &table->entry[i];
@@ -158,7 +178,7 @@ static const char* extension(const char* path)
 }
 
 #define MY_PATH_MAX (1024)
-static glob_t* expand_file_patterns(char* argv[], int first, int last, const char* dir, glob_t* globset)
+static glob_t* expand_file_patterns(char* argv[], int first, int last, const char* dir, glob_t* globset, const FM_Opts* opts)
 {
   char file_pattern[MY_PATH_MAX+1];
   int i;
@@ -178,13 +198,13 @@ static glob_t* expand_file_patterns(char* argv[], int first, int last, const cha
     rc = glob(file_pattern, flags, errfunc, globset);
   }
 
-  fprintf(stdout, "%d files to be processed\n", globset->gl_pathc);
+  info(opts, "%d files to be processed\n", globset->gl_pathc);
   return globset;
 }
 
-static F2M_Table* create_table(glob_t* globset)
+static FM_Table* create_table(glob_t* globset, const FM_Opts* opts)
 {
-  F2M_Table* table = allocate_table(globset->gl_pathc);
+  FM_Table* table = allocate_table(globset->gl_pathc);
   int i;
 
   if (!table) {
@@ -200,22 +220,22 @@ static F2M_Table* create_table(glob_t* globset)
     if (!ext || (ext[0] == '\0')) {
       continue;
     }
-    F2M_Entry* entry = find(ext, table);
+    FM_Entry* entry = find(ext, table);
     if (!entry) {
-      F2M_Entry new_entry = { ext, 0, 1 };
+      FM_Entry new_entry = { ext, 0, 1 };
       add(&new_entry, table);
     } else {
       entry->count++;
     }
   }
-  fprintf(stdout, "%d extensions to be processed\n", table->size);
+  info(opts, "%d extensions to be processed\n", table->size);
   for (i=0; i<table->size; ++i) {
-    fprintf(stdout, "  [%s] has %d entries\n", table->entry[i].key, table->entry[i].count);
+    info(opts, "  [%s] has %d entries\n", table->entry[i].key, table->entry[i].count);
   }
   return table;
 }
 
-static F2M_Table* fill_table(glob_t* globset, F2M_Table* table)
+static FM_Table* fill_table(glob_t* globset, FM_Table* table)
 {
   int i;
   /*
@@ -223,7 +243,7 @@ static F2M_Table* fill_table(glob_t* globset, F2M_Table* table)
    */
   for (i=0; i<table->size; ++i) {
     int values = table->entry[i].count;
-    F2M_FileTable* file_table = malloc(sizeof(F2M_FileTable) + (sizeof(char*)*values));
+    FM_FileTable* file_table = malloc(sizeof(FM_FileTable) + (sizeof(char*)*values));
     if (!file_table) {
       return NULL;
     }
@@ -235,7 +255,7 @@ static F2M_Table* fill_table(glob_t* globset, F2M_Table* table)
     if (!ext || (ext[0] == '\0')) {
       continue;
     }
-    F2M_Entry* entry = find(ext, table);
+    FM_Entry* entry = find(ext, table);
     if (entry) {
       entry->table->values[entry->table->cur_value++] = globset->gl_pathv[i];
     } else {
@@ -248,7 +268,7 @@ static F2M_Table* fill_table(glob_t* globset, F2M_Table* table)
   return table;
 }
 
-static const char* map_file_to_member(const char* file, char* member, const F2M_Opts* opts)
+static const char* map_file_to_member(const char* file, char* member, const FM_Opts* opts)
 {
   const char* slash = strrchr(file, '/');
   if (!slash || slash[1] == '\0') {
@@ -275,7 +295,7 @@ static const char* map_file_to_member(const char* file, char* member, const F2M_
   return member;
 }
 
-static const char* map_ext_to_dataset(const char* dataset_pattern, const char* ext, char* dataset, const F2M_Opts* opts)
+static const char* map_ext_to_dataset(const char* dataset_pattern, const char* ext, char* dataset, const FM_Opts* opts)
 {
   /*
    * msf - add in length checks (truncate if option to truncate specified)
@@ -292,7 +312,7 @@ static const char* map_ext_to_dataset(const char* dataset_pattern, const char* e
   return dataset;
 }
 
-static int bpam_open_write(F2M_BPAMHandle* handle)
+static int bpam_open_write(FM_BPAMHandle* handle)
 {
   struct ihadcb* __ptr32 dcb;
   struct opencb* __ptr32 opencb;
@@ -353,7 +373,7 @@ static int bpam_open_write(F2M_BPAMHandle* handle)
 
 #define ASCII_A 0x61
 
-static int write_member(const F2M_BPAMHandle* bh, const char* member)
+static int write_member(const FM_BPAMHandle* bh, const char* member)
 {
   const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
   const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
@@ -427,14 +447,14 @@ static int write_member(const F2M_BPAMHandle* bh, const char* member)
   }
 }
 
-static int copy_file_to_member(const F2M_BPAMHandle* bh, const char* filename, const char* member)
+static int copy_file_to_member(const FM_BPAMHandle* bh, const char* filename, const char* member)
 {
   int rc;
   rc = write_member(bh, member);
   return rc;
 }
 
-static int copy_files(const F2M_Table* table, int entries, const F2M_FileTable* ext_entry, const F2M_BPAMHandle* bh, const char* dataset, const F2M_Opts* opts)
+static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ext_entry, const FM_BPAMHandle* bh, const char* dataset, const FM_Opts* opts)
 {
   int file;
   int rc = 0;
@@ -447,7 +467,7 @@ static int copy_files(const F2M_Table* table, int entries, const F2M_FileTable* 
       fprintf(stderr, "File %s could not be mapped to a valid member. File skipped\n", filename);
       rc |= 1;
     } else {
-      printf("Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
+      info(opts, "Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
       if (copy_file_to_member(bh, filename, member)) {
         fprintf(stderr, "File %s could not be copied to %s(%s)\n", filename, dataset, member);
         rc |= 1;
@@ -457,7 +477,7 @@ static int copy_files(const F2M_Table* table, int entries, const F2M_FileTable* 
   return rc;
 }
 
-static int open_pds_for_write(const char* dataset, F2M_BPAMHandle* bpam_handle)
+static int open_pds_for_write(const char* dataset, FM_BPAMHandle* bpam_handle, const FM_Opts* opts)
 {
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
   struct s99_common_text_unit dd = { DALRTDDN, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
@@ -486,12 +506,12 @@ static int open_pds_for_write(const char* dataset, F2M_BPAMHandle* bpam_handle)
   memcpy(bpam_handle->ddname, dd.s99tupar, dd.s99tulng);
   bpam_handle->ddname[dd.s99tulng] = '\0';
 
-  printf("Allocated DD:%s to %s\n", bpam_handle->ddname, dataset);
+  info(opts, "Allocated DD:%s to %s\n", bpam_handle->ddname, dataset);
 
   return bpam_open_write(bpam_handle);
 }
 
-static int close_pds(const char* dataset, const F2M_BPAMHandle* bpam_handle)
+static int close_pds(const char* dataset, const FM_BPAMHandle* bpam_handle, const FM_Opts* opts)
 {
   const struct closecb closecb_template = { 1, 0, 0 };
   struct closecb* __ptr32 closecb;
@@ -517,18 +537,18 @@ static int close_pds(const char* dataset, const F2M_BPAMHandle* bpam_handle)
   }
 
   rc = ddfree(&dd);
-  printf("Free DD:%s\n", bpam_handle->ddname);
+  info(opts, "Free DD:%s\n", bpam_handle->ddname);
 
   return rc;
 }
 
-static int copy_files_to_multiple_dataset_members(const F2M_Table* table, const char* dataset_pattern, const F2M_Opts* opts)
+static int copy_files_to_multiple_dataset_members(const FM_Table* table, const char* dataset_pattern, const FM_Opts* opts)
 {
   int rc = 0;
   int ext;
   char dataset_buffer[DS_MAX+1];
   const char* dataset;
-  F2M_BPAMHandle dd;
+  FM_BPAMHandle dd;
 
   for (ext=0; ext < table->size; ext++) {
     const char* extname = table->entry[ext].key;
@@ -538,14 +558,14 @@ static int copy_files_to_multiple_dataset_members(const F2M_Table* table, const 
       rc |= 2;
       continue;
     }
-    if (open_pds_for_write(dataset, &dd)) {
+    if (open_pds_for_write(dataset, &dd, opts)) {
       fprintf(stderr, "Unable to allocate DDName for dataset %s. Extension skipped\n", dataset);
       rc |= 4;
       continue;
     }
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
 
-    if (close_pds(dataset, &dd)) {
+    if (close_pds(dataset, &dd, opts)) {
       fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
       rc |= 8;
       continue;
@@ -556,15 +576,15 @@ static int copy_files_to_multiple_dataset_members(const F2M_Table* table, const 
 
 static int cmp_mem_file_pair(const void* l, const void* r)
 {
-  F2M_MemFilePair* lpair = (F2M_MemFilePair*) l;
-  F2M_MemFilePair* rpair = (F2M_MemFilePair*) r;
+  FM_MemFilePair* lpair = (FM_MemFilePair*) l;
+  FM_MemFilePair* rpair = (FM_MemFilePair*) r;
 
   return (strcmp(lpair->member, rpair->member));
 }
 
-static int check_for_duplicate_members(glob_t* globset, const F2M_Table* table, const F2M_Opts* opts)
+static int check_for_duplicate_members(glob_t* globset, const FM_Table* table, const FM_Opts* opts)
 {
-  F2M_MemFilePair* mem_file_pair = calloc(globset->gl_pathc, sizeof(F2M_MemFilePair));
+  FM_MemFilePair* mem_file_pair = calloc(globset->gl_pathc, sizeof(FM_MemFilePair));
   char member_buffer[MEM_MAX+1];
   const char* member;
   int i;
@@ -584,7 +604,7 @@ static int check_for_duplicate_members(glob_t* globset, const F2M_Table* table, 
       num_members++;
     }
   }
-  qsort(mem_file_pair, num_members, sizeof(F2M_MemFilePair), cmp_mem_file_pair);
+  qsort(mem_file_pair, num_members, sizeof(FM_MemFilePair), cmp_mem_file_pair);
   for (i=0; i<num_members-1; ++i) {
     if (!strcmp(mem_file_pair[i].member, mem_file_pair[i+1].member)) {
       fprintf(stderr, "Error. File %s and file %s would both be copied to the same member %s\n", 
@@ -595,11 +615,11 @@ static int check_for_duplicate_members(glob_t* globset, const F2M_Table* table, 
   return rc;
 }
 
-static int copy_files_to_one_dataset_members(glob_t* glob_set, const F2M_Table* table, const char* dataset_pattern, const F2M_Opts* opts)
+static int copy_files_to_one_dataset_members(glob_t* glob_set, const FM_Table* table, const char* dataset_pattern, const FM_Opts* opts)
 {
   int rc = 0;
   int ext;
-  F2M_BPAMHandle dd;
+  FM_BPAMHandle dd;
 
   char dataset_buffer[DS_MAX+1];
   const char* dataset;
@@ -612,21 +632,21 @@ static int copy_files_to_one_dataset_members(glob_t* glob_set, const F2M_Table* 
     fprintf(stderr, "Copy not performed.\n");
     return 8;
   }
-  if (open_pds_for_write(dataset, &dd)) {
+  if (open_pds_for_write(dataset, &dd, opts)) {
     fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
     return 4;
   }
   for (ext=0; ext < table->size; ext++) {
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
   }
-  if (close_pds(dataset, &dd)) {
+  if (close_pds(dataset, &dd, opts)) {
     fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
     rc |= 8;
   }
   return rc;
 }
 
-static int copy_files_to_members(glob_t* globset, const F2M_Table* table, const char* dataset_pattern, const F2M_Opts* opts)
+static int copy_files_to_members(glob_t* globset, const FM_Table* table, const char* dataset_pattern, const FM_Opts* opts)
 {
   if (opts->map) {
     return copy_files_to_multiple_dataset_members(table, dataset_pattern, opts);
@@ -638,13 +658,13 @@ static int copy_files_to_members(glob_t* globset, const F2M_Table* table, const 
 int main(int argc, char* argv[])
 {
   glob_t globset;
-  F2M_Opts opts;
+  FM_Opts opts;
   int i, first_arg;
   char* dir;
   char* dataset_pattern;
   int first_file_pattern;
   int rc;
-  F2M_Table* table;
+  FM_Table* table;
 
   /*
    * Process command-line options
@@ -676,14 +696,14 @@ int main(int argc, char* argv[])
   /*
    * Expand the file patterns and store them into globset
    */
-  if (expand_file_patterns(argv, first_file_pattern, argc, dir, &globset) == NULL) {
+  if (expand_file_patterns(argv, first_file_pattern, argc, dir, &globset, &opts) == NULL) {
     return 8;
   }
 
   /*
    * Create an entry in a sorted table for each extension
    */
-  table = create_table(&globset);
+  table = create_table(&globset, &opts);
   if (!table) {
     return 12;
   }

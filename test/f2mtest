@@ -17,4 +17,5 @@ dtouch "${hlq}.${mlq}.dbg"
 dtouch "${hlq}.${mlq}.o"
 dtouch -l 132 -r vba "${hlq}.${mlq}.lst"
 
-
+sample/f2m src "${hlq}.${mlq}" '*.*'
+sample/f2m include "${hlq}.${mlq}" '*.*'
