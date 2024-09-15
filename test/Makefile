@@ -6,13 +6,13 @@ clean:
 INCDIR=../include
 
 basicread: basicread.o ../src/*.o
-	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o
+	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o >$@.lst
 
 basiccreate: basiccreate.o ../src/*.o
-	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o
+	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o >$@.lst
 
 basicalloc: basicalloc.o ../src/*.o
-	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o
+	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o >$@.lst
 
 basicread.o: basicread.c $(INCDIR)/iosvcs.h $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<

@@ -6,13 +6,13 @@ clean:
 INCDIR=../include
 
 f2m: f2m.o ../src/*.o
-	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o
+	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o >$@.lst
 
 m2f: m2f.o
-	$(LD) $(LDFLAGS) -o $@ $<
+	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
 mchtag: mchtag.o
-	$(LD) $(LDFLAGS) -o $@ $<
+	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
 f2m.o: f2m.c $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<

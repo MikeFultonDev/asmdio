@@ -1,10 +1,15 @@
 #define _XOPEN_SOURCE
 #define _ISOC99_SOURCE
+#define _POSIX_SOURCE
+#define _OPEN_SYS_FILE_EXT
 #include <glob.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "util.h"
 #include "dio.h"
@@ -63,7 +68,28 @@ typedef struct {
   struct decb* __ptr32 decb;
   void* __ptr32 block;
   size_t block_size;
+  size_t bytes_used;
+  unsigned int ttr;
+  int ttr_known:1;
 } FM_BPAMHandle;
+
+typedef struct {
+  size_t record_offset;
+  size_t record_length;
+  size_t data_length;
+  char* data;
+} FM_FileBuffer;
+  
+typedef struct {
+  struct file_tag tag;
+  FM_FileBuffer active;
+  FM_FileBuffer inactive;
+  int fd;
+  char newline_char;
+
+  char data_a[REC_LEN_MAX];
+  char data_b[REC_LEN_MAX];
+} FM_FileHandle;
 
 typedef struct {
   char member[MEM_MAX+1];
@@ -312,7 +338,7 @@ static const char* map_ext_to_dataset(const char* dataset_pattern, const char* e
   return dataset;
 }
 
-static int bpam_open_write(FM_BPAMHandle* handle)
+static int bpam_open_write(FM_BPAMHandle* handle, const FM_Opts* opts)
 {
   struct ihadcb* __ptr32 dcb;
   struct opencb* __ptr32 opencb;
@@ -367,23 +393,160 @@ static int bpam_open_write(FM_BPAMHandle* handle)
   handle->decb = decb;
   handle->block = block;
   handle->block_size = dcb->dcbblksi;
+  handle->bytes_used = 0;
 
   return 0;
 }
 
-#define ASCII_A 0x61
-
-static int write_member(const FM_BPAMHandle* bh, const char* member)
+/*
+ * Open the file and initialize the file handle 
+ */
+static FM_FileHandle* open_file(const char* filename, FM_FileHandle* fh, const FM_Opts* opts)
 {
-  const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
-  const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
-  const struct decb decb_template = { 0, 0x8020 };
-  union stowlist* stowlist;
-  struct stowlist_add* stowlistadd;
-  unsigned int ttr;
-  size_t memlen = strlen(member);
-  int rc;
+  struct stat info;
+  int fd = open(filename, O_RDONLY);
+  if (fd < 0) {
+    return NULL;
+  }
 
+  memset(fh, sizeof(fh), 0);
+
+  fh->fd = fd;
+
+  if (fstat(fd, &info) < 0) {
+    close(fd);
+    return NULL;
+  }
+  fh->tag = info.st_tag;
+
+  fh->active.data = fh->data_a;
+  fh->inactive.data = fh->data_b;
+
+  return fh;
+}
+
+/*
+ * Close the file. Returns zero on success, non-zero otherwise
+ */
+static int close_file(FM_FileHandle* fh, const FM_Opts* opts)
+{
+  return close(fh->fd);
+}
+
+/*
+ * Scan the buffer looking for the first newline from the current offset to
+ * length of bytes read into buffer.
+ * If found, return the offset.
+ * If not found, return -1.
+ */
+static int scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* opts)
+{
+  return 0;
+}
+
+/*
+ * Slightly tricky code.
+ * We want to avoid doing data copy so we maintain 2 data buffers.
+ * When the last part of the buffer is scanned, there will be no
+ * newline found, and we will need to then read data into the 
+ * other buffer and mark that some of the record is in the first
+ * (active) buffer and the rest is in the second (inactive) buffer.
+ * Since the target is a dataset that has a maximum record length,
+ * we can know that we'll hit a newline somewhere in a given buffer
+ * unless it is the very last line, in which case there may be no
+ * newline
+ */
+static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
+{
+  size_t newline_offset;
+
+  newline_offset = scan_buffer(fh, &fh->active, opts);
+  if (newline_offset >= 0) {
+    fh->active.record_length = newline_offset - fh->active.record_offset - 1;
+    fh->inactive.record_offset = 0;
+    fh->inactive.record_length = 0;
+    info(opts, "full line: active_offset: %d active_length: %d\n", fh->active.record_offset, fh->active.record_length);  
+  } else {
+    /*
+     * Partial line (record) in the buffer.
+     */
+    int rc = read(fh->fd, fh->inactive.data, REC_LEN_MAX);
+    if (rc < 0) {
+      return 0;
+    }
+    fh->inactive.data_length = rc;
+    newline_offset = scan_buffer(fh, &fh->inactive, opts);
+    fh->inactive.record_offset = 0;
+    if (newline_offset < 0) {
+      /*
+       * File ends without a newline
+       */
+      fh->inactive.record_length = fh->inactive.data_length;
+    } else {
+      fh->inactive.record_length = newline_offset - 1;
+    }
+    info(opts, "scattered line: active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n", 
+      fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);  
+
+    /*
+     * Swap buffers
+     */
+    char* tmp_buff;
+    tmp_buff = fh->active.data;
+    fh->active.data = fh->inactive.data;
+    fh->inactive.data = tmp_buff;
+    fh->active.record_offset = newline_offset + 1;
+    fh->active.data_length = fh->inactive.data_length;
+  }
+  return 1; 
+}
+
+/*
+ * This code will calculate the newline character based
+ * on looking at the file tag of the file being copied and,
+ * if the file tag isn't specified, it will read the 
+ * active data buffer for 'clues'.
+ */
+static void calc_tag(FM_FileHandle* fh, const FM_Opts* opts)
+{
+  if (fh->tag.ft_ccsid = 819) {
+    fh->newline_char = 0x0A; /* ASCII newline */
+  } else if (fh->tag.ft_ccsid = 1047) {
+    fh->newline_char = 0x15; /* EBCDIC newline */
+  } else {
+    /* msf: this needs to be fleshed out */
+    fh->newline_char = 0x15; /* default to EBCDIC right now */
+  }
+}
+
+static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
+{
+  ssize_t rc;
+  if (fh->active.record_offset == 0) {
+    /*
+     * Buffer is empty
+     */
+    rc = read(fh->fd, fh->active.data, REC_LEN_MAX);
+    if (rc <= 0) {
+      return 0;
+    }
+    fh->active.data_length = rc;
+    if (fh->newline_char == 0) {
+      calc_tag(fh, opts);
+    }
+  } else {
+    fh->active.record_offset += (fh->active.record_length + 1);
+  }
+  return get_record(fh, opts);
+}
+
+static void add_line(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_Opts* opts)
+{
+  /*
+   * Need to change this code to copy the record from fh and copy it into
+   * the block being built up, which is different depending on whether it is
+   * FB or VB (and other record formats could also be considered).
+   */
   if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
     /*
      * write out a variable length record
@@ -394,21 +557,28 @@ static int write_member(const FM_BPAMHandle* bh, const char* member)
     halfword[2] = 4;  /* size of record */
     bh->dcb->dcbblksi = bh->block_size;
   } else {
-    /*
-     * write out a record of A's
-     */
     bh->dcb->dcbblksi = bh->dcb->dcblrecl;
-    memset(bh->block, ASCII_A, bh->dcb->dcbblksi);
+    memset(bh->block, 0x40, bh->dcb->dcbblksi);
   }
+  return;
+}
 
-  /*
-   * Write out a block 
-   */
+static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opts)
+{
+  return (fh->active.record_length + bh->bytes_used <= bh->block_size);
+}
+
+/*
+ * Write out a block. Returns 0 if successful, non-zero otherwise
+ */
+static int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
+{
+  const struct decb decb_template = { 0, 0x8020 };
   *(bh->decb) = decb_template;
   SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
   bh->decb->area = bh->block;
 
-  rc = WRITE(bh->decb);
+  int rc = WRITE(bh->decb);
   if (rc) {
     fprintf(stderr, "Unable to perform WRITE. rc:%d\n", rc);
     return rc;
@@ -420,10 +590,25 @@ static int write_member(const FM_BPAMHandle* bh, const char* member)
     return rc;
   }
 
-  ttr = NOTE(bh->dcb);
+  if (!bh->ttr_known) {
+    bh->ttr = NOTE(bh->dcb);
+    bh->ttr_known = 1;
+  }
 
+  return 0;
+}
+
+static int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const char* filename, const char* member, const FM_Opts* opts)
+{
+  const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
+  const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
+  union stowlist* stowlist;
+  struct stowlist_add* stowlistadd;
+  size_t memlen = strlen(member);
   stowlist = MALLOC24(sizeof(struct stowlist_iff));
   stowlistadd = MALLOC24(sizeof(struct stowlist_add));
+  int rc;
+
   if ((!stowlist) || (!stowlistadd)) {
     fprintf(stderr, "Unable to obtain storage for STOW\n");
     return 4;
@@ -431,12 +616,12 @@ static int write_member(const FM_BPAMHandle* bh, const char* member)
   stowlist->iff = stowlistiff_template;
   *stowlistadd = stowlistadd_template;
   memcpy(stowlistadd->mem_name, member, memlen);
-  STOW_SET_TTR((*stowlistadd), ttr);
+  STOW_SET_TTR((*stowlistadd), bh->ttr);
 
   SET_24BIT_PTR(stowlist->iff.dcb24, bh->dcb);
   stowlist->iff.type = STOW_IFF;
   stowlist->iff.direntry = stowlistadd;
-  stowlist->iff.ccsid = 819;
+  stowlist->iff.ccsid = fh->tag.ft_ccsid;
 
   rc = STOW(stowlist, NULL, STOW_IFF);
   if (rc != STOW_IFF_CC_CREATE_OK) {
@@ -447,14 +632,51 @@ static int write_member(const FM_BPAMHandle* bh, const char* member)
   }
 }
 
-static int copy_file_to_member(const FM_BPAMHandle* bh, const char* filename, const char* member)
+/*
+ * Open the file, read lines, and add the lines to the block until the block is full
+ * at which point, write the block out and repeat.
+ * The 'ttr' needs to be marked as unknown and the underlying write_block will establish
+ * it on first block write.
+ * Once all the blocks are written, write the directory entry for the dataset member
+ * and then close off the file.
+ */
+static int write_member(FM_BPAMHandle* bh, const char* filename, const char* member, const FM_Opts* opts)
+{
+  FM_FileHandle fh;
+  int rc;
+
+  if (!open_file(filename, &fh, opts)) {
+    return 4;
+  }
+
+  bh->ttr_known = 0;
+  while (read_line(&fh, opts)) {
+    if (can_add_line(&fh, bh, opts)) {
+      add_line(bh, &fh, opts);
+    } else {
+      rc = write_block(bh, opts);
+      add_line(bh, &fh, opts);
+    }
+  }
+  rc = write_block(bh, opts);
+  
+  rc = write_member_dir_entry(bh, &fh, filename, member, opts);
+
+  rc = close_file(&fh, opts);
+
+  return rc;
+
+
+}
+
+static int copy_file_to_member(FM_BPAMHandle* bh, const char* filename, const char* member, const FM_Opts* opts)
 {
   int rc;
-  rc = write_member(bh, member);
+  rc = write_member(bh, filename, member, opts);
   return rc;
 }
 
-static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ext_entry, const FM_BPAMHandle* bh, const char* dataset, const FM_Opts* opts)
+static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ext_entry, FM_BPAMHandle* bh, const char* dataset, const FM_Opts* opts)
 {
   int file;
   int rc = 0;
@@ -468,7 +690,7 @@ static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ex
       rc |= 1;
     } else {
       info(opts, "Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
-      if (copy_file_to_member(bh, filename, member)) {
+      if (copy_file_to_member(bh, filename, member, opts)) {
         fprintf(stderr, "File %s could not be copied to %s(%s)\n", filename, dataset, member);
         rc |= 1;
       }
@@ -477,7 +699,7 @@ static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ex
   return rc;
 }
 
-static int open_pds_for_write(const char* dataset, FM_BPAMHandle* bpam_handle, const FM_Opts* opts)
+static int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const FM_Opts* opts)
 {
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
   struct s99_common_text_unit dd = { DALRTDDN, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
@@ -503,24 +725,24 @@ static int open_pds_for_write(const char* dataset, FM_BPAMHandle* bpam_handle, c
   /*
    * Copy system generated DD name into passed in handle
    */
-  memcpy(bpam_handle->ddname, dd.s99tupar, dd.s99tulng);
-  bpam_handle->ddname[dd.s99tulng] = '\0';
+  memcpy(bh->ddname, dd.s99tupar, dd.s99tulng);
+  bh->ddname[dd.s99tulng] = '\0';
 
-  info(opts, "Allocated DD:%s to %s\n", bpam_handle->ddname, dataset);
+  info(opts, "Allocated DD:%s to %s\n", bh->ddname, dataset);
 
-  return bpam_open_write(bpam_handle);
+  return bpam_open_write(bh, opts);
 }
 
-static int close_pds(const char* dataset, const FM_BPAMHandle* bpam_handle, const FM_Opts* opts)
+static int close_pds(const char* dataset, const FM_BPAMHandle* bh, const FM_Opts* opts)
 {
   const struct closecb closecb_template = { 1, 0, 0 };
   struct closecb* __ptr32 closecb;
   int rc;
 
   struct s99_common_text_unit dd = { DUNDDNAM, 1, 0, 0 };
-  int ddname_len = strlen(bpam_handle->ddname);
+  int ddname_len = strlen(bh->ddname);
   dd.s99tulng = ddname_len;
-  memcpy(dd.s99tupar, bpam_handle->ddname, ddname_len);
+  memcpy(dd.s99tupar, bh->ddname, ddname_len);
 
   closecb = MALLOC31(sizeof(struct closecb));
   if (!closecb) {
@@ -528,7 +750,7 @@ static int close_pds(const char* dataset, const FM_BPAMHandle* bpam_handle, cons
     return 4;
   }
   *closecb = closecb_template;
-  closecb->dcb24 = bpam_handle->dcb;
+  closecb->dcb24 = bh->dcb;
 
   rc = CLOSE(closecb);
   if (rc) {
@@ -537,7 +759,7 @@ static int close_pds(const char* dataset, const FM_BPAMHandle* bpam_handle, cons
   }
 
   rc = ddfree(&dd);
-  info(opts, "Free DD:%s\n", bpam_handle->ddname);
+  info(opts, "Free DD:%s\n", bh->ddname);
 
   return rc;
 }

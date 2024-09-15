@@ -26,7 +26,7 @@ export CC=xlc
 export CFLAGS="-Wc,debug,${DATA_MODEL},AGGR,${LIST},${INFO}"
 export CPPFLAGS="-DAMODE=${MODE}"
 export LD=xlc
-export LDFLAGS="-Wl,${DATA_MODEL},edit=yes"
+export LDFLAGS="-Wl,${DATA_MODEL},edit=yes,map,case=mixed"
 
 gmake -j -C src
 gmake -j -C test
