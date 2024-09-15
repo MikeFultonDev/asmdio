@@ -403,7 +403,7 @@ static int bpam_open_write(FM_BPAMHandle* handle, const FM_Opts* opts)
  */
 static FM_FileHandle* open_file(const char* filename, FM_FileHandle* fh, const FM_Opts* opts)
 {
-  struct stat info;
+  struct stat stat_info;
   int fd = open(filename, O_RDONLY);
   if (fd < 0) {
     return NULL;
@@ -413,15 +413,16 @@ static FM_FileHandle* open_file(const char* filename, FM_FileHandle* fh, const F
 
   fh->fd = fd;
 
-  if (fstat(fd, &info) < 0) {
+  if (fstat(fd, &stat_info) < 0) {
     close(fd);
     return NULL;
   }
-  fh->tag = info.st_tag;
+  fh->tag = stat_info.st_tag;
 
   fh->active.data = fh->data_a;
   fh->inactive.data = fh->data_b;
 
+  info(opts, "Code page of input file:%d\n", fh->tag.ft_ccsid);
   return fh;
 }
 
