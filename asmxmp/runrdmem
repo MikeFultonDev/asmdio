@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -e
+
+rdlib=$(echo "$(hlq).ASMXMP.DATA")
+
+mem=$(mls "${rdlib}")
+if [ "${mem}" != "NEWMEM" ]; then
+  echo "Run CRTMEM to create the member before trying to read"
+  exit 4
+fi
+
+xmplib=$(echo "$(hlq).ASMXMP.LOAD")
+
+mvscmd --steplib=$xmplib --mydd="${rdlib}" --pgm=RDMEM

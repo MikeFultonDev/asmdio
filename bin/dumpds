@@ -1,0 +1,36 @@
+#!/bin/sh
+
+#
+# dumpds: dump dataset to flat file for examination
+#
+
+if [ $# -ne 1 ]; then
+  echo "Syntax: dumpds <dataset>" >&2
+  exit 4
+fi
+
+ds=$1
+
+fullds=$(dls ${ds})
+if [ $? -gt 0 ]; then
+  echo "Unable to find dataset: ${ds}" >&2
+  exit 4
+fi
+ser=$(dls -u "${fullds}" | awk ' { print $6 }')
+
+dumprule=" DUMP INDDNAME(IN) OUTDDNAME(DUMPDS) -
+           DATASET(INCLUDE(${fullds})) ALLEXCP
+"
+ruleds="$(hlq).ASMXMP.RULE"
+dumpds="$(hlq).ASMXMP.DUMP"
+
+drm -f "${ruleds}"
+drm -f "${dumpds}"
+dtouch -tseq -rfb -l80 "${ruleds}"
+dtouch -tseq -ru  "${dumpds}"
+
+decho "${dumprule}" "${ruleds}"
+
+set -x
+
+mvscmdauth --pgm=ADRDSSU --sysprint=* --in=${fullds},old --dumpds=${dumpds},old --sysin="${ruleds}"

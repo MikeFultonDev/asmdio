@@ -1,0 +1,260 @@
+*
+* RDMCCSID: Read a PDSE Member CCSID and return it
+*
+* Input:   The DDName MYDD should already be established and 
+*          reference a PDSE
+* Output:  The CCSID is returned in R15. If no CCSID is available, 
+*          0 is returned
+* Note:    The return code will only return the low 8 bits in 
+*          some environments like USS, so CCSID 1047 will be 23
+* 
+* Program Flow:
+* - Acquire stack storage and clear it
+* - Acquire DCB storage separately because it needs to be AMODE 24
+* - Zero out the DCB storage
+* - Open the PDSE in READ mode
+* - Call DESERV on the PDSE member NEWMEM and GET the 
+*     extended attributes
+* - Determine if the extended attributes are present
+*   - If so, set the CCSID to the value in the extended attributes
+*   - If not, set the CCSID to 0
+* - Close the PDSE
+* - Return the CCSID
+
+         START , 
+         YREGS ,                  register equates, syslib SYS1.MACLIB 
+         IGWDES                   DSECTs for DESERV
+         IGWSMDE
+
+RDMCCSID CSECT , 
+*
+* DSECTs, EQUs for USING
+*
+RDMCCSID AMODE 31 
+RDMCCSID RMODE ANY
+         SYSSTATE AMODE64=NO,ARCHLVL=OSREL,OSREL=SYSSTATE 
+         IEABRCX  DEFINE    convert based branches to relative
+
+*
+* Linkage and storage obtain
+*
+         BAKR  R14,0                use linkage stack 
+         LARL  R12,DATCONST         setup base for CONSTANTS
+         USING DATCONST,R12         "baseless" CSECT 
+         STORAGE OBTAIN,LENGTH=WALEN,EXECUTABLE=NO,LOC=24,CHECKZERO=YES
+         LR    R10,R1               R10 points to Working Storage 
+         USING WAREA,R10            BASE FOR DSECT 
+*
+* Clear storage
+*
+         CHI   R15,X'0014'           X'14': storage zeroed
+         BE    STG_WA_CLEAR
+         LR    R2,R1                 system did not clear, do ourselves
+         LA    R3,WALEN
+         XR    R5,R5
+         MVCL  R2,R4                 clear storage (pad byte zero)
+
+STG_WA_CLEAR DS 0H
+         MVC   SAVEA+4(4),=C'F1SA'  linkage stack convention 
+         LA    R13,SAVEA            ADDRESS OF OUR SA IN R13 
+
+*
+* Start of application logic
+*
+
+*
+* DCB has to be below the line
+*
+        STORAGE OBTAIN,LENGTH=DCBLEN,EXECUTABLE=NO,LOC=24,CHECKZERO=YES
+        LR R8,R1                   R8 points to Output DCB
+         USING DCBAREA,R8
+*
+* Clear storage
+*
+         CHI   R15,X'0014'           X'14': storage zeroed
+         BE    STG_DCB_CLEAR
+         LR    R2,R1                 system did not clear, do ourselves
+         LA    R3,DCBLEN
+         XR    R5,R5
+         MVCL  R2,R4                 clear storage (pad byte zero)
+STG_DCB_CLEAR DS 0H
+
+*
+* Copy the DCB template into 24-bit storage
+* The OPEN_PARMS and DCBE is 31-bit to minimize below-line stg
+*
+LIB_OPEN  DS  0H
+         MVC LIB_DCB(DCBLEN),CONST_DCB
+         MVC OPEN_PARMS(OPENLEN),CONST_OPEN
+         OPEN (LIB_DCB,INPUT),MF=(E,OPEN_PARMS),MODE=31
+         CIJE R15,0,OPEN_SUCCESS
+*
+* The OPEN failed. OR in a FAIL MASK so we can determine
+* from the RC what failed
+*
+OPEN_FAIL DS  0H
+         LHI R8,OPEN_FAIL_MASK
+         LR  R9,R15                put err code in R9
+         OR  R9,R8
+         B   DONE
+
+OPEN_SUCCESS DS 0H
+
+*
+* Copy the DESP template into DESP_AREA
+* Set up the MEM_NAME information into MEM_NAME_LIST_DESL
+*
+MEM_DESERV  DS 0H
+         MVC DESP_AREA(DESERV_LEN),CONST_DESP
+         LA  R6,DESERV_NAME_LEN
+         STH R6,MEM_NAME_LEN
+         MVC MEM_NAME_VAL(DESERV_NAME_LEN),DESERV_NAME
+         LA  R7,MEM_NAME_LIST_DESL
+         USING DESL,R7
+         XC  DESL_ENTRY,DESL_ENTRY
+         LA  R6,MEM_NAME
+         ST  R6,DESL_NAME_PTR
+         DROP R7
+         
+         DESERV FUNC=GET,CONN_INTENT=HOLD,DCB=LIB_DCB,                 +
+               EXT_ATTR=YES,                                           +
+               NAME_LIST=(MEM_NAME_LIST_DESL,DESERV_NAME_COUNT),       +
+               AREA=(DESERV_AREA,DESERV_AREA_LEN),                     +
+               MF=(E,DESP_AREA)
+         CIJE R15,0,DESERV_SUCCESS   
+*
+* The DESERV failed. OR in a FAIL MASK so we can determine
+* from the RC what failed
+*
+DESERV_FAIL DS  0H
+         LHI R8,DESERV_FAIL_MASK
+         LR  R9,R15                put err code in R9 (need R0 too)
+         OR  R9,R8
+         B   DONE
+
+*
+* Check if the DESERV information returned has external attributes
+* If not, set the CCSID to 0, otherwise set it to the CCSID in the
+* extended attributes
+*
+DESERV_SUCCESS DS 0H
+         LA  R7,DESERV_AREA
+         USING DESB,R7
+         LA  R4,DESB_DATA
+         USING SMDE,R4
+         XR  R6,R6
+         LH  R6,SMDE_EXT_ATTR_OFF
+         CHI R6,0
+         BNZ  EXTATTR
+NO_EXTATTR DS 0H
+         L   R0,0
+         B   SAVE_CCSID
+EXTATTR  DS  0H
+         LA  R5,0(R4,R6)
+         USING SMDE_EXT_ATTR,R5
+         LH  R0,SMDE_CCSID
+SAVE_CCSID DS 0H
+         STH R0,MEM_CCSID
+         DROP R7
+         DROP R5
+         DROP R4
+
+*
+* Close the PDSE
+*
+LIB_CLOSE  DS 0H
+         MVC CLOSE_PARMS(CLOSELEN),CONST_CLOSE
+         CLOSE (LIB_DCB),MF=(E,CLOSE_PARMS),MODE=31
+         CIJE R15,0,CLOSE_SUCCESS
+*
+* The CLOSE failed. OR in a FAIL MASK so we can determine
+* from the RC what failed
+*
+CLOSE_FAIL DS  0H
+         LHI R8,CLOSE_FAIL_MASK
+         LR  R9,R15                put err code in R9
+         OR  R9,R8
+         B   DONE
+
+CLOSE_SUCCESS DS 0H
+         LH   R9,MEM_CCSID         Put CCSID in R9 as RC
+*
+* Free DCB storage
+*
+RLSE_DCB   DS 0H
+         STORAGE RELEASE,ADDR=(R8),LENGTH=DCBLEN,EXECUTABLE=NO 
+
+*
+* Linkage and storage release. set RC (reg 15) to the CCSID
+*
+DONE     DS 0H
+RLSE_WA  DS 0H
+         STORAGE RELEASE,ADDR=(R10),LENGTH=WALEN,EXECUTABLE=NO 
+         LR    R15,R9               get saved rc into R15
+         PR    ,                    return to caller 
+
+*
+* Constants and literal pool
+*
+DATCONST   DS    0D                 Doubleword alignment for LARL
+CONST_DCB  DCB   DSORG=PO,MACRF=(R),DDNAME=MYDD,DCBE=CONST_DCBE
+DCBLEN     EQU   *-CONST_DCB
+CONST_DCBE DCBE  RMODE31=BUFF
+CONST_OPEN OPEN (*-*,(INPUT)),MODE=31,MF=L
+OPENLEN    EQU   *-CONST_OPEN
+CONST_CLOSE CLOSE (*-*),MODE=31,MF=L
+CLOSELEN   EQU   *-CONST_CLOSE
+
+READ       READ  DECBMODW,SF,0,0,'S',MF=L
+READLEN    EQU   *-DECBMODW
+
+CONST_DESP DESERV MF=L
+DESERV_LEN EQU *-CONST_DESP
+
+DESERV_NAME_COUNT EQU 1
+DESERV_NAME       DC CL6'NEWMEM'
+DESERV_NAME_LEN   EQU *-DESERV_NAME
+
+BUFFLEN   EQU  80
+
+*
+* From BPAM DESERV Parameters:
+* L'DESB_FIXED + (input_list_entry_count * (SMDE_MAXLEN + gap_size))
+*
+DESERV_AREA_LEN EQU L'DESB_FIXED+SMDE_MAXLEN
+
+         LTORG ,
+
+*
+* Work area DSECT
+*
+WAREA       DSECT 
+SAVEA       DS    18F 
+OPEN_PARMS  DS CL(OPENLEN)
+CLOSE_PARMS DS CL(CLOSELEN)
+READ_DECB   DS CL(READLEN)
+READ_BUFFER DS CL(BUFFLEN)
+
+DESERV_AREA DS CL(DESERV_AREA_LEN)
+DESP_AREA   DS CL(DESERV_LEN)
+
+MEM_CCSID   DS 1H
+
+MEM_NAME_LIST_DESL DS CL16
+MEM_NAME           DS 0H
+MEM_NAME_LEN       DS 1H
+MEM_NAME_VAL       DS CL8
+
+WALEN      EQU  *-SAVEA
+
+DCBAREA    DSECT
+LIB_DCB    DS   CL(DCBLEN)
+
+*
+* RC Failure Masks
+*
+OPEN_FAIL_MASK    EQU   16
+DESERV_FAIL_MASK  EQU   32
+CLOSE_FAIL_MASK   EQU   64
+
+         END   RDMCCSID 
