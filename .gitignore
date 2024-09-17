@@ -24,8 +24,11 @@ CEEDUMP.*
 # Vim backup files
 *~
 
+.vscode
+
 # Compiled executable files
 basicread
 basicalloc
 basiccreate
 crtmem
+readperf

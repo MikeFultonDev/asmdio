@@ -12,7 +12,7 @@ typedef enum {
 
 static int tot = 0;
 
-int syntax(FILE* stream)
+static void syntax(FILE* stream)
 {
     fprintf(stream, "usage: readperf [char|buffer] file\n");
     fprintf(stream, " where 'buffer' reads a buffer and scans chars\n");
@@ -24,23 +24,32 @@ int read_file_with_buffer(const char* filename)
 {
     char buffer[32760];
     int rc, i;
-    int fd = open(filename, O_RDONLY);
+    FILE* fp = fopen(filename, "rb");
 
-    while ((rc = read(fd, buffer, sizeof(buffer)) > 0)) {
+    while (1) {
+        rc = fread(buffer, 1, sizeof(buffer), fp);
+        if (rc <= 0) {
+            break;
+        }
         for (i=0; i < rc; ++i) {
             tot += buffer[i];
         }
     }
+    fclose(fp);
     return tot;
 }
 int read_file_with_char(const char* filename)
 {
     int rc, c; 
-    int fd = open(filename, O_RDONLY);
-
-    while ((rc = read(fd, &c, 1) > 0)) {
-        tot += c;
+    FILE* fp = fopen(filename, "rb");
+    while (1) {
+       c = getc(fp);
+       if (c < 0) {
+        break;
+       }
+       tot += c;
     }  
+    fclose(fp);
     return tot;
 }
 
@@ -50,7 +59,7 @@ int multi_read_with_buffer(const char* filename)
     for (i=0; i<ITERATIONS; ++i) {
         tot += read_file_with_buffer(filename);
     }
-    return 0;
+    return tot;
 }
 
 int multi_read_with_char(const char* filename)
@@ -59,7 +68,7 @@ int multi_read_with_char(const char* filename)
     for (i=0; i<ITERATIONS; ++i) {
         tot += read_file_with_char(filename);
     }    
-    return 0;
+    return tot;
 }
 
 int main(int argc, char* argv[]) 
@@ -68,9 +77,10 @@ int main(int argc, char* argv[])
     const char* file_name = argv[2];
     ReadMethod method;
 
-    if (argc < 2) {
+    if (argc < 3) {
         syntax(stdout);
-    }
+        return 0;
+   }
     if (!strcmp(method_name, "buffer")) {
         method = BufferMethod;
     } else if (!strcmp(method_name, "char")) {
