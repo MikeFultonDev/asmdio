@@ -79,7 +79,13 @@ typedef struct {
   size_t data_length;
   char* data;
 } FM_FileBuffer;
-  
+
+#define TESTING 1
+#ifdef TESTING
+  #define REC_LEN 78
+#else
+  #define REC_LEN REC_LEN_MAX
+#endif
 typedef struct {
   struct file_tag tag;
   FM_FileBuffer active;
@@ -87,8 +93,8 @@ typedef struct {
   int fd;
   char newline_char;
 
-  char data_a[REC_LEN_MAX];
-  char data_b[REC_LEN_MAX];
+  char data_a[REC_LEN];
+  char data_b[REC_LEN];
 } FM_FileHandle;
 
 typedef struct {
@@ -445,7 +451,7 @@ static int close_file(FM_FileHandle* fh, const FM_Opts* opts)
  * If found, return the offset.
  * If not found, return -1.
  */
-static int scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* opts)
+static ssize_t scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* opts)
 {
   int i;
   info(opts, "scan record from %d to %d looking for newline character 0x%x\n", 
@@ -472,38 +478,42 @@ static int scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* opts
  */
 static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
 {
-  size_t newline_offset;
+  ssize_t newline_offset;
 
   info(opts, "get_record\n");
   newline_offset = scan_buffer(fh, &fh->active, opts);
+
   if (newline_offset >= 0) {
     fh->active.record_length = newline_offset - fh->active.record_offset;
-    fh->active.record_offset = newline_offset + 1;
     fh->inactive.record_offset = 0;
     fh->inactive.record_length = 0;
     info(opts, "newline_offset: %d full line: active_offset: %d active_length: %d\n", 
       newline_offset, fh->active.record_offset, fh->active.record_length);  
   } else {
+    fh->active.record_length = fh->active.data_length  - fh->active.record_offset;
     /*
      * Partial line (record) in the buffer.
      */
-    int rc = read(fh->fd, fh->inactive.data, REC_LEN_MAX);
-    if (rc < 0) {
+    info(opts, "partial line was read.\n");
+    int rc = read(fh->fd, fh->inactive.data, REC_LEN);
+    if (rc <= 0) {
+      info(opts, "... end of file reached\n");
       return 0;
     }
     fh->inactive.data_length = rc;
-    newline_offset = scan_buffer(fh, &fh->inactive, opts);
     fh->inactive.record_offset = 0;
+    newline_offset = scan_buffer(fh, &fh->inactive, opts);
     if (newline_offset < 0) {
       /*
        * File ends without a newline
        */
+      info(opts, "... file ends without a newline\n");
       fh->inactive.record_length = fh->inactive.data_length;
     } else {
-      fh->inactive.record_length = newline_offset - 1;
+      fh->inactive.record_length = newline_offset;
     }
-    info(opts, "scattered line: active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n", 
-      fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);  
+    info(opts, "scattered line: newline_offset:%d active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n", 
+      newline_offset, fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);  
 
     /*
      * Swap buffers
@@ -512,8 +522,9 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
     tmp_buff = fh->active.data;
     fh->active.data = fh->inactive.data;
     fh->inactive.data = tmp_buff;
-    fh->active.record_offset = newline_offset + 1;
-    fh->active.data_length = fh->inactive.data_length;
+
+    info(opts, "buffer swapped. Now:\n active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n",
+      fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);
   }
   return 1; 
 }
@@ -540,11 +551,11 @@ static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
 {
   ssize_t rc;
   info(opts, "readline. record_offset:%d\n", fh->active.record_offset);
-  if (fh->active.record_offset == 0) {
+  if (fh->active.record_offset == 0 && fh->active.record_length == 0) {
     /*
      * Buffer is empty
      */
-    rc = read(fh->fd, fh->active.data, REC_LEN_MAX);
+    rc = read(fh->fd, fh->active.data, REC_LEN);
     if (rc <= 0) {
       return 0;
     }
@@ -552,13 +563,18 @@ static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
     if (fh->newline_char == 0) {
       calc_tag(fh, opts);
     }
+  } else {
+    fh->active.record_offset += (fh->active.record_length + 1);
   }
   return get_record(fh, opts);
 }
 
-static void add_line(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_Opts* opts)
+static void add_line(FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_Opts* opts)
 {
-  info(opts, "Add Line\n");
+  info(opts, "Add Line. Active (%d,%d) Inactive (%d,%d)\n", 
+    fh->active.record_offset, fh->active.record_length, 
+    fh->inactive.record_offset, fh->inactive.record_length
+    );
   /*
    * Need to change this code to copy the record from fh and copy it into
    * the block being built up, which is different depending on whether it is
@@ -577,6 +593,7 @@ static void add_line(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_
     bh->dcb->dcbblksi = bh->dcb->dcblrecl;
     memset(bh->block, 0x40, bh->dcb->dcbblksi);
   }
+  bh->bytes_used += (fh->active.record_length + fh->inactive.record_length);
   return;
 }
 
