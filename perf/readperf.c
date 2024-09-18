@@ -29,6 +29,7 @@ int fd_read_file_with_buffer(const char* filename)
     char buffer[32760];
     int rc, i;
     int fd = open(filename, O_RDONLY);
+    int count=0;
 
     while (1) {
         rc = read(fd, buffer, sizeof(buffer));
@@ -36,26 +37,27 @@ int fd_read_file_with_buffer(const char* filename)
             break;
         }
         for (i=0; i < rc; ++i) {
-            tot += buffer[i];
+            count += buffer[i];
         }
     }
     close(fd);
-    return tot;
+    return count;
 }
 
 int fd_read_file_with_char(const char* filename)
 {
-    int rc, c, fd; 
+    char rc, c, fd; 
+    int count=0;
     fd = open(filename, O_RDONLY);
     while (1) {
-       read(fd, &c, 1);
-       if (c < 0) {
-        break;
+       rc = read(fd, &c, 1);
+       if (rc <= 0) {
+         break;
        }
-       tot += c;
+       count += c;
     }  
     close(fd);
-    return tot;
+    return count;
 }
 
 int fd_multi_read_with_buffer(const char* filename)
@@ -80,6 +82,7 @@ int fp_read_file_with_buffer(const char* filename)
 {
     char buffer[32760];
     int rc, i;
+    int count=0;
     FILE* fp = fopen(filename, "rb");
 
     while (1) {
@@ -88,26 +91,27 @@ int fp_read_file_with_buffer(const char* filename)
             break;
         }
         for (i=0; i < rc; ++i) {
-            tot += buffer[i];
+            count += buffer[i];
         }
     }
     fclose(fp);
-    return tot;
+    return count;
 }
 
 int fp_read_file_with_char(const char* filename)
 {
     int rc, c; 
+    int count=0;
     FILE* fp = fopen(filename, "rb");
     while (1) {
        c = getc(fp);
        if (c < 0) {
         break;
        }
-       tot += c;
+       count += c;
     }  
     fclose(fp);
-    return tot;
+    return count;
 }
 
 int fp_multi_read_with_buffer(const char* filename)
