@@ -1,0 +1,1 @@
+xlc -O3  -oreadperf readperf.c
