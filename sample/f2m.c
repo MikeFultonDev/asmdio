@@ -404,10 +404,15 @@ static int bpam_open_write(FM_BPAMHandle* handle, const FM_Opts* opts)
 static FM_FileHandle* open_file(const char* filename, FM_FileHandle* fh, const FM_Opts* opts)
 {
   struct stat stat_info;
+  struct f_cnvrt req = {SETCVTOFF, 0, 0};
   int fd = open(filename, O_RDONLY);
   if (fd < 0) {
     return NULL;
   }
+  /*
+   * Turn auto-convert off
+   */
+  fcntl(fd, F_CONTROL_CVT, &req);
 
   memset(fh, sizeof(fh), 0);
 
@@ -442,7 +447,15 @@ static int close_file(FM_FileHandle* fh, const FM_Opts* opts)
  */
 static int scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* opts)
 {
-  return 0;
+  int i;
+  info(opts, "scan record from %d to %d looking for newline character 0x%x\n", 
+    fb->record_offset, fb->data_length, fh->newline_char);
+  for (i = fb->record_offset; i < fb->data_length; ++i) {
+    if (fb->data[i] == fh->newline_char) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 /*
@@ -461,12 +474,15 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
 {
   size_t newline_offset;
 
+  info(opts, "get_record\n");
   newline_offset = scan_buffer(fh, &fh->active, opts);
   if (newline_offset >= 0) {
-    fh->active.record_length = newline_offset - fh->active.record_offset - 1;
+    fh->active.record_length = newline_offset - fh->active.record_offset;
+    fh->active.record_offset = newline_offset + 1;
     fh->inactive.record_offset = 0;
     fh->inactive.record_length = 0;
-    info(opts, "full line: active_offset: %d active_length: %d\n", fh->active.record_offset, fh->active.record_length);  
+    info(opts, "newline_offset: %d full line: active_offset: %d active_length: %d\n", 
+      newline_offset, fh->active.record_offset, fh->active.record_length);  
   } else {
     /*
      * Partial line (record) in the buffer.
@@ -523,6 +539,7 @@ static void calc_tag(FM_FileHandle* fh, const FM_Opts* opts)
 static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
 {
   ssize_t rc;
+  info(opts, "readline. record_offset:%d\n", fh->active.record_offset);
   if (fh->active.record_offset == 0) {
     /*
      * Buffer is empty
@@ -535,14 +552,13 @@ static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
     if (fh->newline_char == 0) {
       calc_tag(fh, opts);
     }
-  } else {
-    fh->active.record_offset += (fh->active.record_length + 1);
   }
   return get_record(fh, opts);
 }
 
 static void add_line(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_Opts* opts)
 {
+  info(opts, "Add Line\n");
   /*
    * Need to change this code to copy the record from fh and copy it into
    * the block being built up, which is different depending on whether it is
@@ -566,7 +582,10 @@ static void add_line(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_
 
 static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opts)
 {
-  return (fh->active.record_length + bh->bytes_used <= bh->block_size);
+  int rc = (fh->active.record_length + bh->bytes_used <= bh->block_size);
+  info(opts, "Can Add Line:%c (active record length:%d bytes_used:%d block_size:%d)\n", 
+    rc == 1 ? 'Y' : 'N', fh->active.record_length, bh->bytes_used, bh->block_size);
+  return rc;
 }
 
 /*
