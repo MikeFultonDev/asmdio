@@ -82,7 +82,7 @@ typedef struct {
   char* data;
 } FM_FileBuffer;
 
-#define TESTING 1
+//#define TESTING 1
 #ifdef TESTING
   #define REC_LEN 78
 #else
@@ -546,9 +546,9 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
  */
 static void calc_tag(FM_FileHandle* fh, const FM_Opts* opts)
 {
-  if (fh->tag.ft_ccsid = 819) {
+  if (fh->tag.ft_ccsid == 819) {
     fh->newline_char = 0x0A; /* ASCII newline */
-  } else if (fh->tag.ft_ccsid = 1047) {
+  } else if (fh->tag.ft_ccsid == 1047) {
     fh->newline_char = 0x15; /* EBCDIC newline */
   } else {
     /* msf: this needs to be fleshed out */
@@ -579,16 +579,28 @@ static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
   return get_record(fh, opts);
 }
 
+/*
+ * open_debug_file, write_debug_line, close_debug_file 
+ * are functions to make it easier to debug problems in the
+ * code that reads in files using buffers for performance.
+ * By default, the code is not active. If you specify '-d'
+ * as an option, it will write out files of the form: /tmp/<dataset>.<member>
+ * that should be the same as the original file read (but with a
+ * different name). 
+ * The file may or may not have the right file tag on it, so to read
+ * it, you may need to issue: chtag -tcXXXXX /tmp/<dataset>.<member> to set
+ * the file tag before looking at it.
+ */
 static FILE* debug_fp = NULL;
-static void open_debug_file(const char* ddname, const FM_Opts* opts)
+static void open_debug_file(const char* dataset, const char* member, const FM_Opts* opts)
 {
   if (!opts->debug) {
     return;
   }
-  const char debug_fmt[] = "/tmp/%s";
+  const char debug_fmt[] = "/tmp/%s.%s";
 
-  char debug_filename[sizeof(debug_fmt) + DD_MAX + 1];
-  sprintf(debug_filename, debug_fmt, ddname);
+  char debug_filename[sizeof(debug_fmt) + DS_MAX + MEM_MAX + 1];
+  sprintf(debug_filename, debug_fmt, dataset, member);
 
   remove(debug_filename);
   debug_fp = fopen(debug_filename, "wb");
@@ -662,6 +674,7 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 
     fh->active.record_offset = fh->inactive.record_offset;
     fh->active.record_length = fh->inactive.record_length; 
+    fh->active.data_length = fh->inactive.data_length;
     fh->inactive.record_offset = 0;
     fh->inactive.record_length = 0;
 
@@ -705,6 +718,7 @@ static int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
     bh->ttr_known = 1;
   }
 
+  bh->bytes_used = 0;
   return 0;
 }
 
@@ -750,12 +764,12 @@ static int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* 
  * Once all the blocks are written, write the directory entry for the dataset member
  * and then close off the file.
  */
-static int write_member(FM_BPAMHandle* bh, const char* filename, const char* member, const FM_Opts* opts)
+static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* filename, const char* member, const FM_Opts* opts)
 {
   FM_FileHandle fh;
   int rc;
 
-  open_debug_file(bh->ddname, opts);
+  open_debug_file(dataset, member, opts);
   if (!open_file(filename, &fh, opts)) {
     return 4;
   }
@@ -782,10 +796,10 @@ static int write_member(FM_BPAMHandle* bh, const char* filename, const char* mem
 
 }
 
-static int copy_file_to_member(FM_BPAMHandle* bh, const char* filename, const char* member, const FM_Opts* opts)
+static int copy_file_to_member(FM_BPAMHandle* bh, const char* dataset, const char* filename, const char* member, const FM_Opts* opts)
 {
   int rc;
-  rc = write_member(bh, filename, member, opts);
+  rc = write_member(bh, dataset, filename, member, opts);
   return rc;
 }
 
@@ -803,7 +817,7 @@ static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ex
       rc |= 1;
     } else {
       info(opts, "Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
-      if (copy_file_to_member(bh, filename, member, opts)) {
+      if (copy_file_to_member(bh, dataset, filename, member, opts)) {
         fprintf(stderr, "File %s could not be copied to %s(%s)\n", filename, dataset, member);
         rc |= 1;
       }
