@@ -637,7 +637,20 @@ static void close_debug_file(const FM_Opts* opts)
   debug_fp = NULL;
 }
 
-static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
+static int copy_at_most(void* dest, void* src, size_t length, size_t max)
+{
+  if (length > max) {
+    length = max;
+  }
+  if (length == 0) {
+    return length;
+  }
+
+  memcpy(dest, src, length);
+  return length;
+}
+
+static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, int line_num, const FM_Opts* opts)
 {
   debug(opts, "Add Line. Active (%d,%d) Inactive (%d,%d) bytes_used:%d\n", 
     fh->active.record_offset, fh->active.record_length, 
@@ -648,7 +661,7 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
  
   char* block_char = (char*) (bh->block);
   if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
-    unsigned int* next_rec;
+    unsigned short* next_rec;
     if (bh->bytes_used == 0) {
       /*
        * First word is block length - clear it to 0 for now
@@ -663,24 +676,38 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
     /*
      * Write out length of record for variable length record format
      */
-    next_rec = (unsigned int*) (&block_char[bh->bytes_used]);
-    next_rec[0] = (fh->active.record_length + fh->inactive.record_length); 
+    next_rec = (unsigned short*) (&block_char[bh->bytes_used]);
+    unsigned short rec_len = (fh->active.record_length + fh->inactive.record_length + sizeof(unsigned int));
+    if (rec_len > bh->dcb->dcblrecl) {
+      info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", line_num, bh->dcb->dcblrecl, rec_len);
+      return;
+    }
+    next_rec[0] = rec_len;
+    next_rec[1] = 0;
     bh->bytes_used += sizeof(unsigned int);
+
+    debug(opts, "Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
   }
+
+  int max_bytes = bh->dcb->dcblrecl;
+  int copied_active_bytes;
+  int copied_inactive_bytes;
 
   /*
    * Write out the raw data of the record which could span the active and inactive data blocks
    */
-  memcpy(&block_char[bh->bytes_used], &fh->active.data[fh->active.record_offset], fh->active.record_length);
-  bh->bytes_used += fh->active.record_length;
-  memcpy(&block_char[bh->bytes_used], &fh->active.data[fh->active.record_offset], fh->active.record_length);
-  bh->bytes_used += fh->inactive.record_length;
+  copied_active_bytes = copy_at_most(&block_char[bh->bytes_used], &fh->active.data[fh->active.record_offset], fh->active.record_length, max_bytes);
+  bh->bytes_used += copied_active_bytes;
+  max_bytes -= copied_active_bytes;
+  copied_inactive_bytes = copy_at_most(&block_char[bh->bytes_used], &fh->inactive.data[fh->inactive.record_offset], fh->inactive.record_length, max_bytes);
+  bh->bytes_used += copied_inactive_bytes;
+
 
   if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
     /*
      *  If the record is FIXED, then pad the record out with blanks
      */
-    int pad_length = bh->dcb->dcblrecl - (fh->active.record_length + fh->inactive.record_length);
+    int pad_length = bh->dcb->dcblrecl - (copied_active_bytes + copied_inactive_bytes);
     if (pad_length > 0) {
       memset(&block_char[bh->bytes_used], fh->space_char, pad_length);
     }
@@ -738,9 +765,26 @@ static int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
     /*
      * Specify the block size for the variable length records 
      */
-    unsigned int* start = (unsigned int*) (bh->block);
-    start[0] = bh->bytes_used;
+//#define EMPTY_BLOCK 1
+#ifdef EMPTY_BLOCK
+    unsigned short* halfword = (unsigned short*) (bh->block);
+    halfword[0] = 8;  /* size of block */
+    halfword[1] = 0;
+    halfword[2] = 4;  /* size of record */
+    halfword[3] = 0;
+    bh->dcb->dcbblksi = bh->block_size;  
+#else
+    unsigned short* halfword = (unsigned short*) (bh->block);
+#if 0
+    halfword[0] = halfword[2] + 4; /* this works to just write the first record of each block */
+#endif
+    halfword[0] = bh->bytes_used;  /* size of block */
+    halfword[1] = 0;
+    halfword[3] = 0;
     bh->dcb->dcbblksi = bh->block_size;
+#endif
+    debug(opts, "(Block Write) First Record length:%d bytes used:%d\n", halfword[2], halfword[0]);
+
   } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) { 
     bh->dcb->dcbblksi = bh->bytes_used;
   } else {
@@ -821,13 +865,14 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
     return 4;
   }
 
+  int line_num = 0;
   bh->ttr_known = 0;
   while (read_line(&fh, opts)) {
     if (can_add_line(&fh, bh, opts)) {
-      add_line(bh, &fh, opts);
+      add_line(bh, &fh, ++line_num, opts);
     } else {
       rc = write_block(bh, opts);
-      add_line(bh, &fh, opts);
+      add_line(bh, &fh, ++line_num, opts);
     }
   }
   rc = write_block(bh, opts);
