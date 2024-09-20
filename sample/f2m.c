@@ -84,7 +84,7 @@ typedef struct {
 
 //#define TESTING 1
 #ifdef TESTING
-  #define REC_LEN 78
+  #define REC_LEN 300
 #else
   #define REC_LEN REC_LEN_MAX
 #endif
