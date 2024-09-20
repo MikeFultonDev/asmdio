@@ -23,6 +23,7 @@ static void syntax(FILE* stream)
 Options:\n\
   -h, --help          Print out this help.\n\
   -v, --verbose       Provide verbose output.\n\
+  -d, --debug         Provide debug output.\n\
   -m, --mapexttollq   Treat the dataset name as a dataset prefix and\n\
                       map the extension to a a low-level qualifier (default).\n\
   -i, --ignoreext     Do not perform any mapping with the extension\n\
@@ -41,6 +42,7 @@ Options:\n\
 typedef struct {
   int help:1;
   int verbose:1;
+  int debug:1;
   int map:1;
 } FM_Opts;
 
@@ -122,11 +124,28 @@ static int info(const FM_Opts* opts, const char* fmt, ...)
   return rc;
 }
 
+static int debug(const FM_Opts* opts, const char* fmt, ...)
+{
+  va_list arg_ptr;
+  int rc;
+  va_start(arg_ptr, fmt);
+  if (opts->debug) {
+    rc = vfprintf(stdout, fmt, arg_ptr);
+  } else {
+    rc = 0;
+  }
+  va_end(arg_ptr);
+  return rc;
+}
+
 static int process_opt(FM_Opts* opts, char* argv[], int entry)
 {
   if (!strcmp(argv[entry], "-h") || !strcmp(argv[entry], "--help")) {
     opts->help = 1;
   } else if (!strcmp(argv[entry], "-v") || !strcmp(argv[entry], "--verbose")) {
+    opts->verbose = 1;
+  } else if (!strcmp(argv[entry], "-d") || !strcmp(argv[entry], "--debug")) {
+    opts->debug = 1;
     opts->verbose = 1;
   } else if (!strcmp(argv[entry], "-m") || !strcmp(argv[entry], "--mapexttollq")) {
     opts->map = 1;
@@ -262,7 +281,7 @@ static FM_Table* create_table(glob_t* globset, const FM_Opts* opts)
   }
   info(opts, "%d extensions to be processed\n", table->size);
   for (i=0; i<table->size; ++i) {
-    info(opts, "  [%s] has %d entries\n", table->entry[i].key, table->entry[i].count);
+    debug(opts, "  [%s] has %d entries\n", table->entry[i].key, table->entry[i].count);
   }
   return table;
 }
@@ -454,7 +473,7 @@ static int close_file(FM_FileHandle* fh, const FM_Opts* opts)
 static ssize_t scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* opts)
 {
   int i;
-  info(opts, "scan record from %d to %d looking for newline character 0x%x\n", 
+  debug(opts, "scan record from %d to %d looking for newline character 0x%x\n", 
     fb->record_offset, fb->data_length, fh->newline_char);
   for (i = fb->record_offset; i < fb->data_length; ++i) {
     if (fb->data[i] == fh->newline_char) {
@@ -480,24 +499,24 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
 {
   ssize_t newline_offset;
 
-  info(opts, "get_record\n");
+  debug(opts, "get_record\n");
   newline_offset = scan_buffer(fh, &fh->active, opts);
 
   if (newline_offset >= 0) {
     fh->active.record_length = newline_offset - fh->active.record_offset;
     fh->inactive.record_offset = 0;
     fh->inactive.record_length = 0;
-    info(opts, "newline_offset: %d full line: active_offset: %d active_length: %d\n", 
+    debug(opts, "newline_offset: %d full line: active_offset: %d active_length: %d\n", 
       newline_offset, fh->active.record_offset, fh->active.record_length);  
   } else {
-    fh->active.record_length = fh->active.data_length  - fh->active.record_offset;
+    fh->active.record_length = fh->active.data_length - fh->active.record_offset;
     /*
      * Partial line (record) in the buffer.
      */
-    info(opts, "partial line was read.\n");
+    debug(opts, "partial line was read.\n");
     int rc = read(fh->fd, fh->inactive.data, REC_LEN);
     if (rc <= 0) {
-      info(opts, "... end of file reached\n");
+      debug(opts, "... end of file reached\n");
       return 0;
     }
     fh->inactive.data_length = rc;
@@ -507,24 +526,14 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
       /*
        * File ends without a newline
        */
-      info(opts, "... file ends without a newline\n");
+      debug(opts, "... file ends without a newline\n");
       fh->inactive.record_length = fh->inactive.data_length;
     } else {
       fh->inactive.record_length = newline_offset;
     }
-    info(opts, "scattered line: newline_offset:%d active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n", 
+    debug(opts, "scattered line: newline_offset:%d active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n", 
       newline_offset, fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);  
 
-    /*
-     * Swap buffers
-     */
-    char* tmp_buff;
-    tmp_buff = fh->active.data;
-    fh->active.data = fh->inactive.data;
-    fh->inactive.data = tmp_buff;
-
-    info(opts, "buffer swapped. Now:\n active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n",
-      fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);
   }
   return 1; 
 }
@@ -550,10 +559,11 @@ static void calc_tag(FM_FileHandle* fh, const FM_Opts* opts)
 static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
 {
   ssize_t rc;
-  info(opts, "readline. record_offset:%d\n", fh->active.record_offset);
+  debug(opts, "readline. record_offset:%d\n", fh->active.record_offset);
   if (fh->active.record_offset == 0 && fh->active.record_length == 0) {
     /*
-     * Buffer is empty
+     * Buffer is empty - read in the first buffer and determine the file
+     * tagging information
      */
     rc = read(fh->fd, fh->active.data, REC_LEN);
     if (rc <= 0) {
@@ -569,12 +579,56 @@ static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
   return get_record(fh, opts);
 }
 
-static void add_line(FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_Opts* opts)
+static FILE* debug_fp = NULL;
+static void open_debug_file(const char* ddname, const FM_Opts* opts)
 {
-  info(opts, "Add Line. Active (%d,%d) Inactive (%d,%d)\n", 
+  if (!opts->debug) {
+    return;
+  }
+  const char debug_fmt[] = "/tmp/%s";
+
+  char debug_filename[sizeof(debug_fmt) + DD_MAX + 1];
+  sprintf(debug_filename, debug_fmt, ddname);
+
+  remove(debug_filename);
+  debug_fp = fopen(debug_filename, "wb");
+  if (!debug_fp) {
+    fprintf(stderr, "Unable to open debug file: %s for write\n", debug_filename);
+    return;
+  }
+}
+
+static void write_debug_line(FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_Opts* opts)
+{
+  if (!opts->debug) {
+    return;
+  }
+  if (fh->active.record_length > 0) {
+    fwrite(&fh->active.data[fh->active.record_offset], fh->active.record_length, 1, debug_fp);
+  }
+  if (fh->inactive.record_length > 0) {
+    fwrite(&fh->inactive.data[fh->inactive.record_offset], fh->inactive.record_length, 1, debug_fp);
+  }
+  fwrite(&fh->newline_char, 1, 1, debug_fp);
+}
+
+static void close_debug_file(const FM_Opts* opts)
+{
+  if (!opts->debug) {
+    return;
+  }
+  fclose(debug_fp);
+  debug_fp = NULL;
+}
+
+static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
+{
+  debug(opts, "Add Line. Active (%d,%d) Inactive (%d,%d)\n", 
     fh->active.record_offset, fh->active.record_length, 
     fh->inactive.record_offset, fh->inactive.record_length
     );
+  write_debug_line(bh, fh, opts);
+ 
   /*
    * Need to change this code to copy the record from fh and copy it into
    * the block being built up, which is different depending on whether it is
@@ -594,13 +648,32 @@ static void add_line(FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_Opts* 
     memset(bh->block, 0x40, bh->dcb->dcbblksi);
   }
   bh->bytes_used += (fh->active.record_length + fh->inactive.record_length);
+
+  /*
+   * Now that the buffers have been copied out, if the inactive offsets are non-zero
+   * copy them over to the active offsets and swap the buffers.
+   */
+
+  if (fh->inactive.record_length > 0) {
+    char* tmp_buff;
+    tmp_buff = fh->active.data;
+    fh->active.data = fh->inactive.data;
+    fh->inactive.data = tmp_buff;
+
+    fh->active.record_offset = fh->inactive.record_offset;
+    fh->active.record_length = fh->inactive.record_length; 
+    fh->inactive.record_offset = 0;
+    fh->inactive.record_length = 0;
+
+    debug(opts, "Buffers swapped. active record_offset:%s record_length:%d\n", fh->active.record_offset, fh->active.record_length);
+  }
   return;
 }
 
 static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opts)
 {
   int rc = (fh->active.record_length + bh->bytes_used <= bh->block_size);
-  info(opts, "Can Add Line:%c (active record length:%d bytes_used:%d block_size:%d)\n", 
+  debug(opts, "Can Add Line:%c (active record length:%d bytes_used:%d block_size:%d)\n", 
     rc == 1 ? 'Y' : 'N', fh->active.record_length, bh->bytes_used, bh->block_size);
   return rc;
 }
@@ -682,6 +755,7 @@ static int write_member(FM_BPAMHandle* bh, const char* filename, const char* mem
   FM_FileHandle fh;
   int rc;
 
+  open_debug_file(bh->ddname, opts);
   if (!open_file(filename, &fh, opts)) {
     return 4;
   }
@@ -700,6 +774,8 @@ static int write_member(FM_BPAMHandle* bh, const char* filename, const char* mem
   rc = write_member_dir_entry(bh, &fh, filename, member, opts);
 
   rc = close_file(&fh, opts);
+
+  close_debug_file(opts);
 
   return rc;
 
@@ -765,7 +841,7 @@ static int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const FM_O
   memcpy(bh->ddname, dd.s99tupar, dd.s99tulng);
   bh->ddname[dd.s99tulng] = '\0';
 
-  info(opts, "Allocated DD:%s to %s\n", bh->ddname, dataset);
+  debug(opts, "Allocated DD:%s to %s\n", bh->ddname, dataset);
 
   return bpam_open_write(bh, opts);
 }
@@ -796,7 +872,7 @@ static int close_pds(const char* dataset, const FM_BPAMHandle* bh, const FM_Opts
   }
 
   rc = ddfree(&dd);
-  info(opts, "Free DD:%s\n", bh->ddname);
+  debug(opts, "Free DD:%s\n", bh->ddname);
 
   return rc;
 }
