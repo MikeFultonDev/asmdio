@@ -94,6 +94,7 @@ typedef struct {
   FM_FileBuffer inactive;
   int fd;
   char newline_char;
+  char space_char;
 
   char data_a[REC_LEN];
   char data_b[REC_LEN];
@@ -548,11 +549,14 @@ static void calc_tag(FM_FileHandle* fh, const FM_Opts* opts)
 {
   if (fh->tag.ft_ccsid == 819) {
     fh->newline_char = 0x0A; /* ASCII newline */
+    fh->space_char = 0x20;   /* ASCII space   */
   } else if (fh->tag.ft_ccsid == 1047) {
     fh->newline_char = 0x15; /* EBCDIC newline */
+    fh->space_char = 0x40;   /* EBCDIC space   */
   } else {
     /* msf: this needs to be fleshed out */
     fh->newline_char = 0x15; /* default to EBCDIC right now */
+    fh->space_char = 0x40;   /* default to EBCDIC right now */
   }
 }
 
@@ -635,31 +639,53 @@ static void close_debug_file(const FM_Opts* opts)
 
 static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 {
-  debug(opts, "Add Line. Active (%d,%d) Inactive (%d,%d)\n", 
+  debug(opts, "Add Line. Active (%d,%d) Inactive (%d,%d) bytes_used:%d\n", 
     fh->active.record_offset, fh->active.record_length, 
-    fh->inactive.record_offset, fh->inactive.record_length
+    fh->inactive.record_offset, fh->inactive.record_length,
+    bh->bytes_used
     );
   write_debug_line(bh, fh, opts);
  
-  /*
-   * Need to change this code to copy the record from fh and copy it into
-   * the block being built up, which is different depending on whether it is
-   * FB or VB (and other record formats could also be considered).
-   */
+  char* block_char = (char*) (bh->block);
   if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    unsigned int* next_rec;
+    if (bh->bytes_used == 0) {
+      /*
+       * First word is block length - clear it to 0 for now
+       * Set the block size to be the full block size since the 
+       * WRITE routine knows to get the logical block size from the
+       * first word.
+       */
+      unsigned int* start = (unsigned int*) (bh->block);
+      start[0] = 0;
+      bh->bytes_used += sizeof(unsigned int);
+    }
     /*
-     * write out a variable length record
+     * Write out length of record for variable length record format
      */
-    memset(bh->block, 0, bh->block_size);
-    unsigned short* halfword = (unsigned short*) (bh->block);
-    halfword[0] = 8;  /* size of block */
-    halfword[2] = 4;  /* size of record */
-    bh->dcb->dcbblksi = bh->block_size;
-  } else {
-    bh->dcb->dcbblksi = bh->dcb->dcblrecl;
-    memset(bh->block, 0x40, bh->dcb->dcbblksi);
+    next_rec = (unsigned int*) (&block_char[bh->bytes_used]);
+    next_rec[0] = (fh->active.record_length + fh->inactive.record_length); 
+    bh->bytes_used += sizeof(unsigned int);
   }
-  bh->bytes_used += (fh->active.record_length + fh->inactive.record_length);
+
+  /*
+   * Write out the raw data of the record which could span the active and inactive data blocks
+   */
+  memcpy(&block_char[bh->bytes_used], &fh->active.data[fh->active.record_offset], fh->active.record_length);
+  bh->bytes_used += fh->active.record_length;
+  memcpy(&block_char[bh->bytes_used], &fh->active.data[fh->active.record_offset], fh->active.record_length);
+  bh->bytes_used += fh->inactive.record_length;
+
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
+    /*
+     *  If the record is FIXED, then pad the record out with blanks
+     */
+    int pad_length = bh->dcb->dcblrecl - (fh->active.record_length + fh->inactive.record_length);
+    if (pad_length > 0) {
+      memset(&block_char[bh->bytes_used], fh->space_char, pad_length);
+    }
+    bh->bytes_used += pad_length;
+  }
 
   /*
    * Now that the buffers have been copied out, if the inactive offsets are non-zero
@@ -685,7 +711,8 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 
 static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opts)
 {
-  int rc = (fh->active.record_length + bh->bytes_used <= bh->block_size);
+  int hdr_size = (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? sizeof(unsigned int) : 0;
+  int rc = (fh->active.record_length + bh->bytes_used + hdr_size <= bh->block_size);
   debug(opts, "Can Add Line:%c (active record length:%d bytes_used:%d block_size:%d)\n", 
     rc == 1 ? 'Y' : 'N', fh->active.record_length, bh->bytes_used, bh->block_size);
   return rc;
@@ -700,6 +727,26 @@ static int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
   *(bh->decb) = decb_template;
   SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
   bh->decb->area = bh->block;
+
+  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n", 
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N', 
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N', 
+    bh->bytes_used, 
+    bh->block_size
+  );
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    /*
+     * Specify the block size for the variable length records 
+     */
+    unsigned int* start = (unsigned int*) (bh->block);
+    start[0] = bh->bytes_used;
+    bh->dcb->dcbblksi = bh->block_size;
+  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) { 
+    bh->dcb->dcbblksi = bh->bytes_used;
+  } else {
+    fprintf(stderr, "Not sure how to write a block that is not recv or recf\n");
+    return 4;
+  }
 
   int rc = WRITE(bh->decb);
   if (rc) {
