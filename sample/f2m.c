@@ -680,7 +680,7 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, int line_num, const F
     unsigned short rec_len = (fh->active.record_length + fh->inactive.record_length + sizeof(unsigned int));
     if (rec_len > bh->dcb->dcblrecl) {
       info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", line_num, bh->dcb->dcblrecl, rec_len);
-      return;
+      rec_len = bh->dcb->dcblrecl;
     }
     next_rec[0] = rec_len;
     next_rec[1] = 0;
@@ -689,7 +689,7 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, int line_num, const F
     debug(opts, "Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
   }
 
-  int max_bytes = bh->dcb->dcblrecl;
+  int max_bytes = (bh->dcb->dcblrecl - sizeof(unsigned int));
   int copied_active_bytes;
   int copied_inactive_bytes;
 
@@ -745,6 +745,36 @@ static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opt
   return rc;
 }
 
+static int rec_num = 1;
+static void validate_block(FM_BPAMHandle* bh, const FM_Opts* opts)
+{
+  if (!opts->debug) {
+    return;
+  }
+
+  char* block_char = (char*) (bh->block);
+  unsigned short* block_hw = (unsigned short*) (bh->block);
+  unsigned short block_size = block_hw[0];
+
+  debug(opts, "Validate Block: Block Size: %d\n", block_size);
+  char* next_rec_start = &(((char*)block_hw)[4]);
+  while ((next_rec_start - block_char) < block_size) {
+    unsigned short rec_length = *((unsigned short*) next_rec_start); 
+    debug(opts, "Record %d Length: %d\n", rec_num, rec_length);
+    if (rec_length < 4) {
+      fprintf(stderr, "Unexpected record length. Validation Failed.\n");
+      exit(4);
+    }
+    next_rec_start = &next_rec_start[rec_length];
+    rec_num++;
+  }
+  if (next_rec_start - block_char != block_size) {
+    fprintf(stderr, "Total record length did not match block size: (%d,%d)\n", next_rec_start - block_char, block_size);
+    exit(4);
+  }
+    
+}
+
 /*
  * Write out a block. Returns 0 if successful, non-zero otherwise
  */
@@ -791,6 +821,8 @@ static int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
     fprintf(stderr, "Not sure how to write a block that is not recv or recf\n");
     return 4;
   }
+
+  validate_block(bh, opts);
 
   int rc = WRITE(bh->decb);
   if (rc) {
