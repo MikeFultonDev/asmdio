@@ -73,6 +73,7 @@ typedef struct {
   size_t bytes_used;
   unsigned int ttr;
   int ttr_known:1;
+  size_t line_num;
 } FM_BPAMHandle;
 
 typedef struct {
@@ -98,6 +99,7 @@ typedef struct {
 
   char data_a[REC_LEN];
   char data_b[REC_LEN];
+  size_t line_num;
 } FM_FileHandle;
 
 typedef struct {
@@ -440,7 +442,7 @@ static FM_FileHandle* open_file(const char* filename, FM_FileHandle* fh, const F
    */
   fcntl(fd, F_CONTROL_CVT, &req);
 
-  memset(fh, sizeof(fh), 0);
+  memset(fh, 0, sizeof(FM_FileHandle));
 
   fh->fd = fd;
 
@@ -650,7 +652,7 @@ static int copy_at_most(void* dest, void* src, size_t length, size_t max)
   return length;
 }
 
-static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, int line_num, const FM_Opts* opts)
+static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 {
   debug(opts, "Add Line. Active (%d,%d) Inactive (%d,%d) bytes_used:%d\n", 
     fh->active.record_offset, fh->active.record_length, 
@@ -679,7 +681,7 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, int line_num, const F
     next_rec = (unsigned short*) (&block_char[bh->bytes_used]);
     unsigned short rec_len = (fh->active.record_length + fh->inactive.record_length + sizeof(unsigned int));
     if (rec_len > bh->dcb->dcblrecl) {
-      info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", line_num, bh->dcb->dcblrecl, rec_len);
+      info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", fh->line_num, bh->dcb->dcblrecl, rec_len);
       rec_len = bh->dcb->dcblrecl;
     }
     next_rec[0] = rec_len;
@@ -739,13 +741,12 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, int line_num, const F
 static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opts)
 {
   int hdr_size = (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? sizeof(unsigned int) : 0;
-  int rc = (fh->active.record_length + bh->bytes_used + hdr_size <= bh->block_size);
-  debug(opts, "Can Add Line:%c (active record length:%d bytes_used:%d block_size:%d)\n", 
-    rc == 1 ? 'Y' : 'N', fh->active.record_length, bh->bytes_used, bh->block_size);
+  int rc = (fh->active.record_length + fh->inactive.record_length + bh->bytes_used + hdr_size <= bh->block_size);
+  debug(opts, "Can Add Line:%c (active record length:%d inactive record length:%d bytes_used:%d block_size:%d)\n", 
+    rc == 1 ? 'Y' : 'N', fh->active.record_length, fh->inactive.record_length, bh->bytes_used, bh->block_size);
   return rc;
 }
 
-static int rec_num = 1;
 static void validate_block(FM_BPAMHandle* bh, const FM_Opts* opts)
 {
   if (!opts->debug) {
@@ -760,13 +761,13 @@ static void validate_block(FM_BPAMHandle* bh, const FM_Opts* opts)
   char* next_rec_start = &(((char*)block_hw)[4]);
   while ((next_rec_start - block_char) < block_size) {
     unsigned short rec_length = *((unsigned short*) next_rec_start); 
-    debug(opts, "Record %d Length: %d\n", rec_num, rec_length);
+    debug(opts, "Record %d Length: %d\n", bh->line_num, rec_length);
     if (rec_length < 4) {
       fprintf(stderr, "Unexpected record length. Validation Failed.\n");
       exit(4);
     }
     next_rec_start = &next_rec_start[rec_length];
-    rec_num++;
+    bh->line_num++;
   }
   if (next_rec_start - block_char != block_size) {
     fprintf(stderr, "Total record length did not match block size: (%d,%d)\n", next_rec_start - block_char, block_size);
@@ -897,15 +898,17 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
     return 4;
   }
 
-  int line_num = 0;
+  bh->line_num = 1;
+  fh.line_num = 1;
   bh->ttr_known = 0;
   while (read_line(&fh, opts)) {
     if (can_add_line(&fh, bh, opts)) {
-      add_line(bh, &fh, ++line_num, opts);
+      add_line(bh, &fh, opts);
     } else {
       rc = write_block(bh, opts);
-      add_line(bh, &fh, ++line_num, opts);
+      add_line(bh, &fh, opts);
     }
+    fh.line_num++;
   }
   rc = write_block(bh, opts);
   
