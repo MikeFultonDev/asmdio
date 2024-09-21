@@ -6,14 +6,17 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
 #include "util.h"
 #include "dio.h"
 #include "iosvcs.h"
+#include "fm.h"
+#include "fmopts.h"
+#include "msg.h"
+#include "filemap.h"
+#include "bpamio.h"
 
 static void syntax(FILE* stream)
 {
@@ -51,393 +54,6 @@ will copy:\n\
   the .lst files to corresponding dataset members IBMUSER.PROJ23.SRC.LST\n\
 ");
   return;
-}
-
-typedef struct {
-  int help:1;
-  int verbose:1;
-  int debug:1;
-  int map:1;
-} FM_Opts;
-
-typedef struct {
-  int cur_value;
-  char* values[0];
-} FM_FileTable;
-
-typedef struct {
-  const char* key;
-  FM_FileTable* table;
-  int count;
-} FM_Entry;
-
-typedef struct {
-  size_t max_size;
-  size_t size;
-  FM_Entry* entry;
-} FM_Table;
-
-typedef struct {
-  char ddname[DD_MAX+1];
-  struct ihadcb* __ptr32 dcb;
-  struct opencb* __ptr32 opencb;
-  struct decb* __ptr32 decb;
-  void* __ptr32 block;
-  size_t block_size;
-  size_t bytes_used;
-  unsigned int ttr;
-  int ttr_known:1;
-  size_t line_num;
-} FM_BPAMHandle;
-
-typedef struct {
-  size_t record_offset;
-  size_t record_length;
-  size_t data_length;
-  char* data;
-} FM_FileBuffer;
-
-//#define TESTING 1
-#ifdef TESTING
-  #define REC_LEN 300
-#else
-  #define REC_LEN REC_LEN_MAX
-#endif
-typedef struct {
-  struct file_tag tag;
-  FM_FileBuffer active;
-  FM_FileBuffer inactive;
-  int fd;
-  char newline_char;
-  char space_char;
-
-  char data_a[REC_LEN];
-  char data_b[REC_LEN];
-  size_t line_num;
-} FM_FileHandle;
-
-typedef struct {
-  char member[MEM_MAX+1];
-  char* filename;
-} FM_MemFilePair;
-
-static void init_opts(FM_Opts* opts) {
-  opts->help = 0;
-  opts->verbose = 0;
-  opts->map  = 1;
-}
-
-static int info(const FM_Opts* opts, const char* fmt, ...)
-{
-  va_list arg_ptr;
-  int rc;
-  va_start(arg_ptr, fmt);
-  if (opts->verbose) {
-    rc = vfprintf(stdout, fmt, arg_ptr);
-  } else {
-    rc = 0;
-  }
-  va_end(arg_ptr);
-  return rc;
-}
-
-static int debug(const FM_Opts* opts, const char* fmt, ...)
-{
-  va_list arg_ptr;
-  int rc;
-  va_start(arg_ptr, fmt);
-  if (opts->debug) {
-    rc = vfprintf(stdout, fmt, arg_ptr);
-  } else {
-    rc = 0;
-  }
-  va_end(arg_ptr);
-  return rc;
-}
-
-static int process_opt(FM_Opts* opts, char* argv[], int entry)
-{
-  if (!strcmp(argv[entry], "-h") || !strcmp(argv[entry], "--help")) {
-    opts->help = 1;
-  } else if (!strcmp(argv[entry], "-v") || !strcmp(argv[entry], "--verbose")) {
-    opts->verbose = 1;
-  } else if (!strcmp(argv[entry], "-d") || !strcmp(argv[entry], "--debug")) {
-    opts->debug = 1;
-    opts->verbose = 1;
-  } else if (!strcmp(argv[entry], "-m") || !strcmp(argv[entry], "--mapexttollq")) {
-    opts->map = 1;
-  } else if (!strcmp(argv[entry], "-i") || !strcmp(argv[entry], "--ignoreext")) {
-    opts->map = 0;
-  } else {
-    fprintf(stderr, "Option %s not recognized. Option ignored.\n", argv[entry]);
-  }
-  return 0;
-}
-
-static int errfunc(const char *epath, int eerrno)
-{
-  fprintf(stderr, "%s", strerror(eerrno));
-  fprintf(stderr, "Path %s is in error. No processing performed\n");
-  return -1;
-}
-
-static FM_Table* allocate_table(size_t num_entries)
-{
-  /* 
-   * This is inefficient, but allocate the table assuming one entry
-   * for each extension, so guaranteed to be big enough
-   */
-  FM_Table* table = malloc(sizeof(FM_Table));
-  if (!table) {
-    return NULL;
-  }
-  FM_Entry* entry = calloc(num_entries, sizeof(FM_Entry));
-  if (!entry) {
-    free(table);
-    return NULL;
-  }
-  table->max_size = num_entries;
-  table->size = 0;
-  table->entry = entry;
-  return table;
-}
-
-static int cmpfn(const void* l, const void* r)
-{
-  FM_Entry* le = (FM_Entry*) l;
-  FM_Entry* re = (FM_Entry*) r;
-  return (strcmp(le->key, re->key));
-}
-
-static FM_Entry* find(const char* key, FM_Table* table)
-{
-  FM_Entry key_entry = { key, 0, 0 };
-  FM_Entry* entry = (FM_Entry*) bsearch(&key_entry, table->entry, table->size, sizeof(FM_Entry), cmpfn);
-  return entry;
-}
-
-/*
- * add: low perf implementation - should use hand-written bsearch if this is 
- * important to find the spot to insert.
- */
-static FM_Entry* add(FM_Entry* entry, FM_Table* table)
-{
-  int i;
-  for (i=0; i<table->size; ++i) {
-    if (strcmp(table->entry[i].key, entry->key) > 0) {
-      break;
-    }
-  }
-  memmove(&table->entry[i+1], &table->entry[i], (table->size-i)*sizeof(FM_Entry));
-  memcpy(&table->entry[i], entry, sizeof(FM_Entry));
-  table->size++;
-
-  return &table->entry[i];
-}
-
-static const char* extension(const char* path)
-{
-  char* dot = strrchr(path, '.');
-  if (dot) {
-    return dot+1;
-  } else {
-    return NULL;
-  }
-}
-
-#define MY_PATH_MAX (1024)
-static glob_t* expand_file_patterns(char* argv[], int first, int last, const char* dir, glob_t* globset, const FM_Opts* opts)
-{
-  char file_pattern[MY_PATH_MAX+1];
-  int i;
-  int rc;
-  for (i=first; i<last; ++i) {
-    int flags;
-    rc = snprintf(file_pattern, sizeof(file_pattern), "%s/%s", dir, argv[i]);
-    if (rc == MY_PATH_MAX) {
-      fprintf(stderr, "File pattern: <%s/%s> is too large\n", dir, argv[i]);
-      return NULL;
-    }
-    if (i == first) {
-      flags = 0;
-    } else {
-      flags = GLOB_APPEND;
-    }
-    rc = glob(file_pattern, flags, errfunc, globset);
-  }
-
-  info(opts, "%d files to be processed\n", globset->gl_pathc);
-  return globset;
-}
-
-static FM_Table* create_table(glob_t* globset, const FM_Opts* opts)
-{
-  FM_Table* table = allocate_table(globset->gl_pathc);
-  int i;
-
-  if (!table) {
-    return NULL;
-  }
-
-  /*
-   * First pass is to get a count of the number of files with each
-   * extension
-   */
-  for (i=0;i<globset->gl_pathc; ++i) {
-    const char* ext = extension(globset->gl_pathv[i]);
-    if (!ext || (ext[0] == '\0')) {
-      continue;
-    }
-    FM_Entry* entry = find(ext, table);
-    if (!entry) {
-      FM_Entry new_entry = { ext, 0, 1 };
-      add(&new_entry, table);
-    } else {
-      entry->count++;
-    }
-  }
-  info(opts, "%d extensions to be processed\n", table->size);
-  for (i=0; i<table->size; ++i) {
-    debug(opts, "  [%s] has %d entries\n", table->entry[i].key, table->entry[i].count);
-  }
-  return table;
-}
-
-static FM_Table* fill_table(glob_t* globset, FM_Table* table)
-{
-  int i;
-  /*
-   * Second pass is to allocate each file table now that the number of entries is known.
-   */
-  for (i=0; i<table->size; ++i) {
-    int values = table->entry[i].count;
-    FM_FileTable* file_table = malloc(sizeof(FM_FileTable) + (sizeof(char*)*values));
-    if (!file_table) {
-      return NULL;
-    }
-    file_table->cur_value = 0;
-    table->entry[i].table = file_table;
-  }
-  for (i=0;i<globset->gl_pathc; ++i) {
-    const char* ext = extension(globset->gl_pathv[i]);
-    if (!ext || (ext[0] == '\0')) {
-      continue;
-    }
-    FM_Entry* entry = find(ext, table);
-    if (entry) {
-      entry->table->values[entry->table->cur_value++] = globset->gl_pathv[i];
-    } else {
-      /* 
-       * Error - should have been added already
-       */
-       fprintf(stderr, "Internal Error: file %s not in table\n", globset->gl_pathv[i]);
-    }
-  }
-  return table;
-}
-
-static const char* map_file_to_member(const char* file, char* member, const FM_Opts* opts)
-{
-  const char* slash = strrchr(file, '/');
-  if (!slash || slash[1] == '\0') {
-    return NULL;
-  }
-
-  /*
-   * msf - add in length checks (truncate if option to truncate specified)
-   * msf - add in checks to map invalid characters if option specified to do so
-   */
-  const char* dot = strrchr(file, '.');
-  if (!dot || (dot < slash)) {
-    dot = &file[strlen(file)];
-  }
-  size_t memlen = dot-slash-1;
-  if (memlen > MEM_MAX) {
-    return NULL;
-  }
-
-  memcpy(member, &slash[1], memlen);
-  member[memlen] = 0;
-  uppercase(member);
-
-  return member;
-}
-
-static const char* map_ext_to_dataset(const char* dataset_pattern, const char* ext, char* dataset, const FM_Opts* opts)
-{
-  /*
-   * msf - add in length checks (truncate if option to truncate specified)
-   * msf - add in checks to map invalid characters if option specified to do so
-   */
-
-  if (strlen(dataset_pattern) + 1 + strlen(ext) > DS_MAX) {
-    return NULL;
-  }
-
-  sprintf(dataset, "%s.%s", dataset_pattern, ext);
-  uppercase(dataset);
-
-  return dataset;
-}
-
-static int bpam_open_write(FM_BPAMHandle* handle, const FM_Opts* opts)
-{
-  struct ihadcb* __ptr32 dcb;
-  struct opencb* __ptr32 opencb;
-  struct decb* __ptr32 decb;
-  void* __ptr32 block;
-
-  const struct opencb opencb_template = { 1, 0, 0, 0, 0 };
-  int rc;
-
-  dcb = dcb_init(handle->ddname);
-  if (!dcb) {
-    fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
-    return 4;
-  }
-
-  /*
-   * DCB set to PO, BPAM WRITE and POINT
-   */
-  dcb->dcbdsgpo = 1;
-  dcb->dcbeodad.dcbhiarc.dcbbftek.dcbbfaln = 0x84;
-  dcb->dcboflgs = dcbofuex;
-  dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
-
-  opencb = MALLOC31(sizeof(struct opencb));
-  if (!opencb) {
-    fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
-    return 4;
-  }
-  *opencb = opencb_template;
-  opencb->dcb24 = dcb;
-  opencb->mode = OPEN_OUTPUT;
-
-  rc = OPEN(opencb);
-  if (rc) {
-    fprintf(stderr, "Unable to perform OPEN. rc:%d\n", rc);
-    return rc;
-  }
-
-  decb = MALLOC24(sizeof(struct decb));
-  if (!decb) {
-    fprintf(stderr, "Unable to obtain storage for WRITE decb\n");
-    return 4;
-  }
-  block = MALLOC24(dcb->dcbblksi);
-  if (!block) {
-    fprintf(stderr, "Unable to obtain storage for WRITE block\n");
-    return 4;
-  }
-
-  handle->dcb = dcb;
-  handle->opencb = opencb;
-  handle->decb = decb;
-  handle->block = block;
-  handle->block_size = dcb->dcbblksi;
-  handle->bytes_used = 0;
-
-  return 0;
 }
 
 /*
@@ -510,7 +126,9 @@ static ssize_t scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* 
  * Since the target is a dataset that has a maximum record length,
  * we can know that we'll hit a newline somewhere in a given buffer
  * unless it is the very last line, in which case there may be no
- * newline
+ * newline.
+ * This code presumes it is working with 'text'. Binary files will
+ * need to drive a different routine.
  */
 static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
 {
@@ -618,6 +236,7 @@ static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
  * The file may or may not have the right file tag on it, so to read
  * it, you may need to issue: chtag -tcXXXXX /tmp/<dataset>.<member> to set
  * the file tag before looking at it.
+ * Yes - the global variable is ugly and should be fixed.
  */
 static FILE* debug_fp = NULL;
 static void open_debug_file(const char* dataset, const char* member, const FM_Opts* opts)
@@ -674,13 +293,20 @@ static int copy_at_most(void* dest, void* src, size_t length, size_t max)
   return length;
 }
 
+/*
+ * add_line and read_line need to work together with their state because
+ * they are sharing a common set of buffers for efficiency. 
+ * This means that read_line is responsible for setting up the active and
+ * inactive buffer state information and add_line is responsible for 
+ * cleaning up the state after it has processed the information.
+ */
 static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 {
   debug(opts, "Add Line. Active (%d,%d) Inactive (%d,%d) bytes_used:%d\n", 
     fh->active.record_offset, fh->active.record_length, 
     fh->inactive.record_offset, fh->inactive.record_length,
     bh->bytes_used
-    );
+  );
   write_debug_line(bh, fh, opts);
  
   char* block_char = (char*) (bh->block);
@@ -780,126 +406,6 @@ static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opt
   return rc;
 }
 
-static void validate_block(FM_BPAMHandle* bh, const FM_Opts* opts)
-{
-  if (!opts->debug) {
-    return;
-  }
-
-  char* block_char = (char*) (bh->block);
-  unsigned short* block_hw = (unsigned short*) (bh->block);
-  unsigned short block_size = block_hw[0];
-
-  debug(opts, "Validate Block: Block Size: %d\n", block_size);
-  char* next_rec_start = &(((char*)block_hw)[4]);
-  while ((next_rec_start - block_char) < block_size) {
-    unsigned short rec_length = *((unsigned short*) next_rec_start); 
-    debug(opts, "Record %d Length: %d\n", bh->line_num, rec_length);
-    if (rec_length < 4) {
-      fprintf(stderr, "Unexpected record length. Validation Failed.\n");
-      exit(4);
-    }
-    next_rec_start = &next_rec_start[rec_length];
-    bh->line_num++;
-  }
-  if (next_rec_start - block_char != block_size) {
-    fprintf(stderr, "Total record length did not match block size: (%d,%d)\n", next_rec_start - block_char, block_size);
-    exit(4);
-  }
-    
-}
-
-/*
- * Write out a block. Returns 0 if successful, non-zero otherwise
- */
-static int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
-{
-  const struct decb decb_template = { 0, 0x8020 };
-  *(bh->decb) = decb_template;
-  SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
-  bh->decb->area = bh->block;
-
-  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n", 
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N', 
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N', 
-    bh->bytes_used, 
-    bh->block_size
-  );
-  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
-    /*
-     * Specify the block size for the variable length records 
-     */
-    unsigned short* halfword = (unsigned short*) (bh->block);
-    halfword[0] = bh->bytes_used;  /* size of block */
-    halfword[1] = 0;
-    halfword[3] = 0;
-    bh->dcb->dcbblksi = bh->block_size;
-
-    validate_block(bh, opts);
-    debug(opts, "(Block Write) First Record length:%d bytes used:%d\n", halfword[2], halfword[0]);
-
-  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) { 
-    bh->dcb->dcbblksi = bh->bytes_used;
-  } else {
-    fprintf(stderr, "Not sure how to write a block that is not recv or recf\n");
-    return 4;
-  }
-
-  int rc = WRITE(bh->decb);
-  if (rc) {
-    fprintf(stderr, "Unable to perform WRITE. rc:%d\n", rc);
-    return rc;
-  }
-
-  rc = CHECK(bh->decb);
-  if (rc) {
-    fprintf(stderr, "Unable to perform CHECK. rc:%d\n", rc);
-    return rc;
-  }
-
-  if (!bh->ttr_known) {
-    bh->ttr = NOTE(bh->dcb);
-    bh->ttr_known = 1;
-  }
-
-  bh->bytes_used = 0;
-  return 0;
-}
-
-static int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const char* filename, const char* member, const FM_Opts* opts)
-{
-  const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
-  const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
-  union stowlist* stowlist;
-  struct stowlist_add* stowlistadd;
-  size_t memlen = strlen(member);
-  stowlist = MALLOC24(sizeof(struct stowlist_iff));
-  stowlistadd = MALLOC24(sizeof(struct stowlist_add));
-  int rc;
-
-  if ((!stowlist) || (!stowlistadd)) {
-    fprintf(stderr, "Unable to obtain storage for STOW\n");
-    return 4;
-  }
-  stowlist->iff = stowlistiff_template;
-  *stowlistadd = stowlistadd_template;
-  memcpy(stowlistadd->mem_name, member, memlen);
-  STOW_SET_TTR((*stowlistadd), bh->ttr);
-
-  SET_24BIT_PTR(stowlist->iff.dcb24, bh->dcb);
-  stowlist->iff.type = STOW_IFF;
-  stowlist->iff.direntry = stowlistadd;
-  stowlist->iff.ccsid = fh->tag.ft_ccsid;
-
-  rc = STOW(stowlist, NULL, STOW_IFF);
-  if (rc != STOW_IFF_CC_CREATE_OK) {
-    fprintf(stderr, "Unable to perform STOW (Does the member already exist?). rc:%d\n", rc);
-    return rc;
-  } else {
-    return 0;
-  }
-}
-
 /*
  * Open the file, read lines, and add the lines to the block until the block is full
  * at which point, write the block out and repeat.
@@ -939,8 +445,6 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
   close_debug_file(opts);
 
   return rc;
-
-
 }
 
 static int copy_file_to_member(FM_BPAMHandle* bh, const char* dataset, const char* filename, const char* member, const FM_Opts* opts)
@@ -973,71 +477,6 @@ static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ex
   return rc;
 }
 
-static int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const FM_Opts* opts)
-{
-  struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
-  struct s99_common_text_unit dd = { DALRTDDN, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
-  struct s99_common_text_unit stats = { DALSTATS, 1, 1, { DALSTATS_SHR } };
-
-  int rc = init_dsnam_text_unit(dataset, &dsn);
-  if (rc) {
-    return rc;
-  }
-  rc = dsdd_alloc(&dsn, &dd, &stats);
-  if (rc) {
-    return rc;
-  }
-  rc = init_dsnam_text_unit(dataset, &dsn);
-  if (rc) {
-    return 4;
-  }
-  rc = dsdd_alloc(&dsn, &dd, &stats);
-  if (rc) {
-    return 4;
-  }
-
-  /*
-   * Copy system generated DD name into passed in handle
-   */
-  memcpy(bh->ddname, dd.s99tupar, dd.s99tulng);
-  bh->ddname[dd.s99tulng] = '\0';
-
-  debug(opts, "Allocated DD:%s to %s\n", bh->ddname, dataset);
-
-  return bpam_open_write(bh, opts);
-}
-
-static int close_pds(const char* dataset, const FM_BPAMHandle* bh, const FM_Opts* opts)
-{
-  const struct closecb closecb_template = { 1, 0, 0 };
-  struct closecb* __ptr32 closecb;
-  int rc;
-
-  struct s99_common_text_unit dd = { DUNDDNAM, 1, 0, 0 };
-  int ddname_len = strlen(bh->ddname);
-  dd.s99tulng = ddname_len;
-  memcpy(dd.s99tupar, bh->ddname, ddname_len);
-
-  closecb = MALLOC31(sizeof(struct closecb));
-  if (!closecb) {
-    fprintf(stderr, "Unable to obtain storage for CLOSE cb\n");
-    return 4;
-  }
-  *closecb = closecb_template;
-  closecb->dcb24 = bh->dcb;
-
-  rc = CLOSE(closecb);
-  if (rc) {
-    fprintf(stderr, "Unable to perform CLOSE. rc:%d\n", rc);
-    return rc;
-  }
-
-  rc = ddfree(&dd);
-  debug(opts, "Free DD:%s\n", bh->ddname);
-
-  return rc;
-}
-
 static int copy_files_to_multiple_dataset_members(const FM_Table* table, const char* dataset_pattern, const FM_Opts* opts)
 {
   int rc = 0;
@@ -1065,47 +504,6 @@ static int copy_files_to_multiple_dataset_members(const FM_Table* table, const c
       fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
       rc |= 8;
       continue;
-    }
-  }
-  return rc;
-}
-
-static int cmp_mem_file_pair(const void* l, const void* r)
-{
-  FM_MemFilePair* lpair = (FM_MemFilePair*) l;
-  FM_MemFilePair* rpair = (FM_MemFilePair*) r;
-
-  return (strcmp(lpair->member, rpair->member));
-}
-
-static int check_for_duplicate_members(glob_t* globset, const FM_Table* table, const FM_Opts* opts)
-{
-  FM_MemFilePair* mem_file_pair = calloc(globset->gl_pathc, sizeof(FM_MemFilePair));
-  char member_buffer[MEM_MAX+1];
-  const char* member;
-  int i;
-  int num_members = 0;
-  int rc = 0;
-
-  /*
-   * Create an array of member/file pairs, then sort it by member
-   * and then loop through the sorted array and see if there are any
-   * duplicates (same member name)
-   */
-  for (i=0; i<globset->gl_pathc; ++i) {
-    member = map_file_to_member(globset->gl_pathv[i], member_buffer, opts);
-    if (member) {
-      strcpy(mem_file_pair[num_members].member, member);
-      mem_file_pair[num_members].filename = globset->gl_pathv[i];
-      num_members++;
-    }
-  }
-  qsort(mem_file_pair, num_members, sizeof(FM_MemFilePair), cmp_mem_file_pair);
-  for (i=0; i<num_members-1; ++i) {
-    if (!strcmp(mem_file_pair[i].member, mem_file_pair[i+1].member)) {
-      fprintf(stderr, "Error. File %s and file %s would both be copied to the same member %s\n", 
-        mem_file_pair[i].filename, mem_file_pair[i+1].filename, mem_file_pair[i].member); 
-      rc = 1;
     }
   }
   return rc;

@@ -1,6 +1,7 @@
 #ifndef __IHADCB__
 #define __IHADCB__ 1
 
+#include <stdio.h>
 #include "dcbe.h"
 
 #pragma pack(packed)
