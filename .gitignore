@@ -31,4 +31,9 @@ basicread
 basicalloc
 basiccreate
 crtmem
+
 readperf
+
+f2m
+m2f
+mchtag

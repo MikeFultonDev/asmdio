@@ -122,6 +122,11 @@ struct s99_text_unit {
 
 #define DUNDDNAM 0x01
 
+#define DALSTATS_OLD   0x1
+#define DALSTATS_MOD   0x2
+#define DALSTATS_NEW   0x4
+#define DALSTATS_SHR   0x8
+
 struct s99_eopts {
 	int s99eimsg:1;
 	int s99ermsg:1;

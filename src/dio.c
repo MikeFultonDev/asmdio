@@ -4,8 +4,13 @@
 
 #include "dio.h"
 #include "stow.h"
+#include "util.h"
 #include "s99.h"
 #include "wrappers.h"
+
+//#define DEBUG 1
+
+const struct s99_rbx s99rbxtemplate = {"S99RBX",S99RBXVR,{0,1,0,0,0,0,0},0,0,0};
 
 int STOW(union stowlist* __ptr32 listp, struct ihadcb* __ptr32 dcbp, enum stowtype type)
 {
@@ -109,11 +114,15 @@ void* __ptr32 MALLOC24(size_t bytes)
   int ptr24;
   ptr24 = MALOC24A(bytes);
   void* __ptr32 ptr = (void* __ptr32) ptr24;
+  if (ptr24 == 0) {
+    fprintf(stderr, "Internal Error: Unable to allocate %d bytes below the bar\n", bytes);
+  } else {
 #ifdef DEBUG
   memset(ptr, 0xFE, bytes);
 #else
   memset(ptr, 0x00, bytes);
 #endif
+  }
   return ptr;
 }
 
@@ -125,11 +134,15 @@ int FREE24(void* __ptr32 addr, size_t len)
 void* __ptr32 MALLOC31(size_t bytes)
 {
   void* __ptr32 p = __malloc31(bytes);
+  if (p == 0) {
+    fprintf(stderr, "Internal Error: Unable to allocate %d bytes below the line\n", bytes);
+  } else {
 #ifdef DEBUG
   memset(p, 0xFE, bytes);
 #else
   memset(p, 0x00, bytes);
 #endif
+  }
   return p;
 }
 void FREE31(void* __ptr32 addr)

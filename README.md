@@ -53,6 +53,12 @@ For applications that need to perform common I/O operations, the Language Enviro
 - [GET/PUT](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-get-put) Macros: Get and Put RECORDS, not blocks. 
 - [CLOSE](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMCLOSE)
 
+## Other References
+
+- [Abend Codes](https://tech.mikefulton.ca/ZOSAbendCodes)
+- [EBCDIC](https://tech.mikefulton.ca/EBCDICReference)
+- [Dataset Record Formats](https://tech.mikefulton.ca/DatasetRecordFormats)
+
 ## Key Points
 
 - I/O

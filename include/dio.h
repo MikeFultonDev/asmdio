@@ -15,6 +15,9 @@
 
 #define DD_SYSTEM "????????"
 #define DS_MAX (44)
+#define MEM_MAX (8)
+#define DD_MAX (8)
+#define REC_LEN_MAX (32760)
 
 int OPEN(struct opencb* __ptr32 opencb);
 int FIND(struct findcb* __ptr32 findcb, struct ihadcb* __ptr32 dcb);
@@ -25,6 +28,15 @@ unsigned int NOTE(struct ihadcb* __ptr32 dcb);
 unsigned int DESERV(struct desp* __ptr32 desp);
 int STOW(union stowlist* __ptr32 list, struct ihadcb* __ptr32 dcb, enum stowtype type);
 int CLOSE(struct closecb* __ptr32 closecb);
+
+#pragma map(OPEN, "DOPEN")
+#pragma map(FIND, "DFIND")
+#pragma map(READ, "DREAD")
+#pragma map(WRITE, "DWRITE")
+#pragma map(CHECK, "DCHECK")
+#pragma map(NOTE, "DNOTE")
+#pragma map(STOW, "DSTOW")
+#pragma map(CLOSE, "DCLOSE")
 
 void* __ptr32 MALLOC24(size_t len);
 int FREE24(void* __ptr32 addr, size_t len);

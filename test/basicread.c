@@ -4,12 +4,11 @@
 
 #include "dio.h"
 #include "ihadcb.h"
-#include "ioservices.h"
+#include "iosvcs.h"
 #include "s99.h"
 #include "iob.h"
 #include "util.h"
 
-#define MYDD "MYDD"
 
 /*
  * Basic Read of a PDS Member:
@@ -45,8 +44,10 @@ int main(int argc, char* argv[]) {
   char* mem;
   size_t memlen;
 
+  char ddname[8+1];
+
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
-  struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(MYDD)-1, MYDD };
+  struct s99_common_text_unit dd = { DALRTDDN, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
   struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} };
 
   if (argc != 3) {
@@ -54,17 +55,33 @@ int main(int argc, char* argv[]) {
     return 4;
   }
 
+  memlen = strlen(argv[2]);
+  if (memlen == 0 || memlen > 8) {
+    fprintf(stderr, "Member must be 1 to 8 characters long\n");
+    return 4;
+  }
+
   rc = uppercase(argv[1]);
   rc = uppercase(argv[2]);
 
-  ds = argv[1];
-  rc = init_dsnam_text_unit(ds, &dsn);
+  rc = init_dsnam_text_unit(argv[1], &dsn);
   if (rc) {
     return rc;
   }
-  rc = pdsdd_alloc(&dsn, &dd, &stats);
+  rc = dsdd_alloc(&dsn, &dd, &stats);
   if (rc) {
     return rc;
+  }
+  memcpy(ddname, dd.s99tupar, dd.s99tulng);
+  ddname[dd.s99tulng] = '\0';
+
+  rc = init_dsnam_text_unit(argv[1], &dsn);
+  if (rc) {
+    return 4;
+  }
+  rc = dsdd_alloc(&dsn, &dd, &stats);
+  if (rc) {
+    return 4;
   }
 
   mem = argv[2];
@@ -75,7 +92,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
     return 4;
   }
-  dcb = dcb_init(MYDD);
+  dcb = dcb_init(ddname);
   if (!dcb) {
     fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
     return 4;

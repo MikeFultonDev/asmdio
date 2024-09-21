@@ -67,7 +67,7 @@
 	#define S99A(ptr)         call31asm("S99A", &S99A, 1, ptr)
 	#define S99MSGA(ptr)      call31asm("S99MSGA", &S99MSGA, 1, ptr)
 	#define OPENA(opencb)     call31asm("OPENA", &OPENA, 1, opencb)
-	#define FIND(findcb,dcb)  call31asm("FINDA", &FINDA, 2, findcb, dcb)
+	#define FINDA(findcb,dcb) call31asm("FINDA", &FINDA, 2, findcb, dcb)
 	#define READA(decb)       call31asm("READA", &READA, 1, decb)
 	#define WRITEA(decb)      call31asm("WRITEA", &WRITEA, 1, decb)
 	#define CHECKA(decb)      call31asm("CHECKA", &CHECKA, 1, decb)
