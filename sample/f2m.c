@@ -477,6 +477,14 @@ static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ex
   return rc;
 }
 
+/*
+ * copy_files_to_multiple_dataset_members processes all the files to be copied for one dataset at a time.
+ * e.g. all *.c files will be copied into a dataset with .c as the LLQ.
+ * By performing the copy in this way, we can open the pds (or pdse) for write ONE TIME and then subsequently
+ * write a member at a time into the dataset using BPAM I/O. This is far more efficient than if we were to
+ * open the pds, write the member, then close the member, which is how it would work normally using standard C fopen/fwrite/fclose
+ * routines.
+ */
 static int copy_files_to_multiple_dataset_members(const FM_Table* table, const char* dataset_pattern, const FM_Opts* opts)
 {
   int rc = 0;
@@ -549,6 +557,17 @@ static int copy_files_to_members(glob_t* globset, const FM_Table* table, const c
   }
 }
 
+/*
+ * main program:
+ * -process options, directory, dataset_pattern, and then expand the file patterns 
+ *  storing the expanded set of files into globset via 'expand_file_patterns'
+ * -create a table, with one entry for each extension in the list of files, e.g
+ *  if there are .h, .c, .lst files there would be one entry for each of .h, .c, and .lst
+ * -fill the table by going through each entry and adding in all the files that match that
+ *  extension.
+ * -copy all the files to corresponding datasets, typically by mapping extensions to LLQ's
+ *  of datasets (this is why we went to the trouble of organizing the table with extension entries)
+ */ 
 int main(int argc, char* argv[])
 {
   glob_t globset;
