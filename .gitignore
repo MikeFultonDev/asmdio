@@ -29,3 +29,6 @@ basicread
 basicalloc
 basiccreate
 crtmem
+f2m
+m2f
+mchtag
