@@ -501,6 +501,7 @@ static ssize_t scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* 
 static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
 {
   ssize_t newline_offset;
+  int more_data = 1;
 
   debug(opts, "get_record\n");
   newline_offset = scan_buffer(fh, &fh->active, opts);
@@ -520,10 +521,17 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
     int rc = read(fh->fd, fh->inactive.data, REC_LEN);
     if (rc <= 0) {
       debug(opts, "... end of file reached\n");
-      return 0;
+      /*
+       * Fall through here so that this partial line
+       * at the end of the file will properly be processed.
+       */
+      if (fh->active.record_offset > fh->active.data_length) {
+        more_data = 0;
+      }
     }
     fh->inactive.data_length = rc;
     fh->inactive.record_offset = 0;
+
     newline_offset = scan_buffer(fh, &fh->inactive, opts);
     if (newline_offset < 0) {
       /*
@@ -538,7 +546,7 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
       newline_offset, fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);  
 
   }
-  return 1; 
+  return more_data; 
 }
 
 /*
@@ -662,8 +670,10 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
   write_debug_line(bh, fh, opts);
  
   char* block_char = (char*) (bh->block);
+  int rec_hdr_size;
   if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
     unsigned short* next_rec;
+    rec_hdr_size = sizeof(unsigned int);
     if (bh->bytes_used == 0) {
       /*
        * First word is block length - clear it to 0 for now
@@ -686,12 +696,14 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
     }
     next_rec[0] = rec_len;
     next_rec[1] = 0;
-    bh->bytes_used += sizeof(unsigned int);
+    bh->bytes_used += rec_hdr_size;
 
     debug(opts, "Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
+  } else {
+    rec_hdr_size = 0;
   }
 
-  int max_bytes = (bh->dcb->dcblrecl - sizeof(unsigned int));
+  int max_bytes = (bh->dcb->dcblrecl - rec_hdr_size);
   int copied_active_bytes;
   int copied_inactive_bytes;
 
@@ -710,6 +722,7 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
      *  If the record is FIXED, then pad the record out with blanks
      */
     int pad_length = bh->dcb->dcblrecl - (copied_active_bytes + copied_inactive_bytes);
+    debug(opts, "Pad record %d by %d blanks (active bytes:%d inactive_bytes:%d\n", fh->line_num, pad_length, copied_active_bytes, copied_inactive_bytes);
     if (pad_length > 0) {
       memset(&block_char[bh->bytes_used], fh->space_char, pad_length);
     }
@@ -740,10 +753,16 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 
 static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opts)
 {
-  int hdr_size = (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? sizeof(unsigned int) : 0;
-  int rc = (fh->active.record_length + fh->inactive.record_length + bh->bytes_used + hdr_size <= bh->block_size);
-  debug(opts, "Can Add Line:%c (active record length:%d inactive record length:%d bytes_used:%d block_size:%d)\n", 
-    rc == 1 ? 'Y' : 'N', fh->active.record_length, fh->inactive.record_length, bh->bytes_used, bh->block_size);
+  int line_length;
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    const int hdr_size = sizeof(unsigned int);
+    line_length = fh->active.record_length + fh->inactive.record_length + hdr_size;
+  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
+    line_length = bh->dcb->dcblrecl;
+  }
+  int rc = (line_length + bh->bytes_used <= bh->block_size);
+  debug(opts, "Can Add Line:%c (active record length:%d inactive record length:%d bytes_used:%d block_size:%d lrecl:%d)\n", 
+    rc == 1 ? 'Y' : 'N', fh->active.record_length, fh->inactive.record_length, bh->bytes_used, bh->block_size, bh->dcb->dcblrecl);
   return rc;
 }
 
@@ -796,24 +815,13 @@ static int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
     /*
      * Specify the block size for the variable length records 
      */
-//#define EMPTY_BLOCK 1
-#ifdef EMPTY_BLOCK
     unsigned short* halfword = (unsigned short*) (bh->block);
-    halfword[0] = 8;  /* size of block */
-    halfword[1] = 0;
-    halfword[2] = 4;  /* size of record */
-    halfword[3] = 0;
-    bh->dcb->dcbblksi = bh->block_size;  
-#else
-    unsigned short* halfword = (unsigned short*) (bh->block);
-#if 0
-    halfword[0] = halfword[2] + 4; /* this works to just write the first record of each block */
-#endif
     halfword[0] = bh->bytes_used;  /* size of block */
     halfword[1] = 0;
     halfword[3] = 0;
     bh->dcb->dcbblksi = bh->block_size;
-#endif
+
+    validate_block(bh, opts);
     debug(opts, "(Block Write) First Record length:%d bytes used:%d\n", halfword[2], halfword[0]);
 
   } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) { 
@@ -822,8 +830,6 @@ static int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
     fprintf(stderr, "Not sure how to write a block that is not recv or recf\n");
     return 4;
   }
-
-  validate_block(bh, opts);
 
   int rc = WRITE(bh->decb);
   if (rc) {
