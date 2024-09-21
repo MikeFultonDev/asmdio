@@ -23,6 +23,7 @@ INFO="info'(cmp,cnv,cns,enu,lan,por,pro,ret)'"
 export AS=as
 export ASFLAGS="--SYSPARM'(${ASAMODE})',GOFF,LIST,SUPRWARN'(425,434)'"
 export CC=xlc
+export CFLAGS="-Wc,OPT'(3)',${DATA_MODEL},AGGR,${LIST},${INFO}"
 export CFLAGS="-Wc,debug,${DATA_MODEL},AGGR,${LIST},${INFO}"
 export CPPFLAGS="-DAMODE=${MODE}"
 export LD=xlc

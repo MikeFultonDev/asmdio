@@ -35,6 +35,20 @@ Options:\n\
 <file>                One or more files to copy. Wildcards are supported.\n\
                       Put the name in single-quotes if wildcards are used\n\
                       to prevent shell-globbing.\n\
+\n\
+Examples:\n\
+\n\
+Copy files in the src directory to the IBMUSER.PROJ23.SRC dataset pattern\n\
+Assume there are files with extensions .c, .h, .lst\n\
+and the datasets IBMUSER.PROJ23.SRC.C, IBMUSER.PROJ23.SRC.H, IBMUSER.PROJ23.SRC.LST\n\
+have already been pre-allocated as PDSE's (or PDS's):\n\
+\n\
+  f2m src ibmuser.proj23.src '*.*'\n\
+\n\
+will copy:\n\
+  the .c files to corresponding dataset members IBMUSER.PROJ23.SRC.C\n\
+  the .h files to corresponding dataset members IBMUSER.PROJ23.SRC.H\n\
+  the .lst files to corresponding dataset members IBMUSER.PROJ23.SRC.LST\n\
 ");
   return;
 }
