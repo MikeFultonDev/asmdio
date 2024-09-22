@@ -300,8 +300,9 @@ static int copy_at_most(void* dest, void* src, size_t length, size_t max)
  * inactive buffer state information and add_line is responsible for 
  * cleaning up the state after it has processed the information.
  */
-static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
+static int add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 {
+  int truncated = 0;
   debug(opts, "Add Line. Active (%d,%d) Inactive (%d,%d) bytes_used:%d\n", 
     fh->active.record_offset, fh->active.record_length, 
     fh->inactive.record_offset, fh->inactive.record_length,
@@ -311,6 +312,7 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
  
   char* block_char = (char*) (bh->block);
   int rec_hdr_size;
+  unsigned short rec_len;
   if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
     unsigned short* next_rec;
     rec_hdr_size = sizeof(unsigned int);
@@ -329,9 +331,8 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
      * Write out length of record for variable length record format
      */
     next_rec = (unsigned short*) (&block_char[bh->bytes_used]);
-    unsigned short rec_len = (fh->active.record_length + fh->inactive.record_length + sizeof(unsigned int));
+    rec_len = (fh->active.record_length + fh->inactive.record_length + sizeof(unsigned int));
     if (rec_len > bh->dcb->dcblrecl) {
-      info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", fh->line_num, bh->dcb->dcblrecl, rec_len);
       rec_len = bh->dcb->dcblrecl;
     }
     next_rec[0] = rec_len;
@@ -341,6 +342,11 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
     debug(opts, "Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
   } else {
     rec_hdr_size = 0;
+    rec_len = (fh->active.record_length + fh->inactive.record_length);
+  }
+  if (rec_len > bh->dcb->dcblrecl) {
+    info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", fh->line_num, bh->dcb->dcblrecl, rec_len);
+    truncated = 1;
   }
 
   int max_bytes = (bh->dcb->dcblrecl - rec_hdr_size);
@@ -388,7 +394,7 @@ static void add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 
     debug(opts, "Buffers swapped. active record_offset:%s record_length:%d\n", fh->active.record_offset, fh->active.record_length);
   }
-  return;
+  return truncated;
 }
 
 static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opts)
@@ -419,6 +425,7 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
   FM_FileHandle fh;
   int rc;
   int memrc;
+  int truncated = 0;
 
   open_debug_file(dataset, member, opts);
   if (!open_file(filename, &fh, opts)) {
@@ -430,10 +437,10 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
   bh->ttr_known = 0;
   while (read_line(&fh, opts)) {
     if (can_add_line(&fh, bh, opts)) {
-      add_line(bh, &fh, opts);
+      truncated |= add_line(bh, &fh, opts);
     } else {
       rc = write_block(bh, opts);
-      add_line(bh, &fh, opts);
+      truncated |= add_line(bh, &fh, opts);
     }
     fh.line_num++;
   }
@@ -447,6 +454,10 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
 
   if (memrc > 0) {
     rc = memrc;
+  }
+  if (truncated) {
+    fprintf(stderr, "One or more lines were truncated copying %s to %s(%s). Specify -v for more details\n", 
+      filename, dataset, member);
   }
   return rc;
 }
