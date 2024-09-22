@@ -153,7 +153,7 @@ struct desl {
     struct {
       unsigned char  _filler3[8];
       void * __ptr32 desl_new_name_ptr; /* pointer to new name,       @L2A */
-      void * __ptr32 desl_name_ptr;     /* pointer to name (DESN)          */
+      struct desl_name* __ptr32 desl_name_ptr; /* pointer to name (DESN)     */
       };
     struct {
       unsigned char  _filler4[12];
