@@ -1,6 +1,6 @@
 # asmdio
 
-Dataset I/O in assembler
+Metal I/O: C Dataset I/O that directly calls low-level I/O macros
 
 This repository provides core I/O services in C, for use in both 31-bit and 64-bit code.
 The services provide the full set of capabilities that an assembler programmer would have at their disposal.
