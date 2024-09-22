@@ -25,13 +25,14 @@ struct stowlist_generic_includes_dcb {
   /* more stuff */
 };
 
+#define STOWLIST_IFF_TIMESTAMP_LEN (8)
 struct stowlist_iff {
   unsigned short list_len;
   unsigned char type;
   unsigned char reserved;
   int dcbHOB: 8;
   int dcb24: 24;
-  char timestamp[8];
+  char timestamp[STOWLIST_IFF_TIMESTAMP_LEN];
   void* __ptr32 direntry;
   char user_descriptor[16];
   unsigned short ccsid;
@@ -59,8 +60,8 @@ enum stowtype {
 enum stowcc {
   STOW_CC_OK=0,
   STOW_IFF_CC_CREATE_OK=4,
-  STOW_IFF_CC_UPDATE_FAILED=8,
-  STOW_IFF_CC_PDS_UPDATE_UNSUPPORTED=28
+  STOW_IFF_CC_MEMBER_EXISTS=8,
+  STOW_IFF_CC_PDS_UPDATE_UNSUPPORTED=0x40028
 };
 #pragma pack(pop)
 

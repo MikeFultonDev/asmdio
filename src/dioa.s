@@ -29,7 +29,7 @@ OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
          L   R7,OPENA_PARMSA
 
 *
-* Set up EODAD routine, which will just set R2 to non-zero
+* Set up EODAD routine, which will just set R2 to 1
 * R2 will be checked in the CHECKA code where it is 
 * expected to be triggered
 *
@@ -40,6 +40,15 @@ OPENA    ASDPRO BASE_REG=3,USR_DSAL=OPENA_DSAL
          L   R8,DCBDCBE
          USING DCBE,R8
          ST  R5,DCBEEODA
+
+* Set up SYNAD routine, which will just set R2 to 2
+         LA  R5,SYNAD
+         USING OPENA_PARMS,R7
+         L   R6,OPENA_DCB
+         USING IHADCB,R6
+         L   R8,DCBDCBE
+         USING DCBE,R8
+         ST  R5,DCBESYNA
 
 * Call OPEN with 24-bit DCB in 31-bit MODE
          OPEN MODE=31,MF=(E,(7))
@@ -53,6 +62,14 @@ EODAD    DS 0H
 * and then return to caller (CHECKA or READA via SVC19)
 *
          LA R2,1
+         BR R14
+
+SYNAD    DS 0H
+*
+* Set R2 to 2 indicating 'synchronous error'
+* and then return to caller (CHECKA or READA via SVC19)
+*
+         LA R2,2
          BR R14
 
          DROP

@@ -418,6 +418,7 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
 {
   FM_FileHandle fh;
   int rc;
+  int memrc;
 
   open_debug_file(dataset, member, opts);
   if (!open_file(filename, &fh, opts)) {
@@ -438,12 +439,15 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
   }
   rc = write_block(bh, opts);
   
-  rc = write_member_dir_entry(bh, &fh, filename, member, opts);
+  memrc = write_member_dir_entry(bh, &fh, dataset, member, opts);
 
   rc = close_file(&fh, opts);
 
   close_debug_file(opts);
 
+  if (memrc > 0) {
+    rc = memrc;
+  }
   return rc;
 }
 
@@ -469,8 +473,11 @@ static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ex
     } else {
       info(opts, "Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
       if (copy_file_to_member(bh, dataset, filename, member, opts)) {
-        fprintf(stderr, "File %s could not be copied to %s(%s)\n", filename, dataset, member);
-        rc |= 1;
+        /*
+         * If a member copy fails - just return
+         */
+        fprintf(stderr, "File %s could not be copied to %s(%s). No further copies to this dataset will be attempted.\n", filename, dataset, member);
+        return rc;
       }
     }
   }
@@ -502,7 +509,7 @@ static int copy_files_to_multiple_dataset_members(const FM_Table* table, const c
       continue;
     }
     if (open_pds_for_write(dataset, &dd, opts)) {
-      fprintf(stderr, "Unable to allocate DDName for dataset %s. Extension skipped\n", dataset);
+      fprintf(stderr, "Unable to open dataset %s for write. Extension skipped\n", dataset);
       rc |= 4;
       continue;
     }

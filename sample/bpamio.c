@@ -34,7 +34,6 @@ int bpam_open_write(FM_BPAMHandle* handle, const FM_Opts* opts)
   /*
    * DCB set to PO, BPAM WRITE and POINT
    */
-  dcb->dcbdsgpo = 1;
   dcb->dcbeodad.dcbhiarc.dcbbftek.dcbbfaln = 0x84;
   dcb->dcboflgs = dcbofuex;
   dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
@@ -52,6 +51,11 @@ int bpam_open_write(FM_BPAMHandle* handle, const FM_Opts* opts)
   if (rc) {
     fprintf(stderr, "Unable to perform OPEN. rc:%d\n", rc);
     return rc;
+  }
+
+  if (!dcb->dcbdsgpo) {
+    fprintf(stderr, "Dataset is not a PDSE.\n");
+    return 4;
   }
 
   decb = MALLOC24(sizeof(struct decb));
@@ -160,7 +164,105 @@ int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
   return 0;
 }
 
-int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const char* filename, const char* member, const FM_Opts* opts)
+struct desp* __ptr32 init_desp(const FM_BPAMHandle* bh, const char* mem, const FM_Opts* opts)
+{
+  const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
+  const struct decb decb_template = { 0, 0x8080 };
+
+  struct desp* __ptr32 desp;
+  struct desl* __ptr32 desl;
+  struct desl_name* __ptr32 desl_name;
+  struct desb* __ptr32 desb;
+  struct decb* __ptr32 decb;
+  int rc;
+  size_t memlen;
+
+  memlen = strlen(mem);
+
+  desp = MALLOC31(sizeof(struct desp));
+  if (!desp) {
+    fprintf(stderr, "Unable to obtain storage for DESERV\n");
+    return NULL;
+  }
+  desl = MALLOC31(sizeof(struct desl));
+  if (!desl) {
+    fprintf(stderr, "Unable to obtain storage for DESERV DESL\n");
+    return NULL;
+  }
+  desl_name = MALLOC31(sizeof(struct desl_name));
+  if (!desl_name) {
+    fprintf(stderr, "Unable to obtain storage for DESERV DESL NAME\n");
+    return NULL;
+  }
+  desl_name->desl_name_len = memlen;
+  memcpy(desl_name->desl_name, mem, memlen);
+
+  desl->desl_name_ptr = desl_name;
+
+  /*
+   * DESERV GET BYPASS_LLA LIBTYPE DCB CONN_INTENT HOLD EXT_ATTR NAME_LIST AREA
+   */
+  *desp = desp_template;
+  desp->desp_func = desp_func_get;
+  desp->desp_bypass_lla = 1;
+  desp->desp_ext_attr = 1;
+  desp->desp_libtype = desp_libtype_dcb;
+  desp->desp_gettype = desp_gettype_name_list;
+  desp->desp_conn_intent = desp_conn_intent_hold;
+
+  /* setup DCB */
+  desp->desp_dcb_ptr = bh->dcb;
+
+  /* setup DESERV area */
+  int desb_len = sizeof(struct desb) + SMDE_NAME_MAXLEN;
+  desb = MALLOC31(desb_len);
+  if (!desb) {
+    fprintf(stderr, "Unable to obtain storage for DESB area\n");
+    return NULL;
+  }
+  desp->desp_area_ptr = desb;
+  desp->desp_area2 = desb_len;
+
+  /* setup NAMELIST */
+  /* set up DESL list of 1 entry for member to GET */
+
+  desp->desp_name_list_ptr = desl;
+  desp->desp_name_list2 = 1;
+
+  return desp;
+}
+
+void free_desp(struct desp* __ptr32 desp, const FM_Opts* opts)
+{
+  free(desp->desp_name_list_ptr->desl_name_ptr);
+  free(desp->desp_name_list_ptr);
+  free(desp->desp_area_ptr);
+  free(desp);
+}
+
+int read_member_dir_entry(struct desp* __ptr32 desp, const FM_Opts* opts)
+{
+  /* call DESERV and get extended attributes */
+  int rc = DESERV(desp);
+  if (rc) {
+    fprintf(stderr, "Unable to PERFORM DESERV. rc:0x%x\n", rc);
+    return 4;
+  }
+
+  struct smde* __ptr32 smde = (struct smde* __ptr32) (desp->desp_area_ptr->desb_data);
+  debug(opts, "Extended attributes for %.*s\n", desp->desp_name_list_ptr->desl_name_ptr->desl_name_len, desp->desp_name_list_ptr->desl_name_ptr->desl_name);
+  if (smde->smde_ext_attr_off == 0) {
+    debug(opts, "(no extended attributes) SMDE Address:%p SMDE Eye-catcher %8.8s\n", smde, smde->smde_id);
+  } else {
+    struct smde_ext_attr* __ptr32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
+    debug(opts, "CCSID: 0x%x%x last change userid: %8.8s change timestamp: 0x%llx\n",
+      ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
+  }
+
+  return 0;
+}
+
+int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const char* ds, const char* member, const FM_Opts* opts)
 {
   const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
   const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
@@ -187,7 +289,28 @@ int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, con
 
   rc = STOW(stowlist, NULL, STOW_IFF);
   if (rc != STOW_IFF_CC_CREATE_OK) {
-    fprintf(stderr, "Unable to perform STOW (Does the member already exist?). rc:%d\n", rc);
+    if (rc != STOW_IFF_CC_MEMBER_EXISTS) {
+      if (rc == STOW_IFF_CC_PDS_UPDATE_UNSUPPORTED) {
+        fprintf(stderr, "f2m only supports PDSEs, but %s is a PDS. Members will not be copied.\n", ds);
+      } else {
+        fprintf(stderr, "STOW failed rc:0x%x\n", rc);
+      }
+      return rc;
+    }
+    debug(opts, "Member %s already exists - update it.\n", member);
+    struct desp* __ptr32 desp = init_desp(bh, member, opts);
+    if (!read_member_dir_entry(desp, opts)) {
+      /*
+       * Try again and perform an UPDATE
+       */
+      struct smde* __ptr32 smde = (struct smde* __ptr32) (desp->desp_area_ptr->desb_data);
+      struct smde_ext_attr* __ptr32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
+      memcpy(stowlist->iff.timestamp, ext_attr->smde_change_timestamp, STOWLIST_IFF_TIMESTAMP_LEN);
+      rc = STOW(stowlist, NULL, STOW_IFF);
+      if (rc != STOW_CC_OK) {
+        fprintf(stderr, "STOW failed (second time) rc:%d\n", rc);
+      }
+    }
     return rc;
   } else {
     return 0;
