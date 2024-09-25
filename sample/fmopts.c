@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include "asmdiocommon.h"
 #include "fmopts.h"
 
 void init_opts(FM_Opts* opts) 

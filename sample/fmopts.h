@@ -1,6 +1,7 @@
 #ifndef __FM_OPTS_H__
   #define __FM_OPTS_H__
 
+  #include "asmdiocommon.h"
   typedef struct {
     int help:1;
     int verbose:1;

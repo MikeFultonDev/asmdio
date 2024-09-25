@@ -1,6 +1,8 @@
 #ifndef __STOW__
 #define __STOW__ 1
 
+#include "asmdiocommon.h"
+
 #pragma pack(packed)
 
 struct stowlist_add {
@@ -33,7 +35,7 @@ struct stowlist_iff {
   int dcbHOB: 8;
   int dcb24: 24;
   char timestamp[STOWLIST_IFF_TIMESTAMP_LEN];
-  void* __ptr32 direntry;
+  void* PTR32 direntry;
   char user_descriptor[16];
   unsigned short ccsid;
 };

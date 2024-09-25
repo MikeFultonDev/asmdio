@@ -10,6 +10,9 @@ MACDIR=../maclib
 call31.o: call31.c $(IINCDIR)/wrappers.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(IINCDIR) -I$(INCDIR) -c $<
 
+util.o: util.c $(INCDIR)/util.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(IINCDIR) -I$(INCDIR) -c $<
+
 call31a.o: call31a.s
 	$(AS) $(ASFLAGS) -I$(MACDIR) $< >$*.lst
 
