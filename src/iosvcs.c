@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "asmdiocommon.h"
 #include "dio.h"
 #include "ihadcb.h"
 #include "iosvcs.h"
@@ -15,7 +15,7 @@ static const struct s99_rbx s99rbxtemplate = {"S99RBX",S99RBXVR,{0,1,0,0,0,0,0},
 
 int dsdd_alloc(struct s99_common_text_unit* dsn, struct s99_common_text_unit* dd, struct s99_common_text_unit* disp)
 {
-  struct s99rb* __ptr32 parms;
+  struct s99rb* PTR32 parms;
   enum s99_verb verb = S99VRBAL;
   struct s99_flag1 s99flag1 = {0};
   struct s99_flag2 s99flag2 = {0};
@@ -46,7 +46,7 @@ int dsdd_alloc(struct s99_common_text_unit* dsn, struct s99_common_text_unit* dd
 
 int ddfree(struct s99_common_text_unit* dd)
 {
-  struct s99rb* __ptr32 parms;
+  struct s99rb* PTR32 parms;
   enum s99_verb verb = S99VRBUN;
   struct s99_flag1 s99flag1 = {0};
   struct s99_flag2 s99flag2 = {0};

@@ -3,7 +3,8 @@
 
   #include <glob.h>
   #include <string.h>
-
+  
+  #include "asmdiocommon.h"
   #include "fmopts.h"
   #include "fm.h"
 

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "asmdiocommon.h"
 #include "decb.h"
 #include "dio.h"
 #include "ihadcb.h"
@@ -31,14 +32,14 @@ const struct closecb closecb_template = { 1, 0, 0 };
 #define ASCII_A 0x61
 
 int main(int argc, char* argv[]) {
-  struct opencb* __ptr32 opencb;
-  struct closecb* __ptr32 closecb;
-  struct ihadcb* __ptr32 dcb;
-  struct decb* __ptr32 decb;
+  struct opencb* PTR32 opencb;
+  struct closecb* PTR32 closecb;
+  struct ihadcb* PTR32 dcb;
+  struct decb* PTR32 decb;
   int rc;
   unsigned int ttr;
 
-  void* __ptr32 block;
+  void* PTR32 block;
 
   union stowlist* stowlist;
   struct stowlist_add* stowlistadd;

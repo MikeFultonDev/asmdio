@@ -2,15 +2,16 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include "asmdiocommon.h"
 #include "ihadcb.h"
 #include "dio.h"
 
 const struct ihadcb dcb_template = { 0 };
 const struct dcbe dcbe_template = { "DCBE", sizeof(struct dcbe) };
-struct ihadcb* __ptr32 dcb_init(const char* ddname)
+struct ihadcb* PTR32 dcb_init(const char* ddname)
 {
-  struct ihadcb* __ptr32 dcb;
-  struct dcbe* __ptr32 dcbe;
+  struct ihadcb* PTR32 dcb;
+  struct dcbe* PTR32 dcbe;
   if (sizeof(struct ihadcb) != 0x58) {
     fprintf(stderr, "DCB should be 0x58 bytes in size but it is 0x%x bytes\n", sizeof(struct ihadcb));
     return NULL;
@@ -64,12 +65,12 @@ struct ihadcb* __ptr32 dcb_init(const char* ddname)
   return dcb;
 }
 
-void dcb_free(struct ihadcb* __ptr32 dcb)
+void dcb_free(struct ihadcb* PTR32 dcb)
 {
   FREE24(dcb, sizeof(struct ihadcb));
 }
 
-void dcb_fmt_dmp(FILE* stream, struct ihadcb* __ptr32 dcb)
+void dcb_fmt_dmp(FILE* stream, struct ihadcb* PTR32 dcb)
 {
   dumpstg(stream, dcb, sizeof(struct ihadcb)); 
 }

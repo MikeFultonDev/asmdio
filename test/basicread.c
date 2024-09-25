@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "asmdiocommon.h"
 #include "dio.h"
 #include "ihadcb.h"
 #include "iosvcs.h"
@@ -27,18 +28,18 @@ const struct decb decb_template = { 0, 0x8080 };
 const struct closecb closecb_template = { 1 };
 
 int main(int argc, char* argv[]) {
-  struct opencb* __ptr32 opencb;
-  struct findcb* __ptr32 findcb;
-  struct closecb* __ptr32 closecb;
-  struct ihadcb* __ptr32 dcb;
-  struct desp* __ptr32 desp;
-  struct desl* __ptr32 desl;
-  struct desl_name* __ptr32 desl_name;
-  struct desb* __ptr32 desb;
-  struct smde* __ptr32 smde;
-  struct decb* __ptr32 decb;
-  struct iob* __ptr32 iob;
-  void* __ptr32 block;
+  struct opencb* PTR32 opencb;
+  struct findcb* PTR32 findcb;
+  struct closecb* PTR32 closecb;
+  struct ihadcb* PTR32 dcb;
+  struct desp* PTR32 desp;
+  struct desl* PTR32 desl;
+  struct desl_name* PTR32 desl_name;
+  struct desb* PTR32 desb;
+  struct smde* PTR32 smde;
+  struct decb* PTR32 decb;
+  struct iob* PTR32 iob;
+  void* PTR32 block;
   int rc;
   char* ds;
   char* mem;
@@ -179,12 +180,12 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
     return 4;
   }
 
-  smde = (struct smde* __ptr32) (desp->desp_area_ptr->desb_data);
+  smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
   if (smde->smde_ext_attr_off == 0) {
     fprintf(stdout, "No extended attributes for %s(%s)\n", ds, mem);
     fprintf(stdout, "SMDE Address:%p SMDE Eye-catcher %8.8s\n", smde, smde->smde_id);
   } else {
-    struct smde_ext_attr* __ptr32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
+    struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
     fprintf(stdout, "CCSID: 0x%x%x last change userid: %8.8s change timestamp: 0x%llx\n",
       ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
   }
@@ -238,7 +239,7 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
   dumpstg(stdout, block, dcb->dcbblksi);
   fprintf(stdout, "\n");
 
-  iob = (struct iob* __ptr32) decb->stat_addr;
+  iob = (struct iob* PTR32) decb->stat_addr;
   fprintf(stdout, "Residual count:%d\n", iob->iobcsw.iobresct);
 
   /* Read another block (should fail) */

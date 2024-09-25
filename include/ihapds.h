@@ -1,6 +1,8 @@
 #ifndef __IHAPDS_H__
 #define __IHAPDS_H__
 
+#include "asmdiocommon.h"
+
 #pragma pack(packed)
 
 struct pds2 {

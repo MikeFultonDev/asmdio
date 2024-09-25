@@ -1,6 +1,8 @@
 #ifndef __IOB__
 #define __IOB__ 1
 
+#include "asmdiocommon.h"
+
 #pragma pack(packed)
 struct iob {
   union {
@@ -236,7 +238,7 @@ struct iob {
       };
     struct {
       unsigned char  _filler27[42];
-      void * __ptr32 iobccwad;      /* -       FOR FIXED LENGTH RECORDS, ADDRESS OF FIRST */
+      void * PTR32 iobccwad;      /* -       FOR FIXED LENGTH RECORDS, ADDRESS OF FIRST */
       unsigned int   iobdeqcp  : 1, /* -   DEQUEUE CHANNEL PROGRAM FROM QUEUE             */
                      iobunsch  : 1, /* -   UNSCHEDULED QUEUE                              */
                      iobovptr  : 1, /* -   IF 0, DECBAREA + 6 POINTS TO OVERFLOW RECORD   */
@@ -299,20 +301,20 @@ struct iob {
                        iobsiort : 1; /* -   INDICATES TO THE DYNAMIC BUFFERING ROUTINE        */
         unsigned char  iobstat2;     /* -     ERROR CODE FOR ABNORMAL COMPLETION USED AS      */
         } iobdstat;                  /* -   STATUS OF THE I/O REQUEST                         */
-      void * __ptr32 iobdcpnd;      /* -       ADDRESS OF LOCATION WHERE CHANNEL END PROGRAM */
+      void * PTR32 iobdcpnd;      /* -       ADDRESS OF LOCATION WHERE CHANNEL END PROGRAM */
       short int      iobdbytn;      /* -       NUMBER OF BYTES NEEDED ON A TRACK TO WRITE A  */
       unsigned int   iobrec31  : 1, /* -   BLOCK REFERENCE ADDR (DECRECPT) IS A      @03A    */
                      iobkey31  : 1, /* -   KEY ADDR (DECKYADR) IS A 31 BIT ADDR      @03A    */
                      iobdat31  : 1, /* -   DATA ADDR (DECAREA) IS A 31 BIT ADDR      @03A    */
                                : 5;
       unsigned char  iobrsv34;      /* -     RESERVED                                  @03C  */
-      void * __ptr32 iobdqptr;      /* -       ADDRESS OF IOB FOR NEXT I/O OPERATION TO BE   */
+      void * PTR32 iobdqptr;      /* -       ADDRESS OF IOB FOR NEXT I/O OPERATION TO BE   */
       unsigned char  iobrsv35[8];   /* -     RESERVED                                        */
       };
     struct {
       unsigned char  _filler30[42];
-      void * __ptr32 iobmdrec;      /* -       POINTER TO RECORD BEING PASSED TO              */
-      void * __ptr32 iobrcd;        /* -       POINTER TO QUEUE OF OBR RECORDS PASSED FROM    */
+      void * PTR32 iobmdrec;      /* -       POINTER TO RECORD BEING PASSED TO              */
+      void * PTR32 iobrcd;        /* -       POINTER TO QUEUE OF OBR RECORDS PASSED FROM    */
       unsigned char  iobsensv;      /* -       SENSE BYTE SAVE AREA                    MDC009 */
       unsigned char  iobcswsv[7];   /* -     SAVE AREA FOR LAST 7 BYTES OF CSW       MDC010   */
       unsigned char  _filler31[16];
@@ -326,15 +328,15 @@ struct iob {
       };
     struct {
       unsigned char  _filler34[48];
-      void * __ptr32 iobbufc;       /* -       ADDRESS OF ASSOCIATED BUFFER CONTROL BLOCK     */
-      void * __ptr32 iobreada;      /* -       ADDRESS OF FIRST READ CHANNEL PROGRAM SEGMENT  */
-      void * __ptr32 iobnexta;      /* -       ADDRESS OF NEXT ACTIVE IOB              ICB435 */
-      void * __ptr32 iobrdchp;      /* -       ADDRESS OF READ CHANNEL PROGRAM         ICB435 */
+      void * PTR32 iobbufc;       /* -       ADDRESS OF ASSOCIATED BUFFER CONTROL BLOCK     */
+      void * PTR32 iobreada;      /* -       ADDRESS OF FIRST READ CHANNEL PROGRAM SEGMENT  */
+      void * PTR32 iobnexta;      /* -       ADDRESS OF NEXT ACTIVE IOB              ICB435 */
+      void * PTR32 iobrdchp;      /* -       ADDRESS OF READ CHANNEL PROGRAM         ICB435 */
       unsigned char  _filler35[8];
       };
     struct {
       unsigned char  _filler36[52];
-      void * __ptr32 iobbchad;      /* -       BACKWARD CHAIN ADDRESS  */
+      void * PTR32 iobbchad;      /* -       BACKWARD CHAIN ADDRESS  */
       unsigned char  _filler37[16];
       unsigned char  iobdncrf[8];   /* -     COUNT FIELD FOR NEW BLOCK */
       };

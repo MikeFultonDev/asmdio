@@ -1,6 +1,8 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include "asmdiocommon.h"
+#include "util.h"
 
 int uppercase(char *string) {
   if (!string) {

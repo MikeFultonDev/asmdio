@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "asmdiocommon.h"
 #include "util.h"
 #include "dio.h"
 #include "iosvcs.h"

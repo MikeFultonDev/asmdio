@@ -1,6 +1,8 @@
 #ifndef __DESERV_H__
 #define __DESERV_H__
 
+#include "asmdiocommon.h"
+
 #pragma pack(packed)
 
 struct desl_name {
@@ -12,8 +14,8 @@ struct deslx {
   unsigned char   desl_code;
   unsigned short  desl_errcode;
   unsigned char   _filler1;
-  struct desl_name* __ptr32   desl_smde_ptr;
-  struct desl_name* __ptr32   desl_name_ptr;
+  struct desl_name* PTR32   desl_smde_ptr;
+  struct desl_name* PTR32   desl_name_ptr;
 };
 
 struct desp {
@@ -29,7 +31,7 @@ struct desp {
   };
   unsigned char  desp_func;                 /* function type (GET_ALL, GET,     */
   unsigned char  _filler2[3];               /* RESERVED                         */
-  void * __ptr32 desp_member_counts_ptr;    /* pointer to optional output  @08A */
+  void * PTR32 desp_member_counts_ptr;    /* pointer to optional output  @08A */
   union {
     unsigned char  desp_data[12]; /* function data                    */
     unsigned char  desp_flags[2]; /* DESP FLAG1                  @P6C */
@@ -56,26 +58,26 @@ struct desp {
       unsigned char  _filler3;                /* RESERVED                            */
       };
     };
-  struct ihadcb * __ptr32 desp_dcb_ptr;     /* DCB address                      */
-  struct deb * __ptr32 desp_deb_ptr;        /* DEB address                      */
-  void * __ptr32 desp_conn_id_ptr;          /* connect identifier address       */
-  void* __ptr32 desp_areaptr_ptr;           /* address for buffer address @L2A  */
-  struct desb* __ptr32 desp_area_ptr;       /* buffer address                   */
+  struct ihadcb * PTR32 desp_dcb_ptr;     /* DCB address                      */
+  struct deb * PTR32 desp_deb_ptr;        /* DEB address                      */
+  void * PTR32 desp_conn_id_ptr;          /* connect identifier address       */
+  void* PTR32 desp_areaptr_ptr;           /* address for buffer address @L2A  */
+  struct desb* PTR32 desp_area_ptr;       /* buffer address                   */
   int            desp_area2;                /* buffer length                    */
-  void* __ptr32 desp_de_list_ptr;           /* DE_LIST address            @L2A  */
+  void* PTR32 desp_de_list_ptr;           /* DE_LIST address            @L2A  */
   int            desp_de_list2;             /* DE_LIST entry count        @L2A  */
   int            desp_entry_gap;            /* entry gap size                   */
-  void * __ptr32 desp_mem_data_ptr;         /* MEM_DATA address                 */
+  void * PTR32 desp_mem_data_ptr;         /* MEM_DATA address                 */
   int            desp_mem_data2;            /* MEM_DATA entry count             */
-  struct desl * __ptr32 desp_name_list_ptr; /* name list address                */
+  struct desl * PTR32 desp_name_list_ptr; /* name list address                */
   int            desp_name_list2;           /* input list number of entries     */
-  void * __ptr32 desp_name_ptr;             /* name address               @L2A  */
+  void * PTR32 desp_name_ptr;             /* name address               @L2A  */
   union {
-    void * __ptr32 desp_pdsde_ptr; /* bldl directory entry address    */
-    void * __ptr32 desp_smde_ptr;  /* input smde addr for GET    @L1A */
+    void * PTR32 desp_pdsde_ptr; /* bldl directory entry address    */
+    void * PTR32 desp_smde_ptr;  /* input smde addr for GET    @L1A */
     };
-  void * __ptr32 desp_exit_dst_ptr;         /* DESERV exit screen table, DST    */
-  void * __ptr32 desp_exit_prev_dstptr_ptr; /* Address of pointer to previous   */
+  void * PTR32 desp_exit_dst_ptr;         /* DESERV exit screen table, DST    */
+  void * PTR32 desp_exit_prev_dstptr_ptr; /* Address of pointer to previous   */
   };
 
 /* Values for field "desp_func" */
@@ -147,17 +149,17 @@ struct desl {
       unsigned char  desl_code;                    /* result code             */
       unsigned short desl_errcode;                 /* low order halfword of   */
       int            _filler1;                     /* reserved                */
-      void * __ptr32 desl_smde_ptr;                /* pointer to smde         */
+      void * PTR32 desl_smde_ptr;                /* pointer to smde         */
       unsigned char  _filler2[4];
       };
     struct {
       unsigned char  _filler3[8];
-      void * __ptr32 desl_new_name_ptr; /* pointer to new name,       @L2A */
-      struct desl_name* __ptr32 desl_name_ptr; /* pointer to name (DESN)     */
+      void * PTR32 desl_new_name_ptr; /* pointer to new name,       @L2A */
+      struct desl_name* PTR32 desl_name_ptr; /* pointer to name (DESN)     */
       };
     struct {
       unsigned char  _filler4[12];
-      void * __ptr32 desl_old_name_ptr; /* pointer to old name,       @L2A */
+      void * PTR32 desl_old_name_ptr; /* pointer to old name,       @L2A */
       };
     };
   };
@@ -179,14 +181,14 @@ struct desb {
       unsigned int               : 7,
                      desb_lev_iv : 1; /* buffer level                   */
       unsigned char  _filler1[3];     /* reserved                       */
-      void * __ptr32 desb_next;       /* Next Buffer Pointer            */
-      void * __ptr32 _filler2;        /* RESERVED                       */
+      void * PTR32 desb_next;       /* Next Buffer Pointer            */
+      void * PTR32 _filler2;        /* RESERVED                       */
       int            desb_count;      /* count of entries in this       */
-      void * __ptr32 desb_avail;      /* Start of free space in buffer  */
+      void * PTR32 desb_avail;      /* Start of free space in buffer  */
       unsigned char  _filler3;        /* RESERVED                       */
       unsigned char  desb_subpool;    /* subpool number                 */
       short int      desb_gap_len;    /* length of user requested gap   */
-      void * __ptr32 _filler4;        /* RESERVED                       */
+      void * PTR32 _filler4;        /* RESERVED                       */
       __extension__ unsigned char  desb_data[0]; /* start of data area             */
       };
     };
@@ -207,8 +209,8 @@ struct desd {
       unsigned char  desd_errcode[2];     /* low order half word of          */
       short int      desd_index;          /* Index number for name. required */
       short int      desd_data_len;       /* length of data area             */
-      void * __ptr32 desd_data_ptr;       /* address of data                 */
-      void * __ptr32 desd_name_ptr;       /* address of varying length name  */
+      void * PTR32 desd_data_ptr;       /* address of data                 */
+      void * PTR32 desd_name_ptr;       /* address of varying length name  */
       };
     };
   };
@@ -229,8 +231,8 @@ struct desx {
       unsigned char  _filler1[3];     /* RESERVED             */
       };
     };
-  void * __ptr32 desx_desp_ptr;     /* Address of DESP               */
-  void * __ptr32 desx_dst_ptr;      /* DESERV Screen Table, DST      */
+  void * PTR32 desx_desp_ptr;     /* Address of DESP               */
+  void * PTR32 desx_dst_ptr;      /* DESERV Screen Table, DST      */
   unsigned char  desx_caller_key;   /* High order nibble is DESERV's */
   unsigned int   desx_bldl_bit : 1, /* DESERV BLDL path              */
                  desx_pre_bit  : 1, /* Exit invoked prior to DESERV  */
@@ -257,7 +259,7 @@ struct dst {
       unsigned char  dst_res[2];         /* RESERVED            */
       };
     };
-  void * __ptr32 dst_exit_ptr; /* Address of exit routine */
+  void * PTR32 dst_exit_ptr; /* Address of exit routine */
   };
 
 /* Values for field "dst_exit_ptr" */

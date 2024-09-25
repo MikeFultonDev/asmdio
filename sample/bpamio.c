@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "asmdiocommon.h"
+
 #include "util.h"
 #include "dio.h"
 #include "iosvcs.h"
@@ -15,12 +17,13 @@
 #include "msg.h"
 #include "bpamio.h"
 
+
 int bpam_open_write(FM_BPAMHandle* handle, const FM_Opts* opts)
 {
-  struct ihadcb* __ptr32 dcb;
-  struct opencb* __ptr32 opencb;
-  struct decb* __ptr32 decb;
-  void* __ptr32 block;
+  struct ihadcb* PTR32 dcb;
+  struct opencb* PTR32 opencb;
+  struct decb* PTR32 decb;
+  void* PTR32 block;
 
   const struct opencb opencb_template = { 1, 0, 0, 0, 0 };
   int rc;
@@ -164,16 +167,16 @@ int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
   return 0;
 }
 
-struct desp* __ptr32 init_desp(const FM_BPAMHandle* bh, const char* mem, const FM_Opts* opts)
+struct desp* PTR32 init_desp(const FM_BPAMHandle* bh, const char* mem, const FM_Opts* opts)
 {
   const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
   const struct decb decb_template = { 0, 0x8080 };
 
-  struct desp* __ptr32 desp;
-  struct desl* __ptr32 desl;
-  struct desl_name* __ptr32 desl_name;
-  struct desb* __ptr32 desb;
-  struct decb* __ptr32 decb;
+  struct desp* PTR32 desp;
+  struct desl* PTR32 desl;
+  struct desl_name* PTR32 desl_name;
+  struct desb* PTR32 desb;
+  struct decb* PTR32 decb;
   int rc;
   size_t memlen;
 
@@ -232,7 +235,7 @@ struct desp* __ptr32 init_desp(const FM_BPAMHandle* bh, const char* mem, const F
   return desp;
 }
 
-void free_desp(struct desp* __ptr32 desp, const FM_Opts* opts)
+void free_desp(struct desp* PTR32 desp, const FM_Opts* opts)
 {
   free(desp->desp_name_list_ptr->desl_name_ptr);
   free(desp->desp_name_list_ptr);
@@ -240,7 +243,7 @@ void free_desp(struct desp* __ptr32 desp, const FM_Opts* opts)
   free(desp);
 }
 
-int read_member_dir_entry(struct desp* __ptr32 desp, const FM_Opts* opts)
+int read_member_dir_entry(struct desp* PTR32 desp, const FM_Opts* opts)
 {
   /* call DESERV and get extended attributes */
   int rc = DESERV(desp);
@@ -249,12 +252,12 @@ int read_member_dir_entry(struct desp* __ptr32 desp, const FM_Opts* opts)
     return 4;
   }
 
-  struct smde* __ptr32 smde = (struct smde* __ptr32) (desp->desp_area_ptr->desb_data);
+  struct smde* PTR32 smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
   debug(opts, "Extended attributes for %.*s\n", desp->desp_name_list_ptr->desl_name_ptr->desl_name_len, desp->desp_name_list_ptr->desl_name_ptr->desl_name);
   if (smde->smde_ext_attr_off == 0) {
     debug(opts, "(no extended attributes) SMDE Address:%p SMDE Eye-catcher %8.8s\n", smde, smde->smde_id);
   } else {
-    struct smde_ext_attr* __ptr32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
+    struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
     debug(opts, "CCSID: 0x%x%x last change userid: %8.8s change timestamp: 0x%llx\n",
       ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
   }
@@ -298,13 +301,13 @@ int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, con
       return rc;
     }
     debug(opts, "Member %s already exists - update it.\n", member);
-    struct desp* __ptr32 desp = init_desp(bh, member, opts);
+    struct desp* PTR32 desp = init_desp(bh, member, opts);
     if (!read_member_dir_entry(desp, opts)) {
       /*
        * Try again and perform an UPDATE
        */
-      struct smde* __ptr32 smde = (struct smde* __ptr32) (desp->desp_area_ptr->desb_data);
-      struct smde_ext_attr* __ptr32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
+      struct smde* PTR32 smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
+      struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
       memcpy(stowlist->iff.timestamp, ext_attr->smde_change_timestamp, STOWLIST_IFF_TIMESTAMP_LEN);
       rc = STOW(stowlist, NULL, STOW_IFF);
       if (rc != STOW_CC_OK) {
@@ -354,7 +357,7 @@ int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const FM_Opts* op
 int close_pds(const char* dataset, const FM_BPAMHandle* bh, const FM_Opts* opts)
 {
   const struct closecb closecb_template = { 1, 0, 0 };
-  struct closecb* __ptr32 closecb;
+  struct closecb* PTR32 closecb;
   int rc;
 
   struct s99_common_text_unit dd = { DUNDDNAM, 1, 0, 0 };

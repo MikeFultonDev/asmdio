@@ -2,6 +2,8 @@
  * wrappers for C 31-bit or 64-bit functions
  */
 
+#include "asmdiocommon.h"
+
 #if AMODE==31
   #pragma linkage(STOWA,    OS)
   #pragma linkage(NOTEA,    OS)
@@ -22,20 +24,20 @@
   struct closecb;
   struct desp;
 
-  int S99A(struct s99rb* __ptr32 rb);
-  int S99MSGA(struct s99_em* __ptr32 em);
-  int OPENA(struct opencb* __ptr32 opencb);
-  int FINDA(struct findcb* __ptr32 findcb, struct ihadcb* __ptr32 dcb);
-  int READA(struct decb* __ptr32 decb);
-  int WRITEA(struct decb* __ptr32 decb);
-  int CHECKA(struct decb* __ptr32 decb);
-  unsigned int NOTEA(struct ihadcb* __ptr32 dcb);
-  int DESERVA(struct desp* __ptr32 desp);
+  int S99A(struct s99rb* PTR32 rb);
+  int S99MSGA(struct s99_em* PTR32 em);
+  int OPENA(struct opencb* PTR32 opencb);
+  int FINDA(struct findcb* PTR32 findcb, struct ihadcb* PTR32 dcb);
+  int READA(struct decb* PTR32 decb);
+  int WRITEA(struct decb* PTR32 decb);
+  int CHECKA(struct decb* PTR32 decb);
+  unsigned int NOTEA(struct ihadcb* PTR32 dcb);
+  int DESERVA(struct desp* PTR32 desp);
   int STOWA(unsigned int list, unsigned int dcb);
-  int CLOSEA(struct closecb* __ptr32 dcb);
+  int CLOSEA(struct closecb* PTR32 dcb);
 
   int MALOC24A(size_t len);
-  int FREE24A(void* __ptr32 addr, size_t len);
+  int FREE24A(void* PTR32 addr, size_t len);
 
 #elif AMODE == 64
   extern int S99A;

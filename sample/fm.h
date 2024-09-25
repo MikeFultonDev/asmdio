@@ -7,6 +7,7 @@
   #include <glob.h>
   #include <sys/stat.h>
   #include <stddef.h>
+  #include "asmdiocommon.h"
   #include "dio.h"
 
   typedef struct {
@@ -28,10 +29,10 @@
 
   typedef struct {
     char ddname[DD_MAX+1];
-    struct ihadcb* __ptr32 dcb;
-    struct opencb* __ptr32 opencb;
-    struct decb* __ptr32 decb;
-    void* __ptr32 block;
+    struct ihadcb* PTR32 dcb;
+    struct opencb* PTR32 opencb;
+    struct decb* PTR32 decb;
+    void* PTR32 block;
     size_t block_size;
     size_t bytes_used;
     unsigned int ttr;
