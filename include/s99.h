@@ -218,7 +218,7 @@ struct s99_em {
 	struct s99_em_bufs embuf;
 };
 
-#pragma pack(reset)
+#pragma pack(pop)
 
 #define EMDAIR  1
 #define EMFREE  51

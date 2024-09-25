@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include "dcbe.h"
 
-#pragma pack(packed)
+#pragma pack(1)
 struct ihadcb {
   union {
     struct dcbe* PTR32 dcbdcbe;     /* DCBE ADDRESS ASSOCIATED WITH THIS    @L5A */
@@ -218,7 +218,7 @@ struct ihadcb {
     void * PTR32 dcbpoint; /* ADDRESS OF NOTE/POINT MODULE */
     };
 };
-#pragma pack(reset)
+#pragma pack(pop)
 
 /* Values for field "_filler8" */
 #define dcbdv311 0x21 /* 2311 DISK STORAGE                @ZA46311        */

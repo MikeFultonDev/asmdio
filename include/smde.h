@@ -3,7 +3,7 @@
 
 #include "asmdiocommon.h"
 
-#pragma pack(packed)
+#pragma pack(1)
 
 struct smde {
   union {
@@ -405,7 +405,7 @@ struct pmara {
 #define pmarl_lvl4len       0x6A /* @LAA */
 #define pmarl_lvl5len       0x6A /* @LAA */
 
-#pragma pack(reset)
+#pragma pack(pop)
 
 #endif // __SMDE_H__
 

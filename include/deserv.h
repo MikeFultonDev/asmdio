@@ -3,7 +3,7 @@
 
 #include "asmdiocommon.h"
 
-#pragma pack(packed)
+#pragma pack(1)
 
 struct desl_name {
   unsigned short desl_name_len;
@@ -422,7 +422,7 @@ struct desr {
 #define desrs_module_buffered_lla      0x3E9 /* The module is buffered        */
 #define desrs_succ                     0x00  /* successful processing         */
 
-#pragma pack(reset)
+#pragma pack(pop)
 
 #endif // __DESERV__H
 

@@ -3,7 +3,7 @@
 
 #include "asmdiocommon.h"
 
-#pragma pack(packed)
+#pragma pack(1)
 struct opencb {
   int last_entry:1;
   int disp:3;
