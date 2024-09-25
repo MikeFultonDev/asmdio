@@ -3,7 +3,7 @@
 
 #include "asmdiocommon.h"
 
-#pragma pack(packed)
+#pragma pack(1)
 
 struct dcbe {
   unsigned char  dcbe_hdr[4];   /* 0  Alignment and identifier (DCBE)         */
@@ -27,6 +27,6 @@ struct dcbe {
   unsigned char  _filler18[2];  /* 36  MULTACC and MULTSDN                    */
   };
 
-#pragma pack(reset)
+#pragma pack(pop)
 
 #endif

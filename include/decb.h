@@ -3,7 +3,7 @@
 
 #include "asmdiocommon.h"
 
-#pragma pack(packed)
+#pragma pack(1)
 struct decb {
   unsigned int ecb;
   unsigned short type;

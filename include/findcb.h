@@ -3,7 +3,7 @@
 
 #include "asmdiocommon.h"
 
-#pragma pack(packed)
+#pragma pack(1)
 struct findcb {
   //unsigned short cb_len;
   //unsigned short filler;

@@ -3,7 +3,7 @@
 
 #include "asmdiocommon.h"
 
-#pragma pack(packed)
+#pragma pack(1)
 struct iob {
   union {
     struct {
@@ -424,6 +424,6 @@ struct iob {
 #define iobgam   0x0C
 #define iobqisam 0x0C
 
-#pragma pack(reset)
+#pragma pack(pop)
 
 #endif
