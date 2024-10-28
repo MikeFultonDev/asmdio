@@ -2,10 +2,10 @@
   #define __FM_OPTS_H__
 
   #include "asmdiocommon.h"
+  #include "dbgopts.h"
   typedef struct {
+    DBG_Opts dbg;
     int help:1;
-    int verbose:1;
-    int debug:1;
     int map:1;
   } FM_Opts;
 

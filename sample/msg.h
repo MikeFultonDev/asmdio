@@ -4,6 +4,6 @@
   #include "asmdiocommon.h"
   #include "fmopts.h"
 
-  int info(const FM_Opts* opts, const char* fmt, ...);
-  int debug(const FM_Opts* opts, const char* fmt, ...);
+  int info(const DBG_Opts* opts, const char* fmt, ...);
+  int debug(const DBG_Opts* opts, const char* fmt, ...);
 #endif

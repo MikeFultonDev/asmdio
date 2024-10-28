@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-int info(const FM_Opts* opts, const char* fmt, ...)
+int info(const DBG_Opts* opts, const char* fmt, ...)
 {
   va_list arg_ptr;
   int rc;
@@ -17,7 +17,7 @@ int info(const FM_Opts* opts, const char* fmt, ...)
   return rc;
 }
 
-int debug(const FM_Opts* opts, const char* fmt, ...)
+int debug(const DBG_Opts* opts, const char* fmt, ...)
 {
   va_list arg_ptr;
   int rc;

@@ -110,7 +110,7 @@ glob_t* expand_file_patterns(char* argv[], int first, int last, const char* dir,
     rc = glob(file_pattern, flags, errfunc, globset);
   }
 
-  info(opts, "%d files to be processed\n", globset->gl_pathc);
+  info(&opts->dbg, "%d files to be processed\n", globset->gl_pathc);
   return globset;
 }
 
@@ -140,9 +140,9 @@ FM_Table* create_table(glob_t* globset, const FM_Opts* opts)
       entry->count++;
     }
   }
-  info(opts, "%d extensions to be processed\n", table->size);
+  info(&opts->dbg, "%d extensions to be processed\n", table->size);
   for (i=0; i<table->size; ++i) {
-    debug(opts, "  [%s] has %d entries\n", table->entry[i].key, table->entry[i].count);
+    debug(&opts->dbg, "  [%s] has %d entries\n", table->entry[i].key, table->entry[i].count);
   }
   return table;
 }

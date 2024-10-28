@@ -18,7 +18,7 @@
 #include "bpamio.h"
 
 
-int bpam_open_write(FM_BPAMHandle* handle, const FM_Opts* opts)
+int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
 {
   struct ihadcb* PTR32 dcb;
   struct opencb* PTR32 opencb;
@@ -82,7 +82,7 @@ int bpam_open_write(FM_BPAMHandle* handle, const FM_Opts* opts)
   return 0;
 }
 
-static void validate_block(FM_BPAMHandle* bh, const FM_Opts* opts)
+static void validate_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   if (!opts->debug) {
     return;
@@ -113,7 +113,7 @@ static void validate_block(FM_BPAMHandle* bh, const FM_Opts* opts)
 /*
  * Write out a block. Returns 0 if successful, non-zero otherwise
  */
-int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
+int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   const struct decb decb_template = { 0, 0x8020 };
   *(bh->decb) = decb_template;
@@ -167,7 +167,7 @@ int write_block(FM_BPAMHandle* bh, const FM_Opts* opts)
   return 0;
 }
 
-struct desp* PTR32 init_desp(const FM_BPAMHandle* bh, const char* mem, const FM_Opts* opts)
+struct desp* PTR32 init_desp(const FM_BPAMHandle* bh, const char* mem, const DBG_Opts* opts)
 {
   const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
   const struct decb decb_template = { 0, 0x8080 };
@@ -243,7 +243,7 @@ void free_desp(struct desp* PTR32 desp, const FM_Opts* opts)
   free(desp);
 }
 
-int read_member_dir_entry(struct desp* PTR32 desp, const FM_Opts* opts)
+int read_member_dir_entry(struct desp* PTR32 desp, const DBG_Opts* opts)
 {
   /* call DESERV and get extended attributes */
   int rc = DESERV(desp);
@@ -265,7 +265,7 @@ int read_member_dir_entry(struct desp* PTR32 desp, const FM_Opts* opts)
   return 0;
 }
 
-int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const char* ds, const char* member, const FM_Opts* opts)
+int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const char* ds, const char* member, const DBG_Opts* opts)
 {
   const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
   const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
@@ -320,7 +320,7 @@ int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, con
   }
 }
 
-int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const FM_Opts* opts)
+int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
   struct s99_common_text_unit dd = { DALRTDDN, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
@@ -354,7 +354,7 @@ int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const FM_Opts* op
   return bpam_open_write(bh, opts);
 }
 
-int close_pds(const char* dataset, const FM_BPAMHandle* bh, const FM_Opts* opts)
+int close_pds(const char* dataset, const FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   const struct closecb closecb_template = { 1, 0, 0 };
   struct closecb* PTR32 closecb;
