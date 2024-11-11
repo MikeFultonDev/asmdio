@@ -61,9 +61,9 @@ struct desp {
   struct ihadcb * PTR32 desp_dcb_ptr;     /* DCB address                      */
   struct deb * PTR32 desp_deb_ptr;        /* DEB address                      */
   void * PTR32 desp_conn_id_ptr;          /* connect identifier address       */
-  void* PTR32 desp_areaptr_ptr;           /* address for buffer address @L2A  */
+  struct desb** desp_areaptr_ptr;         /* address for buffer address @L2A  */
   struct desb* PTR32 desp_area_ptr;       /* buffer address                   */
-  int            desp_area2;                /* buffer length                    */
+  int            desp_area2;              /* buffer length                    */
   void* PTR32 desp_de_list_ptr;           /* DE_LIST address            @L2A  */
   int            desp_de_list2;             /* DE_LIST entry count        @L2A  */
   int            desp_entry_gap;            /* entry gap size                   */

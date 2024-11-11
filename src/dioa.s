@@ -275,6 +275,8 @@ DESERVA  ASDPRO BASE_REG=3,USR_DSAL=DESERVA_DSAL
 *
 * Return code in R15
 *
+         SLL R0,8
+         OR  R15,R0
 DESERVA_EXIT   DS    0H
          ASDEPI
 

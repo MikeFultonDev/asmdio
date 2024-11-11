@@ -28,6 +28,7 @@ CEEDUMP.*
 
 # Compiled executable files
 basicread
+basicrddir
 basicalloc
 basiccreate
 crtmem
