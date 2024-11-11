@@ -54,7 +54,15 @@ static void print_name(FILE* stream, struct smde* PTR32 smde)
 static time_t convert_tod_to_ltime(unsigned long long tod)
 {
   /*
-   * MSF - this still has to deal with adding leap seconds in
+   * Note that this conversion does not factor in leap seconds.
+   * This is 'on purpose' so that it is consistent with other time
+   * stamps such as the time of a zFS file, the time returned from time()
+   * and other places that a C user would get the time on z/OS.
+   *
+   * Having consistent relative time for zFS files and PDS members being
+   * reported seems more important than providing an 'accurate' time
+   * for a PDS member update which is inconsistent with a time a developer
+   * would get from a zFS file.
    */
   unsigned long long rawtime = tod;
   unsigned long long raw1970time = rawtime - 9048018124800000000ULL;
