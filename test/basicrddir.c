@@ -30,13 +30,16 @@ static void print_name(FILE* stream, struct smde* PTR32 smde)
   struct smde_name* PTR32 name = (struct smde_name*) (((char*) smde) + smde->smde_name_off);
   char* PTR32 mem = name->smde_name_val;
   int len = name->smde_name_len;
-  
-  fprintf(stream, "%.*s", len, mem);
+ 
+  /*
+   * Can use the MLT to find what alias matches which member for a PDS (not required for PDSE)
+   * This will require 2 passes - one to get the MLTs and put them into a table and a second
+   * to print the members out.
+   */
+  char* mlt = smde->smde_mltk.smde_mlt;
+  fprintf(stream, "%.*s %x%x%x", len, mem, mlt[0], mlt[1], mlt[2]);
   if (smde->smde_flag_alias) {
     if (smde->smde_pname_off == 0) {
-      /*
-       * This must be a PDS alias - have to get the primary name a different way (note list?)
-       */
       fprintf(stream, " -> ??? ");
     } else {
       struct smde_pname* PTR32 pname = (struct smde_pname*) (((char*) smde) + smde->smde_pname_off);
