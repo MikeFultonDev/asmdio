@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "asmdiocommon.h"
 #include "dio.h"
@@ -48,6 +49,21 @@ static void print_name(FILE* stream, struct smde* PTR32 smde)
       fprintf(stream, " -> %.*s", plen, pmem);
     }
   }
+}
+
+static time_t convert_tod_to_ltime(unsigned long long tod)
+{
+  /*
+   * MSF - this still has to deal with adding leap seconds in
+   */
+  unsigned long long rawtime = tod;
+  unsigned long long raw1970time = rawtime - 9048018124800000000ULL;
+  double doubletime = (raw1970time >> 32);
+  double doublesecs = doubletime * 1.048576;
+  unsigned long rawseconds = (unsigned long) doublesecs;
+  time_t ltime = (time_t) rawseconds;
+
+  return ltime;
 }
 
 int main(int argc, char* argv[]) {
@@ -176,8 +192,11 @@ int main(int argc, char* argv[]) {
       print_name(stdout, smde);
       if (smde->smde_ext_attr_off != 0) {
         struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
-        fprintf(stdout, " CCSID: 0x%x%x %8.8s timestamp: 0x%llx\n",
-          ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
+        unsigned long long tod = *((long long *) ext_attr->smde_change_timestamp);
+        time_t ltime = convert_tod_to_ltime(tod);
+
+        fprintf(stdout, " CCSID: 0x%x%x %8.8s %s\n",
+          ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ctime(&ltime));
       } else {
         fprintf(stdout, "\n");
       }

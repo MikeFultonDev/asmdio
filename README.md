@@ -56,6 +56,7 @@ For applications that need to perform common I/O operations, the Language Enviro
 
 ## Other References
 
+- [Principles of Operation: PDF](https://tech.mikefulton.ca/PrinciplesOfOperation)
 - [Abend Codes](https://tech.mikefulton.ca/ZOSAbendCodes)
 - [EBCDIC](https://tech.mikefulton.ca/EBCDICReference)
 - [Dataset Record Formats](https://tech.mikefulton.ca/DatasetRecordFormats)
