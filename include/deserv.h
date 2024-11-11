@@ -181,7 +181,7 @@ struct desb {
       unsigned int               : 7,
                      desb_lev_iv : 1; /* buffer level                   */
       unsigned char  _filler1[3];     /* reserved                       */
-      void * PTR32 desb_next;       /* Next Buffer Pointer            */
+      struct desb* PTR32 desb_next;   /* Next Buffer Pointer            */
       void * PTR32 _filler2;        /* RESERVED                       */
       int            desb_count;      /* count of entries in this       */
       void * PTR32 desb_avail;      /* Start of free space in buffer  */

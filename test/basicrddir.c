@@ -25,6 +25,28 @@ const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } 
 const struct decb decb_template = { 0, 0x8080 };
 const struct closecb closecb_template = { 1 };
 
+static void print_name(FILE* stream, struct smde* PTR32 smde)
+{
+  struct smde_name* PTR32 name = (struct smde_name*) (((char*) smde) + smde->smde_name_off);
+  char* PTR32 mem = name->smde_name_val;
+  int len = name->smde_name_len;
+  
+  fprintf(stream, "%.*s", len, mem);
+  if (smde->smde_flag_alias) {
+    if (smde->smde_pname_off == 0) {
+      /*
+       * This must be a PDS alias - have to get the primary name a different way (note list?)
+       */
+      fprintf(stream, " -> ??? ");
+    } else {
+      struct smde_pname* PTR32 pname = (struct smde_pname*) (((char*) smde) + smde->smde_pname_off);
+      char* PTR32 pmem = pname->smde_pname_val;
+      int plen = pname->smde_pname_len;
+      fprintf(stream, " -> %.*s", plen, pmem);
+    }
+  }
+}
+
 int main(int argc, char* argv[]) {
   struct opencb* PTR32 opencb;
   struct closecb* PTR32 closecb;
@@ -138,17 +160,27 @@ int main(int argc, char* argv[]) {
     return 4;
   }
 
-  /*
-   * First SMDE
-   */
-  smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
-  if (smde->smde_ext_attr_off == 0) {
-    fprintf(stdout, "No extended attributes for %s(<first member>)\n", ds);
-    fprintf(stdout, "SMDE Address:%p SMDE Eye-catcher %8.8s\n", smde, smde->smde_id);
-  } else {
-    struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
-    fprintf(stdout, "CCSID: 0x%x%x last change userid: %8.8s change timestamp: 0x%llx\n",
-      ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
+  struct desb* PTR32 cur_desb = desp->desp_area_ptr;
+  while (cur_desb) {
+    int i;
+    int members = cur_desb->desb_count;
+    fprintf(stdout, "Members in DESB %p: %d\n", cur_desb, members);
+    /*
+     * First SMDE
+     */
+    smde = (struct smde* PTR32) (cur_desb->desb_data);
+    for (i=0; i<members; ++i) {
+      print_name(stdout, smde);
+      if (smde->smde_ext_attr_off != 0) {
+        struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
+        fprintf(stdout, " CCSID: 0x%x%x %8.8s timestamp: 0x%llx\n",
+          ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
+      } else {
+        fprintf(stdout, "\n");
+      }
+      smde = (struct smde* PTR32) (((char*) smde) + smde->smde_len);
+    }
+    cur_desb = cur_desb->desb_next;
   }
 
   closecb = MALLOC31(sizeof(struct closecb));
