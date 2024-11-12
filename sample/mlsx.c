@@ -1,4 +1,5 @@
 #include "mlsxopts.h"
+#include "memdir.h"
 #include <stdio.h>
 
 
@@ -60,6 +61,24 @@ int main(int argc, char* argv[])
     return 4;
   }
 
+  const char* ds = argv[first_arg];
+
+  MEMDIR* md = openmemdir(ds);
+  struct mement* me;
+  if (!md) {
+    fprintf(stderr, "Unable to open dataset %s\n", ds);
+    return 4;
+  }
+  while (me = readmemdir(md)) {
+    struct mstat mem;
+    if (!mstat(me, &mem)) {
+      fprintf(stderr, "Unable to retrieve information for member in %s\n", ds);
+      return 8;
+    }
+  }
+  if (closememdir(md)) {
+    fprintf(stderr, "Error closing memdir for %s\n", ds);
+    return 12;
+  }
   return 0;
 }
-
