@@ -1,5 +1,5 @@
 /*
-* NODE_PTR pds_mem(const char *pds):
+* struct mem_node* pds_mem(const char *pds):
 * pds must be a fully qualified pds name, for example,
 * ID.PDS.DATASET * returns a * pointer to a linked list of
 * nodes.  Each node contains a member of the * pds and a
@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include "basicrdpds.h"
 
 /*
@@ -29,15 +30,15 @@ typedef struct {
 
 /* Local function prototypes   */
 
-static int gen_node(NODE_PTR *node, RECORD *rec, NODE_PTR *last_ptr);
-static char *add_name(NODE_PTR *node, char *name, NODE_PTR *last_ptr);
+static int gen_node(struct mem_node** node, RECORD *rec, struct mem_node** last_ptr);
+static char *add_name(struct mem_node** node, const char *name, struct mem_node** last_ptr, const char* userdata, char userdata_len);
 
-NODE_PTR pds_mem(const char *pds) 
+struct mem_node* pds_mem(const char *pds) 
 {
 
   FILE *fp;
   int bytes;
-  NODE_PTR node, last_ptr;
+  struct mem_node* node, *last_ptr;
   RECORD rec;
   int list_end;
   char *qual_pds;
@@ -77,7 +78,7 @@ NODE_PTR pds_mem(const char *pds)
       exit(-1);
     }
 
-    list_end = gen_node(&node,&rec, &last_ptr);
+    list_end = gen_node(&node, &rec, &last_ptr);
 
   } while (!feof(fp) && !list_end);
   fclose(fp);
@@ -85,7 +86,7 @@ NODE_PTR pds_mem(const char *pds)
   return(node);
 }
 /*
- * GEN_NODE() processes the record passed. The main loop scans through the
+ * GEN_struct mem_node() processes the record passed. The main loop scans through the
  * record until it has read at least rec->count bytes, or a directory end
  * marker is detected.
  *
@@ -128,7 +129,7 @@ NODE_PTR pds_mem(const char *pds)
 */
 
 char *endmark = "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF";
-static int gen_node(NODE_PTR *node, RECORD *rec, NODE_PTR *last_ptr) 
+static int gen_node(struct mem_node** node, RECORD *rec, struct mem_node** last_ptr) 
 {
 
    char *ptr, *name;
@@ -156,8 +157,8 @@ static int gen_node(NODE_PTR *node, RECORD *rec, NODE_PTR *last_ptr)
      /* info_byte */
      info_byte = (unsigned int) (*ptr);
      alias = info_byte & ALIAS_MASK;
-     if (!alias) add_name(node,name,last_ptr);
      skip = (info_byte & SKIP_MASK) * 2 + 1;
+     if (!alias) add_name(node,name,last_ptr,ptr,skip);
      ptr += skip;
      count += (TTRLEN + NAMELEN + skip);
    }
@@ -169,18 +170,18 @@ static int gen_node(NODE_PTR *node, RECORD *rec, NODE_PTR *last_ptr)
  * added to the end so that the original ordering is maintained.
 */
 
-static char *add_name(NODE_PTR *node, char *name, NODE_PTR *last_ptr) 
+static char *add_name(struct mem_node** node, const char *name, struct mem_node** last_ptr, const char* userdata, char userdata_len) 
 {
 
-  NODE_PTR newnode;
+  struct mem_node* newnode;
 
   /*
    * malloc space for the new node
   */
 
-  newnode = (NODE_PTR)malloc(sizeof(NODE));
+  newnode = (struct mem_node*)malloc(sizeof(struct mem_node));
   if (newnode == NULL) {
-    fprintf(stderr,"malloc failed for %d bytes\n",sizeof(NODE));
+    fprintf(stderr,"malloc failed for %d bytes\n",sizeof(struct mem_node));
     exit(-1);
   }
 
@@ -189,6 +190,9 @@ static char *add_name(NODE_PTR *node, char *name, NODE_PTR *last_ptr)
   memcpy(newnode->name,name,NAMELEN);
   newnode->name[NAMELEN] = '\0';
   newnode->next = NULL;
+
+  memcpy(newnode->userdata, userdata, userdata_len);
+  newnode->userdata_len = userdata_len;
 
   /*
    * add the new node to the linked list
@@ -210,9 +214,9 @@ static char *add_name(NODE_PTR *node, char *name, NODE_PTR *last_ptr)
  * allocated by the linked list.
 */
 
-void free_mem(NODE_PTR node) 
+void free_mem(struct mem_node* node) 
 {
-  NODE_PTR next_node=node;
+  struct mem_node* next_node=node;
 
   while (next_node != NULL) {
      next_node = node->next;
@@ -222,6 +226,107 @@ void free_mem(NODE_PTR node)
   return;
 }
 
+#pragma pack(full)
+struct ispf_disk_stats {
+  char encoded_userdata_length;
+  unsigned char ver_num;
+  unsigned char mod_num;
+  int sclm:1;
+  int reserve_a:1;
+  int extended:1;
+  int reserve_b:5;
+  unsigned char pd_mod_seconds;
+  unsigned char create_century;
+  char pd_create_julian[3];
+  unsigned char mod_century;
+  char pd_mod_julian[3];
+  unsigned char mod_hours;
+  unsigned char mod_minutes;
+
+  unsigned short curr_num_lines;
+  unsigned short init_num_lines;
+  unsigned short mod_num_lines;
+
+  char userid[NAMELEN];
+
+  /* following is available only in extended format */
+  unsigned int full_curr_num_lines;
+  unsigned int full_init_num_lines;
+  unsigned int full_mod_num_lines;
+};
+#pragma pack(pop)
+
+struct ispf_stats {
+  struct tm create_time;
+  struct tm mod_time;
+  unsigned short curr_num_lines;
+  unsigned short init_num_lines;
+  unsigned short mod_num_lines;
+  unsigned char userid[NAMELEN+1];
+  unsigned char ver_num;
+  unsigned char mod_num;
+  unsigned char sclm;
+};
+
+/*
+ * msf - need to implement check of ranges of values
+ */
+static int valid_ispf_disk_stats(const struct ispf_disk_stats* ids)
+{
+  return 0; 
+}
+
+const struct tm zerotime = { 0 };
+static void set_create_time(struct ispf_stats* is, struct ispf_disk_stats* id)
+{
+  is->create_time = zerotime;
+  if (id->create_century == 1) {
+    is->create_time.tm_year = 100;
+  }
+  /*
+   * msf - write code to convert julian date to year/month
+   */
+}
+
+static void set_mod_time(struct ispf_stats* is, struct ispf_disk_stats* id)
+{
+  is->mod_time = zerotime;
+  if (id->mod_century == 1) {
+    is->mod_time.tm_year = 100;
+  }
+  /*
+   * msf - write code to convert julian date to year/month and packed decimal hours/minutes to hours/minutes
+   */
+}
+
+static int ispf_stats(const struct mem_node* np, struct ispf_stats* is)
+{
+  struct ispf_disk_stats* id = (struct ispf_disk_stats*) (np->userdata);
+  int rc = valid_ispf_disk_stats(id);
+  if (rc) {
+    return rc;
+  }
+  set_create_time(is, id);
+  set_mod_time(is, id);
+  memcpy(is->userid, id->userid, NAMELEN);
+  is->userid[NAMELEN] = '\0';
+
+  is->ver_num = id->ver_num;
+  is->mod_num = id->mod_num;
+  is->sclm = id->sclm;
+
+  if (id->extended) {
+    is->curr_num_lines = id->full_curr_num_lines;
+    is->init_num_lines = id->full_init_num_lines;
+    is->mod_num_lines = id->full_mod_num_lines;
+  } else {
+    is->curr_num_lines = id->curr_num_lines;
+    is->init_num_lines = id->init_num_lines;
+    is->mod_num_lines = id->mod_num_lines;
+  }
+    
+  return 0;
+}
 
 int main(int argc, char* argv[])
 {
@@ -230,9 +335,27 @@ int main(int argc, char* argv[])
     return 4;
   }
   char* dataset = argv[1];
-  NODE_PTR np = pds_mem(dataset);
+  struct mem_node* np = pds_mem(dataset);
   while (np) {
-    printf(" %s\n", np->name);
+    if (np->userdata_len == 31 || np->userdata_len == 41) {
+      /* ISPF USER DATA */
+      /* https://tech.mikefulton.ca/ISPFStatsLayout */
+      struct ispf_stats is;
+      int rc = ispf_stats(np, &is);
+      if (!rc) {
+        char crttime_buff[4+1+2+1+2+1];                /* YYYY/MM/DD       */
+        char modtime_buff[4+1+2+1+2+1+2+1+2+1];        /* YYYY/MM/DD HH:MM */
+        strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", &is.create_time);
+        strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M", &is.create_time);
+        printf(" %s %d.%d %s %s %d %d %d %s\n", 
+         np->name, 
+         is.ver_num, is.mod_num, crttime_buff, modtime_buff, is.curr_num_lines, is.mod_num_lines, is.init_num_lines, is.userid);
+      } else {
+        printf(" %s %d\n", np->name, np->userdata_len);
+      }
+    } else {
+      printf(" %s %d\n", np->name, np->userdata_len);
+    }
     np = np->next;
   }
   return 0;

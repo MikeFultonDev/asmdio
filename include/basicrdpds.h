@@ -1,18 +1,18 @@
-/* this example shows how to create a list of members of a PDS */
-/* part 2 of 2-other file is CCNGIP1 */
 /*
- * NODE: a pointer to this structure is returned from the call to pds_mem().
- * It is a linked list of character arrays - each array contains a member
- * name. Each next pointer points * to the next member, except the last
+ * struct mem_node: a pointer to this structure is returned from the call to pds_mem().
+ * It is a linked list of information about the member - each array contains a member
+ * name and possibly user data. Each next pointer points * to the next member, except the last
  * next member which points to NULL.
 */
 
 #define NAMELEN 8      /* Length of a MVS member name */
 
-typedef struct node {
-                      struct node *next;
-                      char name[NAMELEN+1];
-                    } NODE, *NODE_PTR;
+typedef struct mem_node {
+  struct mem_node *next;
+  char name[NAMELEN+1];
+  char userdata_len;
+  char userdata[64];
+};
 
-NODE_PTR pds_mem(const char *pds);
-void free_mem(NODE_PTR list);
+struct mem_node* pds_mem(const char *pds);
+void free_mem(struct mem_node* nodes);
