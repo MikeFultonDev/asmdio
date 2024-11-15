@@ -38,7 +38,7 @@ static void print_name(FILE* stream, struct smde* PTR32 smde)
    * to print the members out.
    */
   char* mlt = smde->smde_mltk.smde_mlt;
-  fprintf(stream, "%.*s %x%x%x", len, mem, mlt[0], mlt[1], mlt[2]);
+  fprintf(stream, "%.*s %x%x%x 0x%x", len, mem, mlt[0], mlt[1], mlt[2], smde->smde_usrd_len);
   if (smde->smde_flag_alias) {
     if (smde->smde_pname_off == 0) {
       fprintf(stream, " -> ??? ");

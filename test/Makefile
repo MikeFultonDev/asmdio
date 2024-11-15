@@ -1,9 +1,12 @@
-all: basiccreate basicread basicrddir basicalloc
+all: basiccreate basicread basicrddir basicrdpds basicalloc
 
 clean:
-	rm -f basicreate basicread basicalloc *.o *.lst *.dbg
+	rm -f basicreate basicread basicalloc basicrdpds basicrddir *.o *.lst *.dbg
 
 INCDIR=../include
+
+basicrdpds: basicrdpds.o 
+	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
 basicrddir: basicrddir.o ../src/*.o
 	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o >$@.lst
@@ -16,6 +19,9 @@ basiccreate: basiccreate.o ../src/*.o
 
 basicalloc: basicalloc.o ../src/*.o
 	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o >$@.lst
+
+basicrdpds.o: basicrdpds.c $(INCDIR)/basicrdpds.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 basicrddir.o: basicrddir.c $(INCDIR)/iosvcs.h $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
