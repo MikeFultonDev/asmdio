@@ -240,8 +240,8 @@ struct ispf_disk_stats {
   char pd_create_julian[3];
   unsigned char mod_century;
   char pd_mod_julian[3];
-  unsigned char mod_hours;
-  unsigned char mod_minutes;
+  unsigned char pd_mod_hours;
+  unsigned char pd_mod_minutes;
 
   unsigned short curr_num_lines;
   unsigned short init_num_lines;
@@ -268,6 +268,68 @@ struct ispf_stats {
   unsigned char sclm;
 };
 
+static unsigned int pd2d(unsigned char pd)
+{
+  if ((pd & 0x0FU) == 0x0FU) { /* signed value - just grab top nibble */
+    return ((pd & 0xF0U) >> 4U); 
+  } else {
+    return (((pd & 0xF0U) >> 4U)*10U) + (pd & 0x0FU);
+  }
+}
+
+static int j2g(const char* pdjd, int start_year, int* year, int* month, int* day)
+{
+
+  int thousands = pd2d(pdjd[0]);
+  int tens = pd2d(pdjd[1]);
+  int ones = pd2d(pdjd[2]);
+  int jd = thousands*1000 + tens*10 + ones;
+
+#if 0
+  printf("pdjd (hex) 0x%x\n", (unsigned int) (*(unsigned int*)(pdjd)));
+  printf("thousands:%d tens:%d ones:%d\n", thousands, tens, ones);
+#endif
+
+  int I,J,L,N,K;
+  if (start_year == 2000) {
+    jd += 2436310;
+  } else if (start_year == 1900) {
+    jd += 2415020; /* msf - this is probably not right */
+  } else if (start_year == 0) {
+    ;
+  } else {
+    return 4; /* unsupported start year */
+  }
+
+  /*
+   * Julian date to Gregorian date algorithm from:
+   * https://aa.usno.navy.mil/faq/JD_formula
+   */
+  L = jd+68569;
+  N = 4*L/146097;
+  L = L-(146097*N+3)/4;
+  I = 4000*(L+1)/1461001;
+  L = L-1461*I/4+31;
+  J = 80*L/2447;
+  K = L-2447*J/80;
+  L = J/11;
+  J = J+2-12*L;
+  I = 100*(N-49)+I+L;
+
+  /*
+   * For 'struct tm', year starts from 1900, months start from 0, days start from 1
+   */
+  *year = (I-1900);
+  *month = (J-1);
+  *day = K;
+
+#if 0
+  printf("year:%d month:%d day:%d\n", *year, *month, *day);
+#endif
+
+  return 0;
+}
+
 /*
  * msf - need to implement check of ranges of values
  */
@@ -280,23 +342,18 @@ const struct tm zerotime = { 0 };
 static void set_create_time(struct ispf_stats* is, struct ispf_disk_stats* id)
 {
   is->create_time = zerotime;
-  if (id->create_century == 1) {
-    is->create_time.tm_year = 100;
-  }
-  /*
-   * msf - write code to convert julian date to year/month
-   */
+  int start_year = (id->create_century) ? 2000 : 1900;
+  j2g(id->pd_create_julian, start_year, &is->create_time.tm_year, &is->create_time.tm_mon, &is->create_time.tm_mday);
 }
 
 static void set_mod_time(struct ispf_stats* is, struct ispf_disk_stats* id)
 {
   is->mod_time = zerotime;
-  if (id->mod_century == 1) {
-    is->mod_time.tm_year = 100;
-  }
-  /*
-   * msf - write code to convert julian date to year/month and packed decimal hours/minutes to hours/minutes
-   */
+  int start_year = (id->mod_century) ? 2000 : 1900;
+  j2g(id->pd_mod_julian, start_year, &is->mod_time.tm_year, &is->mod_time.tm_mon, &is->mod_time.tm_mday);
+  is->mod_time.tm_hour = pd2d(id->pd_mod_hours);
+  is->mod_time.tm_min = pd2d(id->pd_mod_minutes);
+  is->mod_time.tm_sec = pd2d(id->pd_mod_seconds);
 }
 
 static int ispf_stats(const struct mem_node* np, struct ispf_stats* is)
@@ -343,11 +400,11 @@ int main(int argc, char* argv[])
       struct ispf_stats is;
       int rc = ispf_stats(np, &is);
       if (!rc) {
-        char crttime_buff[4+1+2+1+2+1];                /* YYYY/MM/DD       */
-        char modtime_buff[4+1+2+1+2+1+2+1+2+1];        /* YYYY/MM/DD HH:MM */
+        char crttime_buff[4+1+2+1+2+1];                /* YYYY/MM/DD          */
+        char modtime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
         strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", &is.create_time);
-        strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M", &is.create_time);
-        printf(" %s %d.%d %s %s %d %d %d %s\n", 
+        strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", &is.mod_time);
+        printf(" %s %2.2d.%2.2d %s %s %10d %10d %10d %s\n", 
          np->name, 
          is.ver_num, is.mod_num, crttime_buff, modtime_buff, is.curr_num_lines, is.mod_num_lines, is.init_num_lines, is.userid);
       } else {
