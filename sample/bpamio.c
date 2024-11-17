@@ -96,12 +96,12 @@ static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
   return 0;
 }
 
-int bpam_open_read(FM_BPAMHandle* handle, const DBG_Opts* opts)
+static int bpam_open_read(FM_BPAMHandle* handle, const DBG_Opts* opts)
 {
   return bpam_open(handle, OPEN_INPUT, opts);
 }
 
-int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
+static int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
 {
   return bpam_open(handle, OPEN_OUTPUT, opts);
 }

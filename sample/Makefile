@@ -11,22 +11,28 @@ f2m: f2m.o msg.o fmopts.o filemap.o bpamio.o ../src/*.o
 m2f: m2f.o
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
-mlsx: mlsx.o mlsxopts.o ../src/memdir.o ../src/ztime.o
-	$(LD) $(LDFLAGS) -o $@ $< mlsxopts.o ../src/memdir.o ../src/ztime.o >$@.lst
+mlsx: mlsx.o mlsxopts.o bpamio.o memdir.o ztime.o
+	$(LD) $(LDFLAGS) -o $@ $< msg.o mlsxopts.o memdir.o ztime.o bpamio.o ../src/*.o >$@.lst
 
 mchtag: mchtag.o
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
-f2m.o: f2m.c fm.h msg.h fmopts.h filemap.h bpamio.h $(INCDIR)/*.h
+f2m.o: f2m.c fm.h msg.h fmopts.h filemap.h bpamio.h dbgopts.h $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
-msg.o: msg.c msg.h fm.h fmopts.h $(INCDIR)/*.h
+msg.o: msg.c msg.h fm.h fmopts.h dbgopts.h $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 filemap.o: filemap.c msg.h fm.h fmopts.h $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
-bpamio.o: bpamio.c msg.h fm.h fmopts.h bpamio.h $(INCDIR)/*.h
+memdir.o: memdir.c ztime.h dbgopts.h $(INCDIR)/*.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+
+ztime.o: ztime.c ztime.h dbgopts.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+
+bpamio.o: bpamio.c msg.h fm.h fmopts.h dbgopts.h bpamio.h $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 fmopts.o: fmopts.c fm.h fmopts.h dbgopts.h $(INCDIR)/*.h

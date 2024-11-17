@@ -2,6 +2,7 @@
   #define __MEM_DIR__ 1
 
   #include <time.h>
+  #include "dbgopts.h"
 
   /*
    * MEMDIR: opaque structure (like FILE or DIR)
@@ -47,9 +48,9 @@
     void*  _reserved;                           /* NULL (may change in the future) */
   };
 
-  MEMDIR* openmemdir(const char* dataset);
-  struct mement* readmemdir(MEMDIR* memdir);
-  int closememdir(MEMDIR* memdir);
-  int mstat(struct mement* mement, struct mstat* mem);
+  MEMDIR* openmemdir(const char* dataset, const DBG_Opts* opts);
+  struct mement* readmemdir(MEMDIR* memdir, const DBG_Opts* opts);
+  int closememdir(MEMDIR* memdir, const DBG_Opts* opts);
+  int mstat(struct mement* mement, struct mstat* mem, const DBG_Opts* opts);
 
 #endif

@@ -1,9 +1,15 @@
+#define _XOPEN_SOURCE
+#define _ISOC99_SOURCE
+#define _POSIX_SOURCE
+#define _OPEN_SYS_FILE_EXT
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "basicrdpds.h"
 #include "memdir.h"
 #include "ztime.h"
+#include "bpamio.h"
 
 /*
  * RECORD: each record of a pds will be read into one of these structures.
@@ -270,13 +276,13 @@ const struct tm zerotime = { 0 };
 static void set_create_time(struct ispf_stats* is, struct ispf_disk_stats* id)
 {
   is->create_time = zerotime;
-  pdjd_to_tm(id->pd_create_julian, id->create_century, &is);
+  pdjd_to_tm(id->pd_create_julian, id->create_century, &is->create_time);
 }
 
 static void set_mod_time(struct ispf_stats* is, struct ispf_disk_stats* id)
 {
   is->mod_time = zerotime;
-  pdjd_to_tm(id->pd_mod_julian, id->create_century, &is);
+  pdjd_to_tm(id->pd_mod_julian, id->create_century, &is->mod_time);
   is->mod_time.tm_hour = pd_to_d(id->pd_mod_hours);
   is->mod_time.tm_min = pd_to_d(id->pd_mod_minutes);
   is->mod_time.tm_sec = pd_to_d(id->pd_mod_seconds);
@@ -339,23 +345,28 @@ void* ispf_info(const char* dataset)
   return 0;
 }
 
-MEMDIR* openmemdir(const char* dataset)
+MEMDIR* openmemdir(const char* dataset, const DBG_Opts* opts)
 {
+  FM_BPAMHandle dd;
+  if (open_pds_for_read(dataset, &dd, opts)) {
+    return NULL;
+  }
+  printf("dataset updated successfully\n");
   struct mem_node* np = ispf_info(dataset);
   return NULL;
 }
 
-struct mement* readmemdir(MEMDIR* memdir)
+struct mement* readmemdir(MEMDIR* memdir, const DBG_Opts* opts)
 {
   return NULL;
 }
 
-int closememdir(MEMDIR* memdir)
+int closememdir(MEMDIR* memdir, const DBG_Opts* opts)
 {
   return 0;
 }
 
-int mstat(struct mement* mement, struct mstat* mem)
+int mstat(struct mement* mement, struct mstat* mem, const DBG_Opts* opts)
 {
   return 0;
 }

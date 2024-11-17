@@ -1,4 +1,4 @@
-all: call31.o call31a.o dio.o s99.o dioa.o ihadcb.o util.o iosvcs.o memdir.o ztime.o
+all: call31.o call31a.o dio.o s99.o dioa.o ihadcb.o util.o iosvcs.o
 
 clean:
 	rm -f *.o *.lst *.dbg

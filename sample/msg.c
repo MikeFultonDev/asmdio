@@ -1,7 +1,12 @@
-#include "msg.h"
-#include "fm.h"
+#define _XOPEN_SOURCE
+#define _ISOC99_SOURCE
+#define _POSIX_SOURCE
+#define _OPEN_SYS_FILE_EXT
 #include <stdarg.h>
 #include <stdio.h>
+
+#include "msg.h"
+#include "fm.h"
 
 int info(const DBG_Opts* opts, const char* fmt, ...)
 {
