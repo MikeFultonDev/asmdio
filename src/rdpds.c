@@ -13,7 +13,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include "basicrdpds.h"
+#include "ispf.h"
 
 /*
  * RECORD: each record of a pds will be read into one of these structures.
@@ -408,7 +408,7 @@ int main(int argc, char* argv[])
          np->name, 
          is.ver_num, is.mod_num, crttime_buff, modtime_buff, is.curr_num_lines, is.mod_num_lines, is.init_num_lines, is.userid);
       } else {
-        printf(" %s (invalid ispf stats) %d\n", np->name, np->userdata_len);
+        printf(" %s %d\n", np->name, np->userdata_len);
       }
     } else {
       printf(" %s %d\n", np->name, np->userdata_len);
