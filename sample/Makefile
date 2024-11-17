@@ -11,8 +11,8 @@ f2m: f2m.o msg.o fmopts.o filemap.o bpamio.o ../src/*.o
 m2f: m2f.o
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
-mlsx: mlsx.o mlsxopts.o ../src/memdir.o
-	$(LD) $(LDFLAGS) -o $@ $< mlsxopts.o ../src/memdir.o >$@.lst
+mlsx: mlsx.o mlsxopts.o ../src/memdir.o ../src/ztime.o
+	$(LD) $(LDFLAGS) -o $@ $< mlsxopts.o ../src/memdir.o ../src/ztime.o >$@.lst
 
 mchtag: mchtag.o
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst

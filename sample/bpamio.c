@@ -20,6 +20,12 @@
 #include "bpamio.h"
 #include "ispf.h"
 
+int bpam_open_read(FM_BPAMHandle* handle, const DBG_Opts* opts)
+{
+  /* msf - tbd */
+  return 4;
+}
+
 int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
 {
   struct ihadcb* PTR32 dcb;
@@ -414,7 +420,8 @@ int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, con
    */
   rc = STOW(stowlist, NULL, STOW_IFF);
   switch (rc) {
-    case STOW_IFF_CC_CREATE_OK: 
+    case STOW_IFF_CC_CREATE_OK:
+      rc = 0;
       break;
     case STOW_IFF_CC_PDS_UPDATE_UNSUPPORTED:
       debug(opts, "Member %s(%s) is in a PDS and not a PDSE - do a STOW and not a STOW_IFF\n", ds, member);
@@ -432,7 +439,7 @@ int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, con
   return rc;
 }
 
-int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts)
+static int alloc_pds(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
   struct s99_common_text_unit dd = { DALRTDDN, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
@@ -455,7 +462,25 @@ int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* o
 
   debug(opts, "Allocated DD:%s to %s\n", bh->ddname, dataset);
 
-  return bpam_open_write(bh, opts);
+  return 0;
+}
+
+int open_pds_for_read(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  int rc = alloc_pds(dataset, bh, opts);
+  if (!rc) {
+    rc = bpam_open_read(bh, opts);
+  }
+  return rc;
+}
+
+int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  int rc = alloc_pds(dataset, bh, opts);
+  if (!rc) {
+    rc = bpam_open_write(bh, opts);
+  }
+  return rc;
 }
 
 int close_pds(const char* dataset, const FM_BPAMHandle* bh, const DBG_Opts* opts)

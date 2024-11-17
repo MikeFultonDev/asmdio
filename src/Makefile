@@ -1,4 +1,4 @@
-all: call31.o call31a.o dio.o s99.o dioa.o ihadcb.o util.o iosvcs.o memdir.o
+all: call31.o call31a.o dio.o s99.o dioa.o ihadcb.o util.o iosvcs.o memdir.o ztime.o
 
 clean:
 	rm -f *.o *.lst *.dbg
@@ -26,6 +26,9 @@ iosvcs.o: iosvcs.c $(INCDIR)/iosvcs.h $(INCDIR)/dio.h $(INCDIR)/s99.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 memdir.o: memdir.c $(INCDIR)/memdir.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+
+ztime.o: ztime.c $(INCDIR)/ztime.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 ihadcb.o: ihadcb.c $(IINCDIR)/wrappers.h $(INCDIR)/dio.h $(INCDIR)/ihadcb.h
