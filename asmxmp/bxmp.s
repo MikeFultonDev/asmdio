@@ -29,7 +29,7 @@ NOTE     NOTE  PDS                    FIND OUT WHERE WE JUST WROTE
 NONOTE   DS    0H
 *
 ALLDONE  STCM  R5,14,TTR              SAVE TTR
-         STOW  PDS,DIRLIST,A          ADD TO DIRECTORY
+         STOW  PDS,DIRLIST,R          ADD TO DIRECTORY
          CLOSE (PDS)
 *
          L     R13,SAVE+4

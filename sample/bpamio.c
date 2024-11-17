@@ -20,13 +20,7 @@
 #include "bpamio.h"
 #include "ispf.h"
 
-int bpam_open_read(FM_BPAMHandle* handle, const DBG_Opts* opts)
-{
-  /* msf - tbd */
-  return 4;
-}
-
-int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
+static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
 {
   struct ihadcb* PTR32 dcb;
   struct opencb* PTR32 opencb;
@@ -43,11 +37,23 @@ int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
   }
 
   /*
-   * DCB set to PO, BPAM WRITE and POINT
+   * DCB set to PO, BPAM INPUT|OUTPUT and POINT
    */
   dcb->dcbeodad.dcbhiarc.dcbbftek.dcbbfaln = 0x84;
   dcb->dcboflgs = dcbofuex;
-  dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
+
+  switch (mode) {
+    case OPEN_INPUT:
+      dcb->dcbmacr.dcbmacr1 = dcbmrrd;
+      dcb->dcbmacr.dcbmacr2 = dcbmrpt2;
+      break;
+    case OPEN_OUTPUT:
+      dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
+      break;
+    default:
+      fprintf(stderr, "bpam_open function only supports INPUT and OUTPUT. %d specified\n", mode);
+      return 4;
+  }
 
   opencb = MALLOC31(sizeof(struct opencb));
   if (!opencb) {
@@ -56,7 +62,7 @@ int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
   }
   *opencb = opencb_template;
   opencb->dcb24 = dcb;
-  opencb->mode = OPEN_OUTPUT;
+  opencb->mode = mode;
 
   rc = OPEN(opencb);
   if (rc) {
@@ -89,6 +95,17 @@ int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
 
   return 0;
 }
+
+int bpam_open_read(FM_BPAMHandle* handle, const DBG_Opts* opts)
+{
+  return bpam_open(handle, OPEN_INPUT, opts);
+}
+
+int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
+{
+  return bpam_open(handle, OPEN_OUTPUT, opts);
+}
+
 
 static void validate_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
@@ -357,13 +374,10 @@ static int write_pds_member_dir_entry(struct ihadcb* PTR32 dcb, const char* ds, 
   }
   stowlist->add = *stowlistadd;
 
-  /*
-   * msf - this STOW is not working if the member already exists - it is failing
-   * with an rc of 20.
-   */
   int rc = STOW(stowlist, dcb, STOW_R);
   if (rc == STOW_REPLACE_MEMBER_DOES_NOT_EXIST || rc == STOW_CC_OK) {
     debug(opts, "Member %s(%s) successfully replaced\n", ds, member);
+    rc = 0;
   } else {
     fprintf(stderr, "STOW REPLACE failed for PDS member %s(%s) with rc:%d\n", ds, member, rc);
   }

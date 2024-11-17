@@ -12,6 +12,10 @@
 
 const struct s99_rbx s99rbxtemplate = {"S99RBX",S99RBXVR,{0,1,0,0,0,0,0},0,0,0};
 
+static unsigned int complement(unsigned int x) {
+  return (~x) + 1;
+}
+
 int STOW(union stowlist* PTR32 listp, struct ihadcb* PTR32 dcbp, enum stowtype type)
 {
   /*
@@ -35,17 +39,17 @@ int STOW(union stowlist* PTR32 listp, struct ihadcb* PTR32 dcbp, enum stowtype t
       /* list and dcb should be positive - nothing required */
       break;
     case STOW_R:
-      /* list positive, dcb negative */
-      dcb |= 0x80000000;
+      /* list positive, dcb complement */
+      dcb = complement(dcb);
       break;
     case STOW_D:
-      /* list negative, dcb positive */
-      list |= 0x80000000;
+      /* list complement, dcb positive */
+      list = complement(list);
       break;
     case STOW_C:
-      /* list negative, dcb negative */
-      list |= 0x80000000;
-      dcb |= 0x80000000;
+      /* list complement, dcb complement */
+      list = complement(list);
+      dcb = complement(list);
       break;
     case STOW_I:
       /* list should be NULL, dcb positive */
