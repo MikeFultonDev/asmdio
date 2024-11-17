@@ -626,6 +626,11 @@ int main(int argc, char* argv[])
   dataset_pattern = argv[first_arg + 1];
   first_file_pattern = first_arg + 2;
 
+  if (strlen(dataset_pattern) > DS_MAX) {
+    fprintf(stderr, "Dataset %s is invalid (too long).\n", dataset_pattern);
+    return 8;
+  }
+
   /*
    * Expand the file patterns and store them into globset
    */

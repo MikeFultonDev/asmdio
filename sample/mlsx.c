@@ -1,7 +1,9 @@
+#include <stdio.h>
+#include <string.h>
+#include "dio.h"
 #include "mlsxopts.h"
 #include "memdir.h"
-#include <stdio.h>
-
+#include "util.h"
 
 static void syntax(FILE* stream)
 {
@@ -63,7 +65,17 @@ int main(int argc, char* argv[])
 
   const char* ds = argv[first_arg];
 
-  MEMDIR* md = openmemdir(ds, &opts.dbg);
+  if (strlen(ds) > DS_MAX) {
+    fprintf(stderr, "Dataset %s is invalid (too long).\n", ds);
+    return 8;
+  }
+
+  char dataset_buffer[DS_MAX+1];
+
+  strcpy(dataset_buffer, ds);
+  uppercase(dataset_buffer);
+
+  MEMDIR* md = openmemdir(dataset_buffer, &opts.dbg);
   struct mement* me;
   if (!md) {
     fprintf(stderr, "Unable to open dataset %s\n", ds);
