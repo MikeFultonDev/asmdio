@@ -19,6 +19,7 @@
 #include "msg.h"
 #include "bpamio.h"
 #include "ispf.h"
+#include "ztime.h"
 
 static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
 {
@@ -44,8 +45,7 @@ static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
 
   switch (mode) {
     case OPEN_INPUT:
-      dcb->dcbmacr.dcbmacr1 = dcbmrrd;
-      dcb->dcbmacr.dcbmacr2 = dcbmrpt2;
+      dcb->dcbmacr.dcbmacr1 = dcbmrrd|dcbmrpt1;
       break;
     case OPEN_OUTPUT:
       dcb->dcbmacr.dcbmacr2 = dcbmrwrt|dcbmrpt2;
@@ -136,6 +136,47 @@ static void validate_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 }
 
 /*
+ * Read block.
+ */
+int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  const struct decb decb_template = { 0, 0x8020 };
+  *(bh->decb) = decb_template;
+  SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
+  bh->decb->area = bh->block;
+
+  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n",
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N',
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N',
+    bh->bytes_used,
+    bh->block_size
+  );
+
+  /* Read one block */
+  int rc = READ(bh->decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform READ. rc:%d\n", rc);
+    return rc;
+  }
+  rc = CHECK(bh->decb);
+#if 0
+  /* no RC from CHECK */
+  if (rc) {
+    fprintf(stderr, "Read to end of member. rc:%d\n", rc);
+    return rc;
+  }
+#endif
+
+#if 0
+  fprintf(stdout, "Block read:%p (%d bytes)\n", bh->block, bh->dcb->dcbblksi);
+  dumpstg(stdout, bh->block, bh->dcb->dcbblksi);
+  fprintf(stdout, "\n");
+#endif
+
+  return 0;
+}
+
+/*
  * Write out a block. Returns 0 if successful, non-zero otherwise
  */
 int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
@@ -177,11 +218,13 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     return rc;
   }
 
+#if 0
   rc = CHECK(bh->decb);
   if (rc) {
     fprintf(stderr, "Unable to perform CHECK. rc:%d\n", rc);
     return rc;
   }
+#endif
 
   if (!bh->ttr_known) {
     bh->ttr = NOTE(bh->dcb);
@@ -192,10 +235,111 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
   return 0;
 }
 
+static void print_name(FILE* stream, struct smde* PTR32 smde)
+{
+  struct smde_name* PTR32 name = (struct smde_name*) (((char*) smde) + smde->smde_name_off);
+  char* PTR32 mem = name->smde_name_val;
+  int len = name->smde_name_len;
+
+  /*
+   * Can use the MLT to find what alias matches which member for a PDS (not required for PDSE)
+   * This will require 2 passes - one to get the MLTs and put them into a table and a second
+   * to print the members out.
+   */
+  char* mlt = smde->smde_mltk.smde_mlt;
+  fprintf(stream, "%.*s %x%x%x 0x%x", len, mem, mlt[0], mlt[1], mlt[2], smde->smde_usrd_len);
+  if (smde->smde_flag_alias) {
+    if (smde->smde_pname_off == 0) {
+      fprintf(stream, " -> ??? ");
+    } else {
+      struct smde_pname* PTR32 pname = (struct smde_pname*) (((char*) smde) + smde->smde_pname_off);
+      char* PTR32 pmem = pname->smde_pname_val;
+      int plen = pname->smde_pname_len;
+      fprintf(stream, " -> %.*s", plen, pmem);
+    }
+  }
+}
+
+const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
+const struct decb decb_template = { 0, 0x8080 };
+struct desp* PTR32 get_desp_all(const FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  struct desp* PTR32 desp;
+  struct desl* PTR32 desl;
+  struct desl_name* PTR32 desl_name;
+  struct desb* PTR32 desb;
+  struct decb* PTR32 decb;
+  struct smde* PTR32 smde;
+  int rc;
+
+  desp = MALLOC31(sizeof(struct desp));
+  if (!desp) {
+    fprintf(stderr, "Unable to obtain storage for DESERV\n");
+    return NULL;
+  }
+
+  /*
+   * DESERV GET_ALL BYPASS_LLA LIBTYPE DCB CONN_INTENT NONE EXT_ATTR NAME_LIST AREA
+   */
+  *desp = desp_template;
+  desp->desp_func = desp_func_get_all;
+  desp->desp_bypass_lla = 1;
+  desp->desp_ext_attr = 1;
+  desp->desp_libtype = desp_libtype_dcb;
+  desp->desp_conn_intent = desp_conn_intent_none;
+
+  /* setup DCB */
+  desp->desp_dcb_ptr = bh->dcb;
+
+  /* setup DESERV area */
+  int desb_len = sizeof(struct desb);
+  desb = MALLOC31(desb_len);
+  if (!desb) {
+    fprintf(stderr, "Unable to obtain storage for DESB area\n");
+    return NULL;
+  }
+
+  desp->desp_area_ptr = desb;
+  desp->desp_area2 = desb_len;
+  desp->desp_areaptr_ptr = &desp->desp_area_ptr;
+
+  /* call DESERV and get extended attributes */
+  rc = DESERV(desp);
+  if (rc) {
+    fprintf(stderr, "Unable to PERFORM DESERV GET_ALL. rc:0x%x\n", rc);
+    return NULL;
+  }
+
+  struct desb* PTR32 cur_desb = desp->desp_area_ptr;
+  while (cur_desb) {
+    int i;
+    int members = cur_desb->desb_count;
+    fprintf(stdout, "Members in DESB %p: %d\n", cur_desb, members);
+    /*
+     * First SMDE
+     */
+    smde = (struct smde* PTR32) (cur_desb->desb_data);
+    for (i=0; i<members; ++i) {
+      print_name(stdout, smde);
+      if (smde->smde_ext_attr_off != 0) {
+        struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
+        unsigned long long tod = *((long long *) ext_attr->smde_change_timestamp);
+        time_t ltime = tod_to_time(tod);
+
+        fprintf(stdout, " CCSID: 0x%x%x %8.8s %s\n",
+          ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ctime(&ltime));
+      } else {
+        fprintf(stdout, "\n");
+      }
+      smde = (struct smde* PTR32) (((char*) smde) + smde->smde_len);
+    }
+    cur_desb = cur_desb->desb_next;
+  }
+  return desp;
+}
+
 struct desp* PTR32 init_desp(const FM_BPAMHandle* bh, const char* mem, const DBG_Opts* opts)
 {
-  const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
-  const struct decb decb_template = { 0, 0x8080 };
 
   struct desp* PTR32 desp;
   struct desl* PTR32 desl;
@@ -526,4 +670,189 @@ int close_pds(const char* dataset, const FM_BPAMHandle* bh, const DBG_Opts* opts
   debug(opts, "Free DD:%s\n", bh->ddname);
 
   return rc;
+}
+
+/*
+ * ADD_NAME: Add a new member name to the linked node. The new member is
+ * added to the end so that the original ordering is maintained.
+ */
+static char *add_name(struct mem_node** node, const char *name, struct mem_node** last_ptr, const char* userdata, char userdata_len)
+{
+
+  struct mem_node* newnode;
+
+  /*
+   * malloc space for the new node
+   */
+
+  newnode = (struct mem_node*)malloc(sizeof(struct mem_node));
+  if (newnode == NULL) {
+    fprintf(stderr,"malloc failed for %d bytes\n",sizeof(struct mem_node));
+    exit(-1);
+  }
+
+   /* copy the name into the node and NULL terminate it */
+
+  memcpy(newnode->name,name,MEM_MAX);
+  newnode->name[MEM_MAX] = '\0';
+  newnode->next = NULL;
+
+  memcpy(newnode->userdata, userdata, userdata_len);
+  newnode->userdata_len = userdata_len;
+
+  /*
+   * add the new node to the linked list
+   */
+
+  if (*last_ptr != NULL) {
+    (*last_ptr)->next = newnode;
+    *last_ptr = newnode;
+  }
+  else {
+    *node = newnode;
+    *last_ptr = newnode;
+  }
+  return(newnode->name);
+}
+
+/*
+ * GEN_struct mem_node() processes the record passed. The main loop scans through the
+ * record until it has read at least rec->count bytes, or a directory end
+ * marker is detected.
+ *
+ * Each record has the form:
+ *
+ * +------------+------+------+------+------+----------------+
+ * + # of bytes ¦Member¦Member¦......¦Member¦  Unused        +
+ * + in record  ¦  1   ¦  2   ¦      ¦  n   ¦                +
+ * +------------+------+------+------+------+----------------+
+ *  ¦--count---¦¦-----------------rest-----------------------¦
+ *  (Note that the number stored in count includes its own
+ *   two bytes)
+ *
+ * And, each member has the form:
+ *
+ * +--------+-------+----+-----------------------------------+
+ * + Member ¦TTR    ¦info¦                                   +
+ * + Name   ¦       ¦byte¦  User Data TTRN's (halfwords)     +
+ * + 8 bytes¦3 bytes¦    ¦                                   +
+ * +--------+-------+----+-----------------------------------+
+ */
+#define TTRLEN 3      /* The TTR's are 3 bytes long */
+
+/*
+ * bit 0 of the info-byte is '1' if the member is an alias,
+ * 0 otherwise. ALIAS_MASK is used to extract this information
+ */
+
+#define ALIAS_MASK ((unsigned int) 0x80)
+
+/*
+ * The number of user data half-words is in bits 3-7 of the info byte.
+ * SKIP_MASK is used to extract this information.  Since this number is
+ * in half-words, it needs to be double to obtain the number of bytes.
+ */
+#define SKIP_MASK ((unsigned int) 0x1F)
+
+/*
+ * 8 hex FF's mark the end of the directory
+ */
+
+char *endmark = "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF";
+
+/*
+ * RECORD: each record of a pds will be read into one of these structures.
+ *         The first 2 bytes is the record length, which is put into 'count',
+ *         the remaining 254 bytes are put into rest. Each record is 256 bytes long.
+ */
+
+#define RECLEN  254
+
+typedef struct {
+  unsigned short int count;
+  char rest[RECLEN];
+} RECORD;
+
+static int gen_node(struct mem_node** node, RECORD *rec, struct mem_node** last_ptr)
+{
+
+   char *ptr, *name;
+   int skip, count = 2;
+   unsigned int info_byte, alias, ttrn;
+   char ttr[TTRLEN];
+   int list_end = 0;
+
+   ptr = rec->rest;
+
+   while(count < rec->count) {
+     if (!memcmp(ptr,endmark,MEM_MAX)) {
+       list_end = 1;
+       break;
+     }
+
+     /* member name */
+     name = ptr;
+     ptr += MEM_MAX;
+
+     /* ttr */
+     memcpy(ttr,ptr,TTRLEN);
+     ptr += TTRLEN;
+
+     /* info_byte */
+     info_byte = (unsigned int) (*ptr);
+     alias = info_byte & ALIAS_MASK;
+     skip = (info_byte & SKIP_MASK) * 2 + 1;
+     if (!alias) add_name(node,name,last_ptr,ptr,skip);
+     ptr += skip;
+     count += (TTRLEN + MEM_MAX + skip);
+   }
+   return(list_end);
+}
+
+struct mem_node* pds_mem(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  struct mem_node* node, *last_ptr;
+  RECORD* rec;
+  int list_end;
+
+  node = NULL;
+  last_ptr = NULL;
+  int rc;
+  int offset;
+
+  /*
+   * Read the PDS directory one block at a time until either the 
+   * end of the directory or end-of-file is detected. 
+   * Break the block into records and call up gen_node() with every 
+   * record read, to add member names to the linked list.
+  */
+
+  while ((rc = read_block(bh, opts)) == 0) {
+    for (offset = 0; offset < bh->dcb->dcbblksi; offset += sizeof(RECORD)) {
+      rec = (RECORD*) &(((char*)bh->block)[offset]);
+      list_end = gen_node(&node, rec, &last_ptr);
+      if (list_end) {
+        return node;
+      }
+    }
+  }
+  return NULL;
+}
+
+/*
+ * FREE_MEM: This function should be used
+ * as soon as you are finished using the linked list. It frees the storage
+ * allocated by the linked list.
+*/
+
+void free_mem(struct mem_node* node)
+{
+  struct mem_node* next_node=node;
+
+  while (next_node != NULL) {
+     next_node = node->next;
+     free(node);
+     node = next_node;
+  }
+  return;
 }

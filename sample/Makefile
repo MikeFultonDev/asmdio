@@ -5,14 +5,14 @@ clean:
 
 INCDIR=../include
 
-f2m: f2m.o msg.o fmopts.o filemap.o bpamio.o ../src/*.o
-	$(LD) $(LDFLAGS) -o $@ $< msg.o fmopts.o filemap.o bpamio.o ../src/*.o >$@.lst
+f2m: f2m.o msg.o fmopts.o filemap.o bpamio.o ztime.o ../src/*.o
+	$(LD) $(LDFLAGS) -o $@ $< msg.o fmopts.o filemap.o bpamio.o ztime.o ../src/*.o >$@.lst
 
 m2f: m2f.o
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
 mlsx: mlsx.o mlsxopts.o bpamio.o memdir.o ztime.o
-	$(LD) $(LDFLAGS) -o $@ $< msg.o mlsxopts.o memdir.o ztime.o bpamio.o ../src/*.o >$@.lst
+	$(LD) $(LDFLAGS) -o $@ $< msg.o mlsxopts.o memdir.o bpamio.o ztime.o ../src/*.o >$@.lst
 
 mchtag: mchtag.o
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
