@@ -12,10 +12,13 @@
    * next member which points to NULL.
   */
 
+  #define TTR_LEN (3)
   struct mem_node {
     struct mem_node *next;
     char name[MEM_MAX+1];
     char userdata_len;
+    int is_alias:1;
+    char ttr[TTR_LEN];
     char userdata[64];
   };
 

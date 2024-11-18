@@ -242,12 +242,12 @@ static void print_name(FILE* stream, struct smde* PTR32 smde)
   fprintf(stream, "%.*s %x%x%x 0x%x", len, mem, mlt[0], mlt[1], mlt[2], smde->smde_usrd_len);
   if (smde->smde_flag_alias) {
     if (smde->smde_pname_off == 0) {
-      fprintf(stream, " -> ??? ");
+      fprintf(stream, " alias ??? ");
     } else {
       struct smde_pname* PTR32 pname = (struct smde_pname*) (((char*) smde) + smde->smde_pname_off);
       char* PTR32 pmem = pname->smde_pname_val;
       int plen = pname->smde_pname_len;
-      fprintf(stream, " -> %.*s", plen, pmem);
+      fprintf(stream, " alias %.*s", plen, pmem);
     }
   }
 }
@@ -626,7 +626,7 @@ int close_pds(const char* dataset, const FM_BPAMHandle* bh, const DBG_Opts* opts
  * ADD_NAME: Add a new member name to the linked node. The new member is
  * added to the end so that the original ordering is maintained.
  */
-static char *add_name(struct mem_node** node, const char *name, struct mem_node** last_ptr, const char* userdata, char userdata_len)
+static char *add_member_node(struct mem_node** node, const char *name, int is_alias, char* ttr, struct mem_node** last_ptr, const char* userdata, char userdata_len)
 {
 
   struct mem_node* newnode;
@@ -647,6 +647,8 @@ static char *add_name(struct mem_node** node, const char *name, struct mem_node*
   newnode->name[MEM_MAX] = '\0';
   newnode->next = NULL;
 
+  memcpy(newnode->ttr, ttr, TTR_LEN);
+  newnode->is_alias = is_alias ? 1 : 0;
   memcpy(newnode->userdata, userdata, userdata_len);
   newnode->userdata_len = userdata_len;
 
@@ -688,7 +690,6 @@ static char *add_name(struct mem_node** node, const char *name, struct mem_node*
  * + 8 bytes¦3 bytes¦    ¦                                   +
  * +--------+-------+----+-----------------------------------+
  */
-#define TTRLEN 3      /* The TTR's are 3 bytes long */
 
 /*
  * bit 0 of the info-byte is '1' if the member is an alias,
@@ -729,7 +730,7 @@ static int gen_node(struct mem_node** node, RECORD *rec, struct mem_node** last_
    char *ptr, *name;
    int skip, count = 2;
    unsigned int info_byte, alias, ttrn;
-   char ttr[TTRLEN];
+   char ttr[TTR_LEN];
    int list_end = 0;
 
    ptr = rec->rest;
@@ -745,16 +746,16 @@ static int gen_node(struct mem_node** node, RECORD *rec, struct mem_node** last_
      ptr += MEM_MAX;
 
      /* ttr */
-     memcpy(ttr,ptr,TTRLEN);
-     ptr += TTRLEN;
+     memcpy(ttr,ptr,TTR_LEN);
+     ptr += TTR_LEN;
 
      /* info_byte */
      info_byte = (unsigned int) (*ptr);
      alias = info_byte & ALIAS_MASK;
      skip = (info_byte & SKIP_MASK) * 2 + 1;
-     if (!alias) add_name(node,name,last_ptr,ptr,skip);
+     add_member_node(node,name,alias,ttr,last_ptr,ptr,skip);
      ptr += skip;
-     count += (TTRLEN + MEM_MAX + skip);
+     count += (TTR_LEN + MEM_MAX + skip);
    }
    return(list_end);
 }

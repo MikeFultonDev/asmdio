@@ -119,14 +119,14 @@ void* ispf_info(const char* dataset, FM_BPAMHandle* dd, const DBG_Opts* opts)
         char modtime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
         strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", &is.create_time);
         strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", &is.mod_time);
-        printf(" %s %2.2d.%2.2d %s %s %10d %10d %10d %s\n", 
-         np->name, 
+        printf(" %s %x%x%x %2.2d.%2.2d %s %s %10d %10d %10d %s\n", 
+         np->name, np->ttr[0], np->ttr[1], np->ttr[2],
          is.ver_num, is.mod_num, crttime_buff, modtime_buff, is.curr_num_lines, is.mod_num_lines, is.init_num_lines, is.userid);
       } else {
         printf(" %s (invalid ispf stats) %d\n", np->name, np->userdata_len);
       }
     } else {
-      printf(" %s %d\n", np->name, np->userdata_len);
+      printf(" %s %x%x%x %s\n", np->name, np->ttr[0], np->ttr[1], np->ttr[2], np->is_alias ? "(alias)" : "");
     }
     np = np->next;
   }
