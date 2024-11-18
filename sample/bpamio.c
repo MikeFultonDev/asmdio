@@ -218,14 +218,6 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     return rc;
   }
 
-#if 0
-  rc = CHECK(bh->decb);
-  if (rc) {
-    fprintf(stderr, "Unable to perform CHECK. rc:%d\n", rc);
-    return rc;
-  }
-#endif
-
   if (!bh->ttr_known) {
     bh->ttr = NOTE(bh->dcb);
     bh->ttr_known = 1;
@@ -434,48 +426,6 @@ int read_member_dir_entry(struct desp* PTR32 desp, const DBG_Opts* opts)
   return 0;
 }
 
-static void d2pd(char* pd, int val, int set_positive_sign)
-{
-  if (set_positive_sign) {
-    *pd = 0xF;
-    *pd |= (val << 4);
-  } else {
-    *pd = (val % 10);
-    *pd |= (val / 10) << 4;
-  }
-}
-    
-static void set_ispf_date(unsigned char* century, char* pdjd, struct tm* ltime)
-{
-  int YEAR,MONTH,DAY,I,J,K;
-  int JD;
-
-  YEAR = ltime->tm_year + 1900;
-  MONTH = ltime->tm_mon + 1;
-  DAY = ltime->tm_mday;
-
-  /*
-   * From: https://aa.usno.navy.mil/faq/JD_formula
-   */
-  I  = YEAR;
-  J  = MONTH;
-  K  = DAY;
-  JD = K-32075+1461*(I+4800+(J-14)/12)/4+367*(J-2-(J-14)/12*12)/12-3*((I+4900+(J-14)/12)/100)/4;
-
-  /*
-   * adjust to days from 2000
-   */
-  *century = 1;   /* msf - add code for dates before 2000 */
-  JD -= 2436310;  /* 01/01/2000 Julian                    */
-
-  int thousands = JD/1000;
-  int tens = (JD % 1000) / 10;
-  int ones = (JD % 10);
-  d2pd(&pdjd[0], thousands, 0);
-  d2pd(&pdjd[1], tens, 0);
-  d2pd(&pdjd[2], ones, 1);
-}
-
 const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
 static void add_mem_stats(struct stowlist_add* PTR32 sla, const char* memname, size_t memlen, unsigned int ttr)
 {
@@ -497,11 +447,11 @@ static void add_mem_stats(struct stowlist_add* PTR32 sla, const char* memname, s
   time ( &t );
   ltime = localtime ( &t );
 
-  set_ispf_date(&ids.create_century, ids.pd_create_julian, ltime);
-  set_ispf_date(&ids.mod_century, ids.pd_mod_julian, ltime);
-  d2pd(&ids.pd_mod_hours, ltime->tm_hour, 0);
-  d2pd(&ids.pd_mod_minutes, ltime->tm_min, 0);
-  d2pd(&ids.pd_mod_seconds, ltime->tm_sec, 0);
+  tm_to_pdjd(&ids.create_century, ids.pd_create_julian, ltime);
+  tm_to_pdjd(&ids.mod_century, ids.pd_mod_julian, ltime);
+  ids.pd_mod_hours = d_to_pd(ltime->tm_hour, 0);
+  ids.pd_mod_minutes = d_to_pd(ltime->tm_min, 0);
+  ids.pd_mod_seconds = d_to_pd(ltime->tm_sec, 0);
   memcpy(&ids.userid, userid, sizeof(userid)-1);
 
   memcpy(sla->user_data, &ids, sizeof(struct ispf_disk_stats));

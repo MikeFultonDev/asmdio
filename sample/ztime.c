@@ -10,6 +10,85 @@
  * ISPF Stats Layout on disk: https://tech.mikefulton.ca/ISPFStatsLayout
  */
 
+static const int days[] = {
+  /* Jan */ 31,
+  /* Feb */ 28,
+  /* Mar */ 31,
+  /* Apr */ 30,
+  /* May */ 31,
+  /* Jun */ 30,
+  /* Jul */ 31,
+  /* Aug */ 31,
+  /* Sep */ 30,
+  /* Oct */ 31,
+  /* Nov */ 30,
+  /* Dec */ 31
+};
+
+/*
+ * convert julian (ordinal) day to month/day, where month starts from 0
+ */
+static void j_to_mmdd(int year, int ordinal, int* month, int* day)
+{
+  *month = 0;
+  *day = 0;
+  int i;
+  int leap;
+
+  int remainder = ordinal;
+  if ((year % 4 == 0)) {
+    if ((year % 100 != 0) || (year % 400 == 0)) {
+      leap = 1;
+    } else {
+      leap = 0;
+    }
+  } else {
+    leap = 0;
+  }
+  for (i = 0; i<12; ++i) {
+    int days_in_month = days[i];
+    if (i == 1 && leap) {
+      days_in_month++;
+    }
+    if (remainder < days_in_month) {
+      *month = i;
+      *day = remainder;
+      break;
+    }
+    remainder -= days_in_month;
+  }
+  return;
+}
+
+/*
+ * convert month/day to julian (ordinal), where month starts from 0
+ */
+
+static void mmdd_to_j(int year, int month, int day, int* ordinal)
+{
+  int i;
+  int leap;
+
+  *ordinal = 0;
+  if ((year % 4 == 0)) {
+    if ((year % 100 != 0) || (year % 400 == 0)) {
+      leap = 1;
+    } else {
+      leap = 0;
+    }
+  } else {
+    leap = 0;
+  }
+  for (i = 0; i<month; ++i) {
+    int days_in_month = days[i];
+    if (i == 1 && leap) {
+      days_in_month++;
+    }
+    *ordinal += days_in_month;
+  }
+  *ordinal += day;
+}
+
 /*
  * convert a one byte packed decimal value to decimal
  */
@@ -49,42 +128,15 @@ unsigned char d_to_pd(unsigned int val, int set_positive_sign)
  */
 int pdjd_to_tm(const char* pdjd, int start_century, struct tm* ltime)
 {
-
-  int thousands = pd_to_d(pdjd[0]);
+  int year = pd_to_d(pdjd[0]);
   int tens = pd_to_d(pdjd[1]);
   int ones = pd_to_d(pdjd[2]);
-  int jd = thousands*1000 + tens*10 + ones;
+  int ordinal = tens*10 + ones;
 
-  int I,J,L,N,K;
-  if (start_century == 1) {
-    jd += 2436310;
-  } else if (start_century == 0) {
-    return 8; /* need to add support for 20th century dates */
-  } else {
-    return 4; /* unsupported start century */
-  }
+  year += (1900 + (start_century*100));
+  j_to_mmdd(year, ordinal, &ltime->tm_mon, &ltime->tm_mday);
 
-  /*
-   * Julian date to Gregorian date algorithm from:
-   * https://aa.usno.navy.mil/faq/JD_formula
-   */
-  L = jd+68569;
-  N = 4*L/146097;
-  L = L-(146097*N+3)/4;
-  I = 4000*(L+1)/1461001;
-  L = L-1461*I/4+31;
-  J = 80*L/2447;
-  K = L-2447*J/80;
-  L = J/11;
-  J = J+2-12*L;
-  I = 100*(N-49)+I+L;
-
-  /*
-   * For 'struct tm', year starts from 1900, months start from 0, days start from 1
-   */
-  ltime->tm_year = (I-1900);
-  ltime->tm_mon = (J-1);
-  ltime->tm_mday = K;
+  ltime->tm_year = (year - 1900);
 
   return 0;
 }
@@ -98,32 +150,21 @@ int pdjd_to_tm(const char* pdjd, int start_century, struct tm* ltime)
  */
 void tm_to_pdjd(unsigned char* century, char* pdjd, struct tm* ltime)
 {
-  int YEAR,MONTH,DAY,I,J,K;
-  int JD;
+  int year,month,day;
+  int ordinal;
 
-  YEAR = ltime->tm_year + 1900;
-  MONTH = ltime->tm_mon + 1;
-  DAY = ltime->tm_mday;
+  *century = (ltime->tm_year / 100) - 19;
 
-  /*
-   * From: https://aa.usno.navy.mil/faq/JD_formula
-   */
-  I  = YEAR;
-  J  = MONTH;
-  K  = DAY;
-  JD = K-32075+1461*(I+4800+(J-14)/12)/4+367*(J-2-(J-14)/12*12)/12-3*((I+4900+(J-14)/12)/100)/4;
+  year = ltime->tm_year + 1900;
+  month = ltime->tm_mon;
+  day = ltime->tm_mday;
 
-  /*
-   * adjust to days from 2000
-   */
-  *century = 1;   /* msf - add code for dates before 2000 */
-  JD -= 2436310;  /* 01/01/2000 Julian                    */
+  mmdd_to_j(year, month, day, &ordinal);
 
-  int thousands = JD/1000;
-  int tens = (JD % 1000) / 10;
-  int ones = (JD % 10);
+  int tens = ordinal / 10;
+  int ones = ordinal % 10;
 
-  pdjd[0] = d_to_pd(thousands, 0);
+  pdjd[0] = d_to_pd(year%100, 0);
   pdjd[1] = d_to_pd(tens, 0);
   pdjd[2] = d_to_pd(ones, 1);
 }
