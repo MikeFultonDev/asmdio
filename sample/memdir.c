@@ -105,9 +105,8 @@ static int ispf_stats(const struct mem_node* np, struct ispf_stats* is)
   return 0;
 }
 
-void* ispf_info(const char* dataset, FM_BPAMHandle* dd, const DBG_Opts* opts)
+static struct mstat* memnode_to_mstat(struct mem_node* np, const DBG_Opts* opts)
 {
-  struct mem_node* np = pds_mem(dataset, dd, opts);
   while (np) {
     if (np->userdata_len == 31 || np->userdata_len == 41) {
       /* ISPF USER DATA */
@@ -133,15 +132,81 @@ void* ispf_info(const char* dataset, FM_BPAMHandle* dd, const DBG_Opts* opts)
   return 0;
 }
 
+static void print_name(FILE* stream, struct smde* PTR32 smde)
+{
+  struct smde_name* PTR32 name = (struct smde_name*) (((char*) smde) + smde->smde_name_off);
+  char* PTR32 mem = name->smde_name_val;
+  int len = name->smde_name_len;
+
+  /*
+   * Can use the MLT to find what alias matches which member for a PDS (not required for PDSE)
+   * This will require 2 passes - one to get the MLTs and put them into a table and a second
+   * to print the members out.
+   */
+  char* mlt = smde->smde_mltk.smde_mlt;
+  fprintf(stream, "%.*s %x%x%x 0x%x", len, mem, mlt[0], mlt[1], mlt[2], smde->smde_usrd_len);
+  if (smde->smde_flag_alias) {
+    if (smde->smde_pname_off == 0) {
+      fprintf(stream, " alias ??? ");
+    } else {
+      struct smde_pname* PTR32 pname = (struct smde_pname*) (((char*) smde) + smde->smde_pname_off);
+      char* PTR32 pmem = pname->smde_pname_val;
+      int plen = pname->smde_pname_len;
+      fprintf(stream, " alias %.*s", plen, pmem);
+    }
+  }
+}
+
+static struct mstat* desp_to_mstat(struct desp* PTR32 desp, const DBG_Opts* opts)
+{
+  struct desb* PTR32 cur_desb = desp->desp_area_ptr;
+  while (cur_desb) {
+    int i;
+    int members = cur_desb->desb_count;
+    fprintf(stdout, "Members in DESB %p: %d\n", cur_desb, members);
+    /*
+     * First SMDE
+     */
+    struct smde* PTR32 smde = (struct smde* PTR32) (cur_desb->desb_data);
+    for (i=0; i<members; ++i) {
+      print_name(stdout, smde);
+      if (smde->smde_ext_attr_off != 0) {
+        struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
+        unsigned long long tod = *((long long *) ext_attr->smde_change_timestamp);
+        time_t ltime = tod_to_time(tod);
+
+        fprintf(stdout, " CCSID: 0x%x%x %8.8s %s\n",
+          ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ctime(&ltime));
+      } else {
+        fprintf(stdout, "\n");
+      }
+      smde = (struct smde* PTR32) (((char*) smde) + smde->smde_len);
+    }
+    cur_desb = cur_desb->desb_next;
+  }
+  return 0;
+}
+
+static MEMDIR* merge_mstat(struct mstat* mn_mstat, struct mstat* de_mstat, const DBG_Opts* opts)
+{
+  return 0;
+}
+
 MEMDIR* openmemdir(const char* dataset, const DBG_Opts* opts)
 {
   FM_BPAMHandle dd;
   if (open_pds_for_read(dataset, &dd, opts)) {
     return NULL;
   }
-  struct mem_node* np = ispf_info(dataset, &dd, opts);
+  struct mem_node* np = pds_mem(dataset, &dd, opts);
   struct desp* PTR32 desp = get_desp_all(&dd, opts);
-  return NULL;
+  if (np == NULL || desp == NULL) {
+    return NULL;
+  }
+  struct mstat* mn_mstat = memnode_to_mstat(np, opts);
+  struct mstat* de_mstat = desp_to_mstat(desp, opts);
+
+  return merge_mstat(mn_mstat, de_mstat, opts);
 }
 
 struct mement* readmemdir(MEMDIR* memdir, const DBG_Opts* opts)

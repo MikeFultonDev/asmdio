@@ -227,31 +227,6 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
   return 0;
 }
 
-static void print_name(FILE* stream, struct smde* PTR32 smde)
-{
-  struct smde_name* PTR32 name = (struct smde_name*) (((char*) smde) + smde->smde_name_off);
-  char* PTR32 mem = name->smde_name_val;
-  int len = name->smde_name_len;
-
-  /*
-   * Can use the MLT to find what alias matches which member for a PDS (not required for PDSE)
-   * This will require 2 passes - one to get the MLTs and put them into a table and a second
-   * to print the members out.
-   */
-  char* mlt = smde->smde_mltk.smde_mlt;
-  fprintf(stream, "%.*s %x%x%x 0x%x", len, mem, mlt[0], mlt[1], mlt[2], smde->smde_usrd_len);
-  if (smde->smde_flag_alias) {
-    if (smde->smde_pname_off == 0) {
-      fprintf(stream, " alias ??? ");
-    } else {
-      struct smde_pname* PTR32 pname = (struct smde_pname*) (((char*) smde) + smde->smde_pname_off);
-      char* PTR32 pmem = pname->smde_pname_val;
-      int plen = pname->smde_pname_len;
-      fprintf(stream, " alias %.*s", plen, pmem);
-    }
-  }
-}
-
 const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
 const struct decb decb_template = { 0, 0x8080 };
 struct desp* PTR32 get_desp_all(const FM_BPAMHandle* bh, const DBG_Opts* opts)
@@ -302,31 +277,6 @@ struct desp* PTR32 get_desp_all(const FM_BPAMHandle* bh, const DBG_Opts* opts)
     return NULL;
   }
 
-  struct desb* PTR32 cur_desb = desp->desp_area_ptr;
-  while (cur_desb) {
-    int i;
-    int members = cur_desb->desb_count;
-    fprintf(stdout, "Members in DESB %p: %d\n", cur_desb, members);
-    /*
-     * First SMDE
-     */
-    smde = (struct smde* PTR32) (cur_desb->desb_data);
-    for (i=0; i<members; ++i) {
-      print_name(stdout, smde);
-      if (smde->smde_ext_attr_off != 0) {
-        struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
-        unsigned long long tod = *((long long *) ext_attr->smde_change_timestamp);
-        time_t ltime = tod_to_time(tod);
-
-        fprintf(stdout, " CCSID: 0x%x%x %8.8s %s\n",
-          ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ctime(&ltime));
-      } else {
-        fprintf(stdout, "\n");
-      }
-      smde = (struct smde* PTR32) (((char*) smde) + smde->smde_len);
-    }
-    cur_desb = cur_desb->desb_next;
-  }
   return desp;
 }
 
