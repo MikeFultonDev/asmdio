@@ -62,6 +62,7 @@ For applications that need to perform common I/O operations, the Language Enviro
 - [Dataset Record Formats](https://tech.mikefulton.ca/DatasetRecordFormats)
 - [List PDS Members Sample Code](https://tech.mikefulton.ca/ListPDSMembers)
 - [ISPF Statistics Description](https://tech.mikefulton.ca/ISPFStats)
+- [ISPF Statistics Disk Layout](https://tech.mikefulton.ca/ISPFStatsLayout)
 
 ## Key Points
 

@@ -10,9 +10,10 @@
 #include "ztime.h"
 #include "bpamio.h"
 
-#pragma pack(full)
+#pragma pack(1)
 struct ispf_disk_stats {
   char encoded_userdata_length;
+
   unsigned char ver_num;
   unsigned char mod_num;
   int sclm:1;
@@ -20,14 +21,17 @@ struct ispf_disk_stats {
   int extended:1;
   int reserve_b:5;
   unsigned char pd_mod_seconds;
+
   unsigned char create_century;
   char pd_create_julian[3];
+
   unsigned char mod_century;
   char pd_mod_julian[3];
+
   unsigned char pd_mod_hours;
   unsigned char pd_mod_minutes;
-
   unsigned short curr_num_lines;
+
   unsigned short init_num_lines;
   unsigned short mod_num_lines;
 
@@ -43,9 +47,9 @@ struct ispf_disk_stats {
 struct ispf_stats {
   struct tm create_time;
   struct tm mod_time;
-  unsigned short curr_num_lines;
-  unsigned short init_num_lines;
-  unsigned short mod_num_lines;
+  unsigned int curr_num_lines;
+  unsigned int init_num_lines;
+  unsigned int mod_num_lines;
   unsigned char userid[8+1];
   unsigned char ver_num;
   unsigned char mod_num;
@@ -80,6 +84,7 @@ static int ispf_stats(const struct mem_node* np, struct ispf_stats* is)
 {
   struct ispf_disk_stats* id = (struct ispf_disk_stats*) (np->userdata);
   int rc = valid_ispf_disk_stats(id);
+
   if (rc) {
     return rc;
   }
@@ -193,73 +198,6 @@ static struct mstat* memnode_to_mstat(struct mem_node* np, const DBG_Opts* opts,
   return mstat;
 }
 
-#if 0
-static void print_name(FILE* stream, struct smde* PTR32 smde)
-{
-  struct smde_name* PTR32 name = (struct smde_name*) (((char*) smde) + smde->smde_name_off);
-  char* PTR32 mem = name->smde_name_val;
-  int len = name->smde_name_len;
-
-  /*
-   * Can use the MLT to find what alias matches which member for a PDS (not required for PDSE)
-   * This will require 2 passes - one to get the MLTs and put them into a table and a second
-   * to print the members out.
-   */
-  char* mlt = smde->smde_mltk.smde_mlt;
-  fprintf(stream, "%.*s %x%x%x 0x%x", len, mem, mlt[0], mlt[1], mlt[2], smde->smde_usrd_len);
-  if (smde->smde_flag_alias) {
-    if (smde->smde_pname_off == 0) {
-      fprintf(stream, " alias ??? ");
-    } else {
-      struct smde_pname* PTR32 pname = (struct smde_pname*) (((char*) smde) + smde->smde_pname_off);
-      char* PTR32 pmem = pname->smde_pname_val;
-      int plen = pname->smde_pname_len;
-      fprintf(stream, " alias %.*s", plen, pmem);
-    }
-  }
-}
-
-static print_ispf_stuff()
-{
-        char crttime_buff[4+1+2+1+2+1];                /* YYYY/MM/DD          */
-        char modtime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
-        strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", &is.create_time);
-        strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", &is.mod_time);
-        printf(" %s %x%x%x %2.2d.%2.2d %s %s %10d %10d %10d %s\n",
-         cur_np->name, cur_np->ttr[0], cur_np->ttr[1], cur_np->ttr[2],
-         is.ver_num, is.mod_num, crttime_buff, modtime_buff, is.curr_num_lines, is.mod_num_lines, is.init_num_lines, is.userid); 
-}
-
-static print_desp_stuff()
-{
-  struct desb* PTR32 cur_desb = desp->desp_area_ptr;
-  while (cur_desb) {
-    int i;
-    int members = cur_desb->desb_count;
-    fprintf(stdout, "Members in DESB %p: %d\n", cur_desb, members);
-    /*
-     * First SMDE
-     */
-    struct smde* PTR32 smde = (struct smde* PTR32) (cur_desb->desb_data);
-    for (i=0; i<members; ++i) {
-      print_name(stdout, smde);
-      if (smde->smde_ext_attr_off != 0) {
-        struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
-        unsigned long long tod = *((long long *) ext_attr->smde_change_timestamp);
-        time_t ltime = tod_to_time(tod);
-
-        fprintf(stdout, " CCSID: 0x%x%x %8.8s %s\n",
-          ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ctime(&ltime));
-      } else {
-        fprintf(stdout, "\n");
-      }
-      smde = (struct smde* PTR32) (((char*) smde) + smde->smde_len);
-    }
-    cur_desb = cur_desb->desb_next;
-  }
-}
-#endif
-
 static struct mstat* desp_copy_name_and_alias(struct mstat* mstat, struct smde* PTR32 smde)
 {
 
@@ -269,9 +207,6 @@ static struct mstat* desp_copy_name_and_alias(struct mstat* mstat, struct smde* 
   struct smde_name* PTR32 varname = (struct smde_name*) (((char*) smde) + smde->smde_name_off);
   char* PTR32 name = varname->smde_name_val;
   int len = varname->smde_name_len;
-#if 0
-  printf("SMDE Name %d <%*.*s>\n", len, len, len, name);
-#endif
 
   /*
    * If the SMDE entry is from a PDS, there will be no name offset if this entry is for 
