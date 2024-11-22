@@ -15,6 +15,7 @@ Options:\n\
   -v, --verbose       Provide verbose output.\n\
   -d, --debug         Provide debug output.\n\
   -a, --alias         Print aliases.\n\
+  -T, --alias         Print CCSID.\n\
   -l, --long          Provide long-form output.\n\
 \n\
 <dataset>             The dataset to list members from.\n\
@@ -31,6 +32,65 @@ List the timestamps and CCSIDs for the members of PDSE IBMUSER.PROJ23.SRC:\n\
 \n\
 ");
   return;
+}
+
+static void print_mem(struct mstat* mstat, MLSX_Opts* opts)
+{
+  char crttime_buff[4+1+2+1+2+1];                /* YYYY/MM/DD          */
+  char modtime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
+  char exttime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
+
+  unsigned int memid = mstat->mem_id;
+  const char* name = (mstat->name) ? mstat->name : ".";
+  const char* alias_name = (mstat->alias_name) ? mstat->alias_name : ".";;
+
+  char* ext_id = (mstat->ext_id) ? mstat->ext_id : NULL;
+  unsigned short ccsid = mstat->ext_ccsid;
+  if (mstat->has_ext) {
+    struct tm* exttime = localtime(&mstat->ext_changed);
+    strftime(exttime_buff, sizeof(exttime_buff), "%Y/%m/%d %H:%M:%S", exttime);
+  } else {
+    strcpy(exttime_buff, ".");
+  }
+  short ver_num = mstat->ispf_version;
+  short mod_num = mstat->ispf_modification;
+  int cur = mstat->ispf_current_lines;
+  int init = mstat->ispf_initial_lines;
+  int mod = mstat->ispf_modified_lines;
+  if (mstat->ispf_stats) {
+    strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", &mstat->ispf_created);
+    strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", &mstat->ispf_changed);
+  } else {
+    strcpy(crttime_buff, ".");
+    strcpy(modtime_buff, ".");
+  }
+  char* ispf_id = (mstat->ispf_id) ? mstat->ispf_id : NULL;
+
+  char* user_id = (ext_id != NULL) ? ext_id : ispf_id;
+  if (user_id == NULL) {
+    user_id = ".";
+  }
+
+  char* chgtime_buff = (mstat->ispf_stats) ? modtime_buff : exttime_buff;
+
+  if (opts->ccsid) {
+    printf("%8x ", ccsid);
+  }
+  if (opts->longform) {
+    if (mstat->is_alias) {
+      printf("%8s %10d %21s %s -> %s\n", user_id, cur, chgtime_buff, alias_name, name);
+    } else {
+      printf("%8s %10d %21s %s\n", user_id, cur, chgtime_buff, name);
+    }
+  } else if (opts->alias) {
+    if (mstat->is_alias) {
+      printf("%s -> %s\n", alias_name, name);
+    } else {
+      printf("%s\n", name);
+    }
+  } else {
+    printf("%s\n", name);
+  }
 }
 
 int main(int argc, char* argv[])
@@ -76,17 +136,14 @@ int main(int argc, char* argv[])
   uppercase(dataset_buffer);
 
   MEMDIR* md = openmemdir(dataset_buffer, &opts.dbg);
-  struct mement* me;
+  struct mstat* me;
   if (!md) {
     fprintf(stderr, "Unable to open dataset %s\n", ds);
     return 4;
   }
-  while (me = readmemdir(md, &opts.dbg)) {
-    struct mstat mem;
-    if (!mstat(me, &mem, &opts.dbg)) {
-      fprintf(stderr, "Unable to retrieve information for member in %s\n", ds);
-      return 8;
-    }
+  struct mstat* mem;
+  while (mem = readmemdir(md, &opts.dbg)) {
+    print_mem(mem, &opts);
   }
   if (closememdir(md, &opts.dbg)) {
     fprintf(stderr, "Error closing memdir for %s\n", ds);

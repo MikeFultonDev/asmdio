@@ -8,6 +8,7 @@
     DBG_Opts dbg;
     int help:1;
     int alias:1;
+    int ccsid:1;
     int longform:1;
   } MLSX_Opts;
 

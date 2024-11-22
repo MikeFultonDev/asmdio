@@ -41,7 +41,7 @@ fmopts.o: fmopts.c fm.h fmopts.h dbgopts.h $(INCDIR)/*.h
 m2f.o: m2f.c $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
-mlsx.o: mlsx.c $(INCDIR)/*.h
+mlsx.o: mlsx.c memdir.h $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 mlsxopts.o: mlsxopts.c mlsxopts.h dbgopts.h $(INCDIR)/*.h

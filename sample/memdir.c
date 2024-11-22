@@ -2,6 +2,7 @@
 #define _ISOC99_SOURCE
 #define _POSIX_SOURCE
 #define _OPEN_SYS_FILE_EXT
+#define _XOPEN_SOURCE_EXTENDED 1
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -144,7 +145,8 @@ static struct mstat* memnode_to_mstat(struct mem_node* np, const DBG_Opts* opts,
     char* alias_name;
     char* name;
 
-    memcpy(mstat[entry].mem_id, cur_np->ttr, 3);
+    unsigned int mem_id = (*(unsigned int*) cur_np->ttr) >> 8;
+    mstat[entry].mem_id = mem_id;
     if ((cur_np)->is_alias) {
       mstat[entry].is_alias = 1;
       alias_name = malloc(8+1);
@@ -218,6 +220,7 @@ static struct mstat* desp_copy_name_and_alias(struct mstat* mstat, struct smde* 
     /*
      * Name is an alias
      */
+    mstat->is_alias = 1;
     alias_name = malloc(len+1);
     if (!alias_name) {
       return NULL;
@@ -236,13 +239,14 @@ static struct mstat* desp_copy_name_and_alias(struct mstat* mstat, struct smde* 
       if (!name) {
         return NULL;
       }
-      memcpy(mem_name, pname, plen);
+      memcpy(mem_name, pmem, plen);
       mem_name[plen] = '\0';
     }
   } else {
     /*
      * Name is not an alias
      */
+    mstat->is_alias = 0;
     mem_name = malloc(len+1);
     if (!mem_name) {
       return NULL;
@@ -259,13 +263,14 @@ static struct mstat* desp_copy_name_and_alias(struct mstat* mstat, struct smde* 
 static void print_members(struct mstat* mstat_arr, size_t members)
 {
   printf("\n%d members to print\n", members);
-  printf("ISPF EXT ALIAS MEM-NAME    ALIAS   EXT-ID    CCSID   EXT-CHANGED         VER MOD  CUR-LINES INIT-LINES  MOD-LINES CREATE-TIME           CHANGE-TIME  ISPF-ID\n");
+  printf("MEM-ID ISPF EXT ALIAS MEM-NAME    ALIAS   EXT-ID    CCSID   EXT-CHANGED         VER MOD  CUR-LINES INIT-LINES  MOD-LINES CREATE-TIME           CHANGE-TIME  ISPF-ID\n");
   for (int i=0; i<members; ++i) {
     struct mstat* mstat = &mstat_arr[i];
     char crttime_buff[4+1+2+1+2+1];                /* YYYY/MM/DD          */
     char modtime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
     char exttime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
 
+    unsigned int memid = mstat->mem_id;
     char* ispf  = mstat->ispf_stats ? "Y" : "N";
     char* ext = mstat->has_ext ? "Y" : "N";
     char* alias = mstat->is_alias ? "Y" : "N";
@@ -294,8 +299,8 @@ static void print_members(struct mstat* mstat_arr, size_t members)
     }
     char* ispf_id = (mstat->ispf_id) ? mstat->ispf_id : "NULL";
 
-    printf("%4s %3s %5s %8s %8s %8s %8x %21s %3d %3d %10d %10d %10d %11s %21s %8s\n", 
-      ispf, ext, alias, name, alias_name, ext_id, ccsid, exttime_buff, 
+    printf("%6.6x %4s %3s %5s %8s %8s %8s %8x %21s %3d %3d %10d %10d %10d %11s %21s %8s\n", 
+      memid, ispf, ext, alias, name, alias_name, ext_id, ccsid, exttime_buff, 
       ver_num, mod_num, cur, init, mod, 
       crttime_buff, modtime_buff, ispf_id);
   }
@@ -340,7 +345,8 @@ static struct mstat* desp_to_mstat(struct desp* PTR32 desp, const DBG_Opts* opts
     struct smde* PTR32 smde = (struct smde* PTR32) (cur_desb->desb_data);
     for (i=0; i<sub_members; ++i) {
       char* mlt = smde->smde_mltk.smde_mlt;
-      memcpy(mstat[entry].mem_id, mlt, 3);
+      unsigned int mem_id = (*(unsigned int*) mlt) >> 8;
+      mstat[entry].mem_id = mem_id;
 
       if (!desp_copy_name_and_alias(&mstat[entry], smde)) {
         return NULL;
@@ -371,9 +377,38 @@ static struct mstat* desp_to_mstat(struct desp* PTR32 desp, const DBG_Opts* opts
   return mstat;
 }
 
-static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mstat* de_mstat, size_t de_members, const DBG_Opts* opts)
+/*
+ * compare by: memid, primary member, aliases, e.g.
+ * when the memid (TTR/MLT) is the same, look to the 'alias' and sort non-alias first, then look to alias name and sort by alias
+ * name.
+ */
+static int cmp_mem_primary_alias(const void* lhs, const void* rhs)
 {
-  return 0;
+  const struct mstat* l_mstat = (const struct mstat*) lhs;
+  const struct mstat* r_mstat = (const struct mstat*) rhs;
+
+  if (l_mstat->mem_id != r_mstat->mem_id) {
+    return l_mstat->mem_id - r_mstat->mem_id;
+  } else {
+    if (l_mstat->is_alias != r_mstat->is_alias) {
+      return l_mstat->is_alias - r_mstat->is_alias;
+    } else {
+      if (r_mstat->alias_name == NULL) {
+        if (l_mstat->alias_name == NULL) {
+          return 0;
+        } else {
+          return 1;
+        }
+      } else {
+        /* r_mstat->alias_name != NULL */
+        if (l_mstat->alias_name == NULL) {
+          return -1;
+        } else {
+          return strcmp(r_mstat->alias_name, l_mstat->alias_name);
+        }
+      }
+    }
+  }
 }
 
 struct MEMDIR_Internal {
@@ -383,6 +418,112 @@ struct MEMDIR_Internal {
   size_t cur;
   struct mstat head[0];
 };
+
+static void free_mstat(struct mstat* mstat, size_t entries)
+{
+  for (int i=0; i<entries;++i) {
+    if (mstat[i].name) {
+      free((char*)mstat[i].name);
+    }
+    if (mstat[i].alias_name) {
+      free((char*)mstat[i].alias_name);
+    }
+    if (mstat[i].ext_id) {
+      free((char*)mstat[i].ext_id);
+    }
+    if (mstat[i].ispf_id) {
+      free((char*)mstat[i].ispf_id);
+    }
+  }
+}
+
+static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mstat* de_mstat, size_t de_members, const DBG_Opts* opts)
+{
+
+  if (mn_members != de_members) {
+    fprintf(stderr, 
+      "Internal error: Directory has %d members and alias but Directory Entry Services reports %d members aliases. These should be the same.\n", 
+      mn_members, de_members);
+    return NULL;
+  }
+
+  /*
+   * Sort the two arrays so they can be walked together
+   */
+  qsort(de_mstat, de_members, sizeof(struct mstat), cmp_mem_primary_alias);
+  qsort(mn_mstat, mn_members, sizeof(struct mstat), cmp_mem_primary_alias);
+
+  size_t entries = de_members;
+  struct MEMDIR_Internal* mdi = malloc(sizeof(struct MEMDIR_Internal) + (entries*sizeof(struct mstat)));
+  if (!mdi) {
+    return NULL;
+  }
+  mdi->entries = entries;
+  mdi->cur = 0;
+  struct mstat* merge_mstat = mdi->head;
+ 
+  /*
+   * Copy the mn member info over first and then copy the extended
+   * information and the alias if it is missing
+   */
+  for (int i=0; i<entries; ++i) {
+    merge_mstat[i] = mn_mstat[i];
+
+    /*
+     * Make sure all names are properly dup'ed so that the original
+     * mstat structures can be completely freed
+     */
+    merge_mstat[i].name = strdup(mn_mstat[i].name);
+
+    if (merge_mstat[i].is_alias) {
+      if (merge_mstat[i].alias_name == NULL) {
+        merge_mstat[i].alias_name = strdup(de_mstat[i].alias_name);
+      } else {
+        merge_mstat[i].alias_name = strdup(mn_mstat[i].alias_name);
+      }
+    }
+    if (merge_mstat[i].ispf_stats && merge_mstat[i].ispf_id != NULL) {
+      merge_mstat[i].ispf_id = strdup(mn_mstat[i].ispf_id);
+    }
+
+    if (de_mstat[i].has_ext) {
+      merge_mstat[i].has_ext = 1;
+      if (de_mstat[i].ext_id != NULL) {
+        merge_mstat[i].ext_id = strdup(de_mstat[i].ext_id);
+      }
+      merge_mstat[i].ext_ccsid = de_mstat[i].ext_ccsid;
+      merge_mstat[i].ext_changed = de_mstat[i].ext_changed;
+    }
+  }
+
+  /*
+   * Now walk the merged list and copy in any missing names
+   * for aliases without the original name
+   */
+  for (int i=0; i<entries; ++i) {
+    if (!merge_mstat[i].is_alias) {
+      int next=i+1;
+      while (next < entries) {
+        if (!merge_mstat[next].is_alias) break;
+        if (merge_mstat[i].mem_id == merge_mstat[next].mem_id && merge_mstat[next].name == NULL) {
+          merge_mstat[next].name = strdup(merge_mstat[i].name);
+        }
+        ++next;
+      }
+    }
+  }
+
+  free_mstat(de_mstat, entries);
+  free(de_mstat);
+  free_mstat(mn_mstat, entries);
+  free(mn_mstat);
+
+  if (opts->debug) {
+    print_members(merge_mstat, entries);
+  }
+    
+  return (MEMDIR*) mdi;
+}
 
 MEMDIR* openmemdir(const char* dataset, const DBG_Opts* opts)
 {
@@ -400,25 +541,24 @@ MEMDIR* openmemdir(const char* dataset, const DBG_Opts* opts)
   struct mstat* de_mstat = desp_to_mstat(desp, opts, &de_members);
   struct mstat* mn_mstat = memnode_to_mstat(np, opts, &mn_members);
 
-  if (opts->debug) {
-    print_members(de_mstat, de_members);
-    print_members(mn_mstat, mn_members);
-  }
-
   return merge_mstat(mn_mstat, mn_members, de_mstat, de_members, opts);
 }
 
-struct mement* readmemdir(MEMDIR* memdir, const DBG_Opts* opts)
+struct mstat* readmemdir(MEMDIR* memdir, const DBG_Opts* opts)
 {
-  return NULL;
+  struct MEMDIR_Internal* mdi = (struct MEMDIR_Internal*) memdir;
+  if (mdi->cur == mdi->entries) {
+    return NULL;
+  } else {
+    return &mdi->head[mdi->cur++];
+  }
 }
 
 int closememdir(MEMDIR* memdir, const DBG_Opts* opts)
 {
-  return 0;
-}
+  struct MEMDIR_Internal* mdi = (struct MEMDIR_Internal*) memdir;
+  free_mstat(mdi->head, mdi->entries);
+  free(mdi);
 
-int mstat(struct mement* mement, struct mstat* mem, const DBG_Opts* opts)
-{
   return 0;
 }

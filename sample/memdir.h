@@ -9,7 +9,7 @@
    * used to iterate over the members in a dataset
    */
   typedef struct {
-    void* _reserved;                            /* NULL (may change in the future) */
+    unsigned int version;
   } MEMDIR;
 
   /*
@@ -22,7 +22,7 @@
     int    is_alias:1;                          /* true if this is an alias to a member          */
     int    has_ext:1;                           /* true if this member has extended attributes   */
 
-    char  mem_id[3];                            /* ID that is a unique value for all members in a dataset          */
+    unsigned int mem_id;                        /* ID that is a unique value for all members in a dataset          */
     const char* name;                           /* name of underlying member (NULL terminated)                     */
     const char* alias_name;                     /* pointer to alias name (NULL if not an alias. Alias can be long) */
 
@@ -49,8 +49,7 @@
   };
 
   MEMDIR* openmemdir(const char* dataset, const DBG_Opts* opts);
-  struct mement* readmemdir(MEMDIR* memdir, const DBG_Opts* opts);
+  struct mstat* readmemdir(MEMDIR* memdir, const DBG_Opts* opts);
   int closememdir(MEMDIR* memdir, const DBG_Opts* opts);
-  int mstat(struct mement* mement, struct mstat* mem, const DBG_Opts* opts);
 
 #endif

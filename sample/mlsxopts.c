@@ -10,6 +10,7 @@ void init_opts(MLSX_Opts* opts)
   opts->dbg.debug = 0;
   opts->longform  = 0;
   opts->alias  = 0;
+  opts->ccsid  = 0;
 }
 
 int process_opt(MLSX_Opts* opts, char* argv[], int entry)
@@ -25,6 +26,8 @@ int process_opt(MLSX_Opts* opts, char* argv[], int entry)
     opts->longform = 1;
   } else if (!strcmp(argv[entry], "-a") || !strcmp(argv[entry], "--alias")) {
     opts->alias = 1;
+  } else if (!strcmp(argv[entry], "-T") || !strcmp(argv[entry], "--tag")) {
+    opts->ccsid = 1;
   } else {
     fprintf(stderr, "Option %s not recognized. Option ignored.\n", argv[entry]);
   }
