@@ -462,7 +462,7 @@ STOWA_DSAL    EQU 0
 DIOA     CSECT
          ENTRY S99MSGA
 S99MSGA  ASDPRO BASE_REG=3,USR_DSAL=S99MSGA_DSAL
-         USING S99MSGA_PARMS,R13
+         USING S99MSGA_PARMS,R1
 
 * Call SVC99MSG 
          LINK EP=IEFDB476
@@ -476,6 +476,46 @@ S99MSGA_EXIT   DS    0H
 S99MSGA_PARMS   DSECT
 S99MSGAP DS     AL4
 S99MSGA_DSAL    EQU 0
+
+**| SYEXENQA..... SYSTEMS EXCLUSIVE ENQ
+**| https://tech.mikefulton.ca/ENQMacro
+**| Input:
+**|   R1 -> pointer to QNAME, RNAME, RNAME Length
+**| Output:
+**|   R15 -> RC 0 if successful, non-zero otherwise
+
+DIOA     CSECT
+         ENTRY SYEXENQA
+SYEXENQA ASDPRO BASE_REG=3,USR_DSAL=SYEXENQA_DSAL
+         USING SYEXENQA_PARMS,R1
+         USING SYEXENQS,R13
+
+*
+         ST  0,0
+         MVC SYEXENQS(SYEXENQL),SYEXENQT
+         L   R7,QNAMEA
+         L   R8,RNAMEA
+         L   R9,RNAMEL
+         ENQ ((7),(8),E,(9),SYSTEMS),RET=USE,MF=(E,SYEXENQS)
+
+         ASDEPI
+
+* Template for ENQ
+
+SYEXENQT  ENQ (7,8,E,9,SYSTEMS),RET=USE,MF=L
+
+         DROP
+         LTORG
+
+SYEXENQA_PARMS   DSECT
+QNAMEA DS        AL4
+RNAMEA DS        AL4
+RNAMEL DS        1F
+
+SYEXENQS         DSECT
+       ENQ (2,3,E,4,SYSTEMS),RET=USE,MF=L
+SYEXENQL         EQU *-SYEXENQS
+SYEXENQA_DSAL    EQU SYEXENQL
 
 **|
 **| Addressability DSECTs

@@ -37,11 +37,14 @@
   int CLOSEA(struct closecb* PTR32 dcb);
 
   int MALOC24A(size_t len);
-  int FREE24A(void* PTR32 addr, size_t len);
+
+  int FREE24A(void* __ptr32 addr, size_t len);
+  int SYEXENQA(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
 
 #elif AMODE == 64
   extern int S99A;
   extern int S99MSGA;
+  extern int SYEXENQA;
   extern int OPENA;
   extern int FINDA;
   extern int READA;
@@ -55,6 +58,7 @@
   extern int FREE24A;
   #pragma variable(S99A,     NORENT)
   #pragma variable(S99MSGA,  NORENT)
+  #pragma variable(SYEXENQA,  NORENT)
   #pragma variable(OPENA,    NORENT)
   #pragma variable(FINDA,    NORENT)
   #pragma variable(READA,    NORENT)
@@ -68,6 +72,7 @@
   #pragma variable(FREE24A,  NORENT)
 	#define S99A(ptr)         call31asm("S99A", &S99A, 1, ptr)
 	#define S99MSGA(ptr)      call31asm("S99MSGA", &S99MSGA, 1, ptr)
+	#define SYEXENQA(qname,rname,rnamelen)      call31asm("SYEXENQA", &SYEXENQA, 3, qname, rname, rnamelen)
 	#define OPENA(opencb)     call31asm("OPENA", &OPENA, 1, opencb)
 	#define FINDA(findcb,dcb) call31asm("FINDA", &FINDA, 2, findcb, dcb)
 	#define READA(decb)       call31asm("READA", &READA, 1, decb)

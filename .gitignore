@@ -32,6 +32,7 @@ basicrddir
 basicrdpds
 basicalloc
 basiccreate
+basicenq
 crtmem
 
 readperf
