@@ -31,6 +31,7 @@ unsigned int NOTE(struct ihadcb* PTR32 dcb);
 unsigned int DESERV(struct desp* PTR32 desp);
 int STOW(union stowlist* PTR32 list, struct ihadcb* PTR32 dcb, enum stowtype type);
 int CLOSE(struct closecb* PTR32 closecb);
+int SYEXENQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
 
 #pragma map(OPEN, "DOPEN")
 #pragma map(FIND, "DFIND")

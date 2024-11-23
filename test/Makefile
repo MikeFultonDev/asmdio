@@ -15,10 +15,7 @@ basiccreate: basiccreate.o ../src/*.o
 	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o >$@.lst
 
 basicenq: basicenq.o ../src/*.o
-	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o
-
-basicread.o: basicread.c $(TESTINCDIR)/ioservices.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(TESTINCDIR) -c $<
+	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o >$@.lst
 
 basicalloc: basicalloc.o ../src/*.o
 	$(LD) $(LDFLAGS) -o $@ $< ../src/*.o >$@.lst
@@ -30,9 +27,6 @@ basicread.o: basicread.c $(INCDIR)/iosvcs.h $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 basicenq.o: basicenq.c $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(TESTINCDIR) -c $<
-
-ioservices.o: ioservices.c $(TESTINCDIR)/ioservices.h $(INCDIR)/dio.h $(INCDIR)/s99.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(TESTINCDIR) -c $<
 
 basiccreate.o: basiccreate.c $(INCDIR)/iosvcs.h $(INCDIR)/*.h
