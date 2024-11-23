@@ -1,7 +1,7 @@
          START , 
-ENQMEM   CSECT , 
-ENQMEM   AMODE 31 
-ENQMEM   RMODE ANY
+FUNCTION  CSECT , 
+FUNCTION  AMODE 31 
+FUNCTION  RMODE ANY
          YREGS ,               register equates, syslib SYS1.MACLIB
         SYSSTATE AMODE64=NO,ARCHLVL=OSREL,OSREL=SYSSTATE 
         IEABRCX  DEFINE    convert based branches to relative
@@ -32,7 +32,7 @@ STG_WA_CLEAR DS 0H
 *------------------------------------------------------------------- 
 * application logic                                                - 
 *------------------------------------------------------------------- 
-         ENQ SPFEDIT,MEMNAME,E,52,SYSTEMS
+         
 *------------------------------------------------------------------- 
 * Linkage and storage release. set RC (reg 15)                     -
 *------------------------------------------------------------------- 
@@ -46,10 +46,6 @@ RLSE_WA  DS 0H
 *------------------------------------------------------------------- 
 DATCONST   DS    0D                 Doubleword alignment for LARL
 
-SPFEDIT  DC C'SPFEDIT'
-MEMNAME  DC 0C
-PDS      DC CL44'MFULTON.SAMPLE.DATA                        '
-MEM      DC CL8'MEMBER  '
          LTORG ,
 
 *
@@ -63,4 +59,4 @@ WAREA       DSECT
 SAVEA       DS    18F 
 WALEN       EQU  *-SAVEA
 
-         END   ENQMEM 
+         END   FUNCTION
