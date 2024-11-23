@@ -87,7 +87,7 @@ static FM_FileHandle* open_file(const char* filename, FM_FileHandle* fh, const F
   fh->active.data = fh->data_a;
   fh->inactive.data = fh->data_b;
 
-  info(opts, "Code page of input file:%d\n", fh->tag.ft_ccsid);
+  info(&opts->dbg, "Code page of input file:%d\n", fh->tag.ft_ccsid);
   return fh;
 }
 
@@ -108,7 +108,7 @@ static int close_file(FM_FileHandle* fh, const FM_Opts* opts)
 static ssize_t scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* opts)
 {
   int i;
-  debug(opts, "scan record from %d to %d looking for newline character 0x%x\n", 
+  debug(&opts->dbg, "scan record from %d to %d looking for newline character 0x%x\n", 
     fb->record_offset, fb->data_length, fh->newline_char);
   for (i = fb->record_offset; i < fb->data_length; ++i) {
     if (fb->data[i] == fh->newline_char) {
@@ -137,24 +137,24 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
   ssize_t newline_offset;
   int more_data = 1;
 
-  debug(opts, "get_record\n");
+  debug(&opts->dbg, "get_record\n");
   newline_offset = scan_buffer(fh, &fh->active, opts);
 
   if (newline_offset >= 0) {
     fh->active.record_length = newline_offset - fh->active.record_offset;
     fh->inactive.record_offset = 0;
     fh->inactive.record_length = 0;
-    debug(opts, "newline_offset: %d full line: active_offset: %d active_length: %d\n", 
+    debug(&opts->dbg, "newline_offset: %d full line: active_offset: %d active_length: %d\n", 
       newline_offset, fh->active.record_offset, fh->active.record_length);  
   } else {
     fh->active.record_length = fh->active.data_length - fh->active.record_offset;
     /*
      * Partial line (record) in the buffer.
      */
-    debug(opts, "partial line was read.\n");
+    debug(&opts->dbg, "partial line was read.\n");
     int rc = read(fh->fd, fh->inactive.data, REC_LEN);
     if (rc <= 0) {
-      debug(opts, "... end of file reached\n");
+      debug(&opts->dbg, "... end of file reached\n");
       /*
        * Fall through here so that this partial line
        * at the end of the file will properly be processed.
@@ -171,12 +171,12 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
       /*
        * File ends without a newline
        */
-      debug(opts, "... file ends without a newline\n");
+      debug(&opts->dbg, "... file ends without a newline\n");
       fh->inactive.record_length = fh->inactive.data_length;
     } else {
       fh->inactive.record_length = newline_offset;
     }
-    debug(opts, "scattered line: newline_offset:%d active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n", 
+    debug(&opts->dbg, "scattered line: newline_offset:%d active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n", 
       newline_offset, fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);  
 
   }
@@ -207,7 +207,7 @@ static void calc_tag(FM_FileHandle* fh, const FM_Opts* opts)
 static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
 {
   ssize_t rc;
-  debug(opts, "readline. record_offset:%d\n", fh->active.record_offset);
+  debug(&opts->dbg, "readline. record_offset:%d\n", fh->active.record_offset);
   if (fh->active.record_offset == 0 && fh->active.record_length == 0) {
     /*
      * Buffer is empty - read in the first buffer and determine the file
@@ -243,7 +243,7 @@ static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
 static FILE* debug_fp = NULL;
 static void open_debug_file(const char* dataset, const char* member, const FM_Opts* opts)
 {
-  if (!opts->debug) {
+  if (!opts->dbg.debug) {
     return;
   }
   const char debug_fmt[] = "/tmp/%s.%s";
@@ -261,7 +261,7 @@ static void open_debug_file(const char* dataset, const char* member, const FM_Op
 
 static void write_debug_line(FM_BPAMHandle* bh, const FM_FileHandle* fh, const FM_Opts* opts)
 {
-  if (!opts->debug) {
+  if (!opts->dbg.debug) {
     return;
   }
   if (fh->active.record_length > 0) {
@@ -275,7 +275,7 @@ static void write_debug_line(FM_BPAMHandle* bh, const FM_FileHandle* fh, const F
 
 static void close_debug_file(const FM_Opts* opts)
 {
-  if (!opts->debug) {
+  if (!opts->dbg.debug) {
     return;
   }
   fclose(debug_fp);
@@ -305,7 +305,7 @@ static int copy_at_most(void* dest, void* src, size_t length, size_t max)
 static int add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 {
   int truncated = 0;
-  debug(opts, "Add Line. Active (%d,%d) Inactive (%d,%d) bytes_used:%d\n", 
+  debug(&opts->dbg, "Add Line. Active (%d,%d) Inactive (%d,%d) bytes_used:%d\n", 
     fh->active.record_offset, fh->active.record_length, 
     fh->inactive.record_offset, fh->inactive.record_length,
     bh->bytes_used
@@ -341,13 +341,13 @@ static int add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
     next_rec[1] = 0;
     bh->bytes_used += rec_hdr_size;
 
-    debug(opts, "Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
+    debug(&opts->dbg, "Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
   } else {
     rec_hdr_size = 0;
     rec_len = (fh->active.record_length + fh->inactive.record_length);
   }
   if (rec_len > bh->dcb->dcblrecl) {
-    info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", fh->line_num, bh->dcb->dcblrecl, rec_len);
+    info(&opts->dbg, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", fh->line_num, bh->dcb->dcblrecl, rec_len);
     truncated = 1;
   }
 
@@ -370,7 +370,7 @@ static int add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
      *  If the record is FIXED, then pad the record out with blanks
      */
     int pad_length = bh->dcb->dcblrecl - (copied_active_bytes + copied_inactive_bytes);
-    debug(opts, "Pad record %d by %d blanks (active bytes:%d inactive_bytes:%d\n", fh->line_num, pad_length, copied_active_bytes, copied_inactive_bytes);
+    debug(&opts->dbg, "Pad record %d by %d blanks (active bytes:%d inactive_bytes:%d\n", fh->line_num, pad_length, copied_active_bytes, copied_inactive_bytes);
     if (pad_length > 0) {
       memset(&block_char[bh->bytes_used], fh->space_char, pad_length);
     }
@@ -394,7 +394,7 @@ static int add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
     fh->inactive.record_offset = 0;
     fh->inactive.record_length = 0;
 
-    debug(opts, "Buffers swapped. active record_offset:%s record_length:%d\n", fh->active.record_offset, fh->active.record_length);
+    debug(&opts->dbg, "Buffers swapped. active record_offset:%s record_length:%d\n", fh->active.record_offset, fh->active.record_length);
   }
   return truncated;
 }
@@ -409,7 +409,7 @@ static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opt
     line_length = bh->dcb->dcblrecl;
   }
   int rc = (line_length + bh->bytes_used <= bh->block_size);
-  debug(opts, "Can Add Line:%c (active record length:%d inactive record length:%d bytes_used:%d block_size:%d lrecl:%d)\n", 
+  debug(&opts->dbg, "Can Add Line:%c (active record length:%d inactive record length:%d bytes_used:%d block_size:%d lrecl:%d)\n", 
     rc == 1 ? 'Y' : 'N', fh->active.record_length, fh->inactive.record_length, bh->bytes_used, bh->block_size, bh->dcb->dcblrecl);
   return rc;
 }
@@ -441,14 +441,14 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
     if (can_add_line(&fh, bh, opts)) {
       truncated |= add_line(bh, &fh, opts);
     } else {
-      rc = write_block(bh, opts);
+      rc = write_block(bh, &opts->dbg);
       truncated |= add_line(bh, &fh, opts);
     }
     fh.line_num++;
   }
-  rc = write_block(bh, opts);
+  rc = write_block(bh, &opts->dbg);
   
-  memrc = write_member_dir_entry(bh, &fh, dataset, member, opts);
+  memrc = write_member_dir_entry(bh, &fh, dataset, member, &opts->dbg);
 
   rc = close_file(&fh, opts);
 
@@ -484,7 +484,7 @@ static int copy_files(const FM_Table* table, int entries, const FM_FileTable* ex
       fprintf(stderr, "File %s could not be mapped to a valid member. File skipped\n", filename);
       rc |= 1;
     } else {
-      info(opts, "Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
+      info(&opts->dbg, "Copy file %s to dataset member %s(%s)\n", filename, dataset, member);
       if (copy_file_to_member(bh, dataset, filename, member, opts)) {
         /*
          * If a member copy fails - just return
@@ -521,14 +521,14 @@ static int copy_files_to_multiple_dataset_members(const FM_Table* table, const c
       rc |= 2;
       continue;
     }
-    if (open_pds_for_write(dataset, &dd, opts)) {
+    if (open_pds_for_write(dataset, &dd, &opts->dbg)) {
       fprintf(stderr, "Unable to open dataset %s for write. Extension skipped\n", dataset);
       rc |= 4;
       continue;
     }
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
 
-    if (close_pds(dataset, &dd, opts)) {
+    if (close_pds(dataset, &dd, &opts->dbg)) {
       fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
       rc |= 8;
       continue;
@@ -554,14 +554,14 @@ static int copy_files_to_one_dataset_members(glob_t* glob_set, const FM_Table* t
     fprintf(stderr, "Copy not performed.\n");
     return 8;
   }
-  if (open_pds_for_write(dataset, &dd, opts)) {
+  if (open_pds_for_write(dataset, &dd, &opts->dbg)) {
     fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
     return 4;
   }
   for (ext=0; ext < table->size; ext++) {
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
   }
-  if (close_pds(dataset, &dd, opts)) {
+  if (close_pds(dataset, &dd, &opts->dbg)) {
     fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
     rc |= 8;
   }
@@ -625,6 +625,11 @@ int main(int argc, char* argv[])
   dir = argv[first_arg];
   dataset_pattern = argv[first_arg + 1];
   first_file_pattern = first_arg + 2;
+
+  if (strlen(dataset_pattern) > DS_MAX) {
+    fprintf(stderr, "Dataset %s is invalid (too long).\n", dataset_pattern);
+    return 8;
+  }
 
   /*
    * Expand the file patterns and store them into globset

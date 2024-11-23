@@ -187,7 +187,7 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
   } else {
     struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
     fprintf(stdout, "CCSID: 0x%x%x last change userid: %8.8s change timestamp: 0x%llx\n",
-      ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
+      ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, *((long long*) ext_attr->smde_change_timestamp));
   }
 
   /* Call FIND to find the start of the member */

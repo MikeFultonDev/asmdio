@@ -38,6 +38,7 @@ For applications that need to perform common I/O operations, the Language Enviro
 - [FIND](https://www.ibm.com/docs/en/zos/3.1.0?topic=descriptions-findestablish-beginning-data-set-member-bpam) Macro: Establish the beginning of a data set member using a BLDL list or directory.
 - [DESERV](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-directory-entry-services) [Macro](https://tech.mikefulton.ca/DESERV): Directory Entry Services for PDS and PDSE data sets.
   - [DESERV Parameters](https://tech.mikefulton.ca/DESERV_GET)
+  - [DESERV DFSMS Information](https://www.ibm.com/docs/en/zos/3.1.0?topic=smde-funcget-all)
 - [SMDE Macro](https://tech.mikefulton.ca/SMDEMacro): Directory Entry information returned from DESERV GET.
 - [ISITMGD](https://www.ibm.com/docs/en/zos/3.1.0?topic=pmp-using-isitmgd-determine-whether-data-set-is-system-managed) Macro: Determine if data set is SMS managed and info about a PDSE.
 - [NOTE](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-note-macro-provide-relative-position) Macro: Return the TTRz that can subsequently be used by POINT.
@@ -55,9 +56,13 @@ For applications that need to perform common I/O operations, the Language Enviro
 
 ## Other References
 
+- [Principles of Operation: PDF](https://tech.mikefulton.ca/PrinciplesOfOperation)
 - [Abend Codes](https://tech.mikefulton.ca/ZOSAbendCodes)
 - [EBCDIC](https://tech.mikefulton.ca/EBCDICReference)
 - [Dataset Record Formats](https://tech.mikefulton.ca/DatasetRecordFormats)
+- [List PDS Members Sample Code](https://tech.mikefulton.ca/ListPDSMembers)
+- [ISPF Statistics Description](https://tech.mikefulton.ca/ISPFStats)
+- [ISPF Statistics Disk Layout](https://tech.mikefulton.ca/ISPFStatsLayout)
 
 ## Key Points
 
@@ -75,6 +80,9 @@ For applications that need to perform common I/O operations, the Language Enviro
 - The SMDE includes a section called the SMDE Extended Attributes
 - The Extended Attributes has a 2 byte CCSID in it (among other things)
 - The STOW service lets you modify member entries, which lets you SET the CCSID (see the IFF function)
+
+## ISPF Member Stats decoder
+- [ISPF Stats](https://ibmmainframes.com/viewtopic.php?t=23109&highlight=smf)
 
 ## Terminology
 

@@ -1,9 +1,14 @@
-#include "msg.h"
-#include "fm.h"
+#define _XOPEN_SOURCE
+#define _ISOC99_SOURCE
+#define _POSIX_SOURCE
+#define _OPEN_SYS_FILE_EXT
 #include <stdarg.h>
 #include <stdio.h>
 
-int info(const FM_Opts* opts, const char* fmt, ...)
+#include "msg.h"
+#include "fm.h"
+
+int info(const DBG_Opts* opts, const char* fmt, ...)
 {
   va_list arg_ptr;
   int rc;
@@ -17,7 +22,7 @@ int info(const FM_Opts* opts, const char* fmt, ...)
   return rc;
 }
 
-int debug(const FM_Opts* opts, const char* fmt, ...)
+int debug(const DBG_Opts* opts, const char* fmt, ...)
 {
   va_list arg_ptr;
   int rc;

@@ -65,6 +65,8 @@ enum stowcc {
   STOW_IFF_CC_MEMBER_EXISTS=8,
   STOW_IFF_CC_PDS_UPDATE_UNSUPPORTED=0x40028
 };
+#define STOW_REPLACE_MEMBER_DOES_NOT_EXIST (8)
+
 #pragma pack(pop)
 
 #endif

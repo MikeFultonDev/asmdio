@@ -1,9 +1,6 @@
 #ifndef __FM_H__
   #define __FM_H__ 1
 
-  #define _POSIX_SOURCE
-  #define _OPEN_SYS_FILE_EXT
-
   #include <glob.h>
   #include <sys/stat.h>
   #include <stddef.h>

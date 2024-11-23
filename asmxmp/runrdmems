@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+rdlib=$(echo "$(hlq).ASMXMP.DATA")
+
+drm "${rdlib}"
+dtouch "${rdlib}"
+
+decho "Member 1" "${rdlib}(mem1)"
+decho "Member 2" "${rdlib}(mem1)"
+decho "Member 3" "${rdlib}(mem1)"
+decho "Member 4" "${rdlib}(mem1)"
+
+xmplib=$(echo "$(hlq).ASMXMP.LOAD")
+
+mvscmd --steplib=$xmplib --mydd="${rdlib}" --pgm=RDMEMS
