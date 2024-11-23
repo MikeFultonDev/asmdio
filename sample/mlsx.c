@@ -15,7 +15,9 @@ Options:\n\
   -v, --verbose       Provide verbose output.\n\
   -d, --debug         Provide debug output.\n\
   -a, --alias         Print aliases.\n\
-  -T, --alias         Print CCSID.\n\
+  -T, --tag           Print CCSID.\n\
+  -t, --time          Sort by time file last changed.\n\
+  -r, --reverse       Reverse the sort.\n\
   -l, --long          Provide long-form output.\n\
 \n\
 <dataset>             The dataset to list members from.\n\
@@ -26,9 +28,13 @@ List the members and aliases for the PDSE IBMUSER.PROJ23.SRC:\n\
 \n\
   mlsx -a ibmuser.proj23.src\n\
 \n\
-List the timestamps and CCSIDs for the members of PDSE IBMUSER.PROJ23.SRC:\n\
+List the last changed user and timestamp and CCSIDs for the members of PDSE IBMUSER.PROJ23.SRC:\n\
 \n\
-  mlsx -l ibmuser.proj23.src\n\
+  mlsx -l -T ibmuser.proj23.src\n\
+\n\
+List the members and aliases, sorted by reverse time, for the members of PDSE SYS1.PROCLIB:\n\
+\n\
+  mlsx -l -r -t sys1.proclib\n\
 \n\
 ");
   return;
@@ -58,8 +64,10 @@ static void print_mem(struct mstat* mstat, MLSX_Opts* opts)
   int init = mstat->ispf_initial_lines;
   int mod = mstat->ispf_modified_lines;
   if (mstat->ispf_stats) {
-    strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", &mstat->ispf_created);
-    strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", &mstat->ispf_changed);
+    struct tm* ispf_created_time = localtime(&mstat->ispf_created);
+    struct tm* ispf_changed_time = localtime(&mstat->ispf_changed);
+    strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", ispf_created_time);
+    strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", ispf_changed_time);
   } else {
     strcpy(crttime_buff, ".");
     strcpy(modtime_buff, ".");
@@ -135,7 +143,7 @@ int main(int argc, char* argv[])
   strcpy(dataset_buffer, ds);
   uppercase(dataset_buffer);
 
-  MEMDIR* md = openmemdir(dataset_buffer, &opts.dbg);
+  MEMDIR* md = openmemdir(dataset_buffer, opts.sorttime, opts.sortreverse, &opts.dbg);
   struct mstat* me;
   if (!md) {
     fprintf(stderr, "Unable to open dataset %s\n", ds);

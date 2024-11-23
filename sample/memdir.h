@@ -41,14 +41,14 @@
     int    ispf_current_lines;                  /* 0 to 2**31 */
     int    ispf_initial_lines;                  /* 0 to 2**31 */
     int    ispf_modified_lines;                 /* 0 to 2**31 */
-    struct tm ispf_created;                     /* time member created  */
-    struct tm ispf_changed;                     /* time member modified */
+    time_t ispf_created;                        /* time member created  */
+    time_t ispf_changed;                        /* time member modified */
     char*  ispf_id;                             /* ID of user that last modified the member (NULL terminated) */
 
     void*  _reserved;                           /* NULL (may change in the future) */
   };
 
-  MEMDIR* openmemdir(const char* dataset, const DBG_Opts* opts);
+  MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const DBG_Opts* opts);
   struct mstat* readmemdir(MEMDIR* memdir, const DBG_Opts* opts);
   int closememdir(MEMDIR* memdir, const DBG_Opts* opts);
 

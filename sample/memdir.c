@@ -176,8 +176,8 @@ static struct mstat* memnode_to_mstat(struct mem_node* np, const DBG_Opts* opts,
 
       if (!rc) {
         mstat[entry].ispf_stats = 1;
-        mstat[entry].ispf_created = is.create_time;
-        mstat[entry].ispf_changed = is.mod_time;
+        mstat[entry].ispf_created = mktime(&is.create_time);
+        mstat[entry].ispf_changed = mktime(&is.mod_time);
 
         char* ispf_id = malloc(8+1);
         if (!ispf_id) {
@@ -291,8 +291,10 @@ static void print_members(struct mstat* mstat_arr, size_t members)
     int init = mstat->ispf_initial_lines;
     int mod = mstat->ispf_modified_lines;
     if (mstat->ispf_stats) {
-      strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", &mstat->ispf_created);
-      strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", &mstat->ispf_changed);
+      struct tm* ispf_created_time = localtime(&mstat->ispf_created);
+      struct tm* ispf_changed_time = localtime(&mstat->ispf_changed);
+      strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", ispf_created_time);
+      strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", ispf_changed_time);
     } else {
       memcpy(crttime_buff, "none", 5);
       memcpy(modtime_buff, "none", 5);
@@ -411,6 +413,66 @@ static int cmp_mem_primary_alias(const void* lhs, const void* rhs)
   }
 }
 
+static int cmp_date(const struct mstat* l_mstat, const struct mstat* r_mstat)
+{
+  time_t l_chgtime;
+  time_t r_chgtime;
+
+  if (l_mstat->has_ext) {
+    l_chgtime = l_mstat->ext_changed;
+  } else if (l_mstat->ispf_stats) {
+    l_chgtime = l_mstat->ispf_changed;
+  } else {
+    l_chgtime = 0;
+  }
+  if (r_mstat->has_ext) {
+    r_chgtime = r_mstat->ext_changed;
+  } else if (r_mstat->ispf_stats) {
+    r_chgtime = r_mstat->ispf_changed;
+  } else {
+    r_chgtime = 0;
+  }
+  if (l_chgtime - r_chgtime > 0) {
+    return 1;
+  } else if (l_chgtime - r_chgtime < 0) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static int cmp_mem_reverse_time(const void* lhs, const void* rhs)
+{
+  const struct mstat* l_mstat = (const struct mstat*) lhs;
+  const struct mstat* r_mstat = (const struct mstat*) rhs;
+
+  return cmp_date(l_mstat, r_mstat);
+}
+
+static int cmp_mem_time(const void* lhs, const void* rhs)
+{
+  const struct mstat* l_mstat = (const struct mstat*) lhs;
+  const struct mstat* r_mstat = (const struct mstat*) rhs;
+
+  return cmp_date(l_mstat, r_mstat) * -1;
+}
+
+static int cmp_mem_reverse_name(const void* lhs, const void* rhs)
+{
+  const struct mstat* l_mstat = (const struct mstat*) lhs;
+  const struct mstat* r_mstat = (const struct mstat*) rhs;
+
+  return strcmp(r_mstat->name, l_mstat->name);
+}
+
+static int cmp_mem_name(const void* lhs, const void* rhs)
+{
+  const struct mstat* l_mstat = (const struct mstat*) lhs;
+  const struct mstat* r_mstat = (const struct mstat*) rhs;
+
+  return strcmp(l_mstat->name, r_mstat->name);
+}
+
 struct MEMDIR_Internal {
   unsigned int version;
 
@@ -437,9 +499,8 @@ static void free_mstat(struct mstat* mstat, size_t entries)
   }
 }
 
-static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mstat* de_mstat, size_t de_members, const DBG_Opts* opts)
+static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mstat* de_mstat, size_t de_members, int sort_time, int sort_reverse, const DBG_Opts* opts)
 {
-
   if (mn_members != de_members) {
     fprintf(stderr, 
       "Internal error: Directory has %d members and alias but Directory Entry Services reports %d members aliases. These should be the same.\n", 
@@ -518,6 +579,23 @@ static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mst
   free_mstat(mn_mstat, entries);
   free(mn_mstat);
 
+  /*
+   * Sort the array of mstat information
+   */
+  if (sort_time) {
+    if (sort_reverse) {
+      qsort(merge_mstat, entries, sizeof(struct mstat), cmp_mem_reverse_time);
+    } else {
+      qsort(merge_mstat, entries, sizeof(struct mstat), cmp_mem_time);
+    }
+  } else {
+    if (sort_reverse) {
+      qsort(merge_mstat, entries, sizeof(struct mstat), cmp_mem_reverse_name);
+    } else {
+      qsort(merge_mstat, entries, sizeof(struct mstat), cmp_mem_name);
+    }
+  }
+
   if (opts->debug) {
     print_members(merge_mstat, entries);
   }
@@ -525,7 +603,7 @@ static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mst
   return (MEMDIR*) mdi;
 }
 
-MEMDIR* openmemdir(const char* dataset, const DBG_Opts* opts)
+MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const DBG_Opts* opts)
 {
   FM_BPAMHandle dd;
   size_t de_members;
@@ -541,7 +619,7 @@ MEMDIR* openmemdir(const char* dataset, const DBG_Opts* opts)
   struct mstat* de_mstat = desp_to_mstat(desp, opts, &de_members);
   struct mstat* mn_mstat = memnode_to_mstat(np, opts, &mn_members);
 
-  return merge_mstat(mn_mstat, mn_members, de_mstat, de_members, opts);
+  return merge_mstat(mn_mstat, mn_members, de_mstat, de_members, sort_time, sort_reverse, opts);
 }
 
 struct mstat* readmemdir(MEMDIR* memdir, const DBG_Opts* opts)
