@@ -79,7 +79,7 @@ static void print_mem(struct mstat* mstat, MLSX_Opts* opts)
     user_id = ".";
   }
 
-  char* chgtime_buff = (mstat->ispf_stats) ? modtime_buff : exttime_buff;
+  char* chgtime_buff = (mstat->has_ext) ? exttime_buff : modtime_buff;
 
   if (opts->ccsid) {
     printf("%8x ", ccsid);
