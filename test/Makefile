@@ -1,7 +1,7 @@
 all: basiccreate basicread basicrddir basicalloc basicenq
 
 clean:
-	rm -f basicreate basicread basicalloc basicrddir *.o *.lst *.dbg
+	rm -f basicreate basicread basicalloc basicrddir basicenq *.o *.lst *.dbg
 
 INCDIR=../include
 

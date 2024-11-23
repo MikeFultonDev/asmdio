@@ -32,16 +32,19 @@ STG_WA_CLEAR DS 0H
 *------------------------------------------------------------------- 
 * application logic                                                - 
 *------------------------------------------------------------------- 
-*        ENQ (SPFEDIT,MEMNAME,E,52,SYSTEMS),RET=TEST
-         CHI R15,0
-         BZ DONE
-         ST R15,0
+         MVC ENQTESTPARM,ENQTEST     INITIALIZE ENQUEUE PARAMETERS
+         LA  R3,SPFEDIT
+         LA  R4,MEMNAME
+         LA  R5,52
+         ENQ ((R3),(R4),E,(R5),SYSTEMS),RET=TEST,MF=(E,ENQTESTPARM)
+         LR  R9,R15                Save reg for RC
 *------------------------------------------------------------------- 
 * Linkage and storage release. set RC (reg 15)                     -
 *------------------------------------------------------------------- 
 DONE     DS 0H
 RLSE_WA  DS 0H
         STORAGE RELEASE,ADDR=(R10),LENGTH=WALEN,EXECUTABLE=NO 
+         LR R15,R9
          PR    ,                    return to caller 
 
 *------------------------------------------------------------------- 
@@ -51,19 +54,22 @@ DATCONST   DS    0D                 Doubleword alignment for LARL
 
 SPFEDIT  DC CL8'SPFEDIT '
 MEMNAME  DC 0C
-PDS      DC CL44'MFULTON.SAMPLE.DATA                        '
-MEM      DC CL8'MEMBER  '
+PDS      DC CL44'MFULTON.ASMXMP.DATA                        '
+MEM      DC CL8'MEMBER3 '
          LTORG ,
 
 *
 * Addressability DSECTs
 *
+ENQTEST     ENQ   (*-*,*-*,E,*-*,SYSTEMS),RET=TEST,MF=L
+ENQTESTLEN  EQU *-ENQTEST
 ENQDEQ      ISGPEL
 *------------------------------------------------------------------- 
 * DSECT                                                            - 
 *------------------------------------------------------------------- 
 WAREA       DSECT 
-SAVEA       DS    18F 
+SAVEA       DS   18F
+ENQTESTPARM DS   CL(ENQTESTLEN)
 WALEN       EQU  *-SAVEA
 
          END   ENQMEM 
