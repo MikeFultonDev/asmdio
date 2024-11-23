@@ -1,7 +1,9 @@
 #ifndef __FINDCB__
 #define __FINDCB__ 1
 
-#pragma pack(packed)
+#include "asmdiocommon.h"
+
+#pragma pack(1)
 struct findcb {
   //unsigned short cb_len;
   //unsigned short filler;

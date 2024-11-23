@@ -1,6 +1,8 @@
 #ifndef __S99X__
 #define __S99X__ 1
 
+#include "asmdiocommon.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -90,7 +92,7 @@ struct s99_browse_token_text_unit {
 	unsigned char btoktype;
 	unsigned char btokvers;
 	unsigned short btokpl3;
-	char * __ptr32 btokiotp;
+	char * PTR32 btokiotp;
 	unsigned short btokpl4;
 	unsigned int btokjkey;
 	unsigned short btokpl5;
@@ -122,6 +124,11 @@ struct s99_text_unit {
 
 #define DUNDDNAM 0x01
 
+#define DALSTATS_OLD   0x1
+#define DALSTATS_MOD   0x2
+#define DALSTATS_NEW   0x4
+#define DALSTATS_SHR   0x8
+
 struct s99_eopts {
 	int s99eimsg:1;
 	int s99ermsg:1;
@@ -148,13 +155,13 @@ struct s99_rbx {
 	char s99ekey;
 	struct s99_emgsv s99emgsv;
 	char s99enmsg;
-	void* __ptr32 s99ecppl;
+	void* PTR32 s99ecppl;
 	char s99ercr;
 	char s99ercm;
 	char s99erco;
 	char s99ercf;
 	unsigned int s99ewrc;
-	void* __ptr32 s99emsgp;
+	void* PTR32 s99emsgp;
 	unsigned short s99eerr;
 	unsigned short s99einfo;
 	unsigned int s99ersn;
@@ -166,8 +173,8 @@ struct s99rb {
 struct s99_flag1 s99flag1;
 unsigned short s99error;
 unsigned short s99info;
-	struct s99_text_unit* __ptr32 * __ptr32 s99txtpp;
-	struct s99_rbx* __ptr32 s99s99x;
+	struct s99_text_unit* PTR32 * PTR32 s99txtpp;
+	struct s99_rbx* PTR32 s99s99x;
 struct s99_flag2 s99flag2;
 };
 
@@ -199,30 +206,30 @@ struct s99_em {
 	char emidnum;
 	char emnmsgbk;
 	char emsrsrv2;
-	struct s99rb * __ptr32 ems99rbp;
+	struct s99rb * PTR32 ems99rbp;
 	unsigned int emretcod;
-	void* __ptr32 emcpplp;
-	void* __ptr32 embufp;
+	void* PTR32 emcpplp;
+	void* PTR32 embufp;
 	unsigned int emsrsrv3;
-	void* __ptr32 emwtpcdp;
+	void* PTR32 emwtpcdp;
 
 	struct s99_em_wtdert emwtdert;
 
 	struct s99_em_bufs embuf;
 };
 
-#pragma pack(reset)
+#pragma pack(pop)
 
 #define EMDAIR  1
 #define EMFREE  51
 #define EMSVC99 50
 
-struct s99rb* __ptr32 s99_init(enum s99_verb verb, struct s99_flag1 flag1, struct s99_flag2 flag2, struct s99_rbx* rbxin, size_t num_text_units, ...);
-void s99_free(struct s99rb* __ptr32 parms);
-int s99_prt_msg(FILE* stream, struct s99rb* __ptr32 svc99parms, int svc99rc);
-void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms);
+struct s99rb* PTR32 s99_init(enum s99_verb verb, struct s99_flag1 flag1, struct s99_flag2 flag2, struct s99_rbx* rbxin, size_t num_text_units, ...);
+void s99_free(struct s99rb* PTR32 parms);
+int s99_prt_msg(FILE* stream, struct s99rb* PTR32 svc99parms, int svc99rc);
+void s99_fmt_dmp(FILE* stream, struct s99rb* PTR32 parms);
 
-int S99(struct s99rb* __ptr32 parms);
-int S99MSG(struct s99_em* __ptr32 parms);
+int S99(struct s99rb* PTR32 parms);
+int S99MSG(struct s99_em* PTR32 parms);
 
 #endif

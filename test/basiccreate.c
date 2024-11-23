@@ -3,16 +3,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "asmdiocommon.h"
 #include "decb.h"
 #include "dio.h"
 #include "ihadcb.h"
-#include "ioservices.h"
+#include "iosvcs.h"
 #include "s99.h"
 #include "util.h"
 
 /*
  * Basic Create of a PDSE Member:
- * - Allocate DDName 'MYDD' to (PDSE name passed in)
+ * - Allocate System-Generated DDName to (PDSE name passed in)
  * - Establish DCB for DDName
  * - Perform OPEN on PDSE
  * - Perform WRITE on PDSE and write a block of ASCII a's to the PDSE (0x61)
@@ -28,26 +29,26 @@ const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
 const struct decb decb_template = { 0, 0x8020 };
 const struct closecb closecb_template = { 1, 0, 0 };
 
-#define MYDD "MYDD"
-
 #define ASCII_A 0x61
 
 int main(int argc, char* argv[]) {
-  struct opencb* __ptr32 opencb;
-  struct closecb* __ptr32 closecb;
-  struct ihadcb* __ptr32 dcb;
-  struct decb* __ptr32 decb;
+  struct opencb* PTR32 opencb;
+  struct closecb* PTR32 closecb;
+  struct ihadcb* PTR32 dcb;
+  struct decb* PTR32 decb;
   int rc;
   unsigned int ttr;
 
-  struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
-  struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(MYDD)-1, MYDD };
-  struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} }; /* OLD=1, SHR=8 */
-  void* __ptr32 block;
+  void* PTR32 block;
 
   union stowlist* stowlist;
   struct stowlist_add* stowlistadd;
   size_t memlen;
+  char ddname[8+1];
+
+  struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
+  struct s99_common_text_unit dd = { DALRTDDN, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
+  struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} };
 
   if (argc != 3) {
     fprintf(stderr, "Syntax: %s <dataset> <member>\n", argv[0]);
@@ -65,14 +66,25 @@ int main(int argc, char* argv[]) {
 
   rc = init_dsnam_text_unit(argv[1], &dsn);
   if (rc) {
+    return rc;
+  }
+  rc = dsdd_alloc(&dsn, &dd, &stats);
+  if (rc) {
+    return rc;
+  }
+  memcpy(ddname, dd.s99tupar, dd.s99tulng);
+  ddname[dd.s99tulng] = '\0';
+
+  rc = init_dsnam_text_unit(argv[1], &dsn);
+  if (rc) {
     return 4;
   }
-  rc = pdsdd_alloc(&dsn, &dd, &stats);
+  rc = dsdd_alloc(&dsn, &dd, &stats);
   if (rc) {
     return 4;
   }
 
-  dcb = dcb_init(MYDD);
+  dcb = dcb_init(ddname);
   if (!dcb) {
     fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
     return 4;
@@ -158,7 +170,7 @@ int main(int argc, char* argv[]) {
 
   rc = STOW(stowlist, NULL, STOW_IFF);
   if (rc != STOW_IFF_CC_CREATE_OK) {
-    fprintf(stderr, "Unable to perform STOW. rc:%d\n", rc);
+    fprintf(stderr, "Unable to perform STOW (Does the member already exist?). rc:%d\n", rc);
     return rc;
   }
 #else
@@ -197,11 +209,6 @@ int main(int argc, char* argv[]) {
     return rc;
   }
   FREE31(opencb);
-
-  rc = ddfree(&dd);
-  if (rc) {
-    return 4;
-  }
 
   return 0;
 }

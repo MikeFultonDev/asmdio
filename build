@@ -7,6 +7,7 @@
 set -e
 
 # Default build is 31-bit.  Use "MODE=64" envar to build a 64-bit version.
+# Unfortunately it appears 64-bit is currently broken.
 if [ -z "${MODE}" ]; then
   MODE='31'
 fi
@@ -22,10 +23,12 @@ INFO="info'(cmp,cnv,cns,enu,lan,por,pro,ret)'"
 export AS=as
 export ASFLAGS="--SYSPARM'(${ASAMODE})',GOFF,LIST,SUPRWARN'(425,434)'"
 export CC=xlc
+export CFLAGS="-Wc,OPT'(3)',${DATA_MODEL},AGGR,${LIST},${INFO}"
 export CFLAGS="-Wc,debug,${DATA_MODEL},AGGR,${LIST},${INFO}"
 export CPPFLAGS="-DAMODE=${MODE}"
 export LD=xlc
-export LDFLAGS="-Wl,${DATA_MODEL},edit=no"
+export LDFLAGS="-Wl,${DATA_MODEL},edit=yes,map,case=mixed"
 
 gmake -j -C src
 gmake -j -C test
+gmake -j -C sample

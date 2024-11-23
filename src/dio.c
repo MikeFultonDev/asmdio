@@ -1,13 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "asmdiocommon.h"
 #include "dio.h"
 #include "stow.h"
+#include "util.h"
 #include "s99.h"
 #include "wrappers.h"
 
-int STOW(union stowlist* __ptr32 listp, struct ihadcb* __ptr32 dcbp, enum stowtype type)
+//#define DEBUG 1
+
+const struct s99_rbx s99rbxtemplate = {"S99RBX",S99RBXVR,{0,1,0,0,0,0,0},0,0,0};
+
+static unsigned int complement(unsigned int x) {
+  return (~x) + 1;
+}
+
+int STOW(union stowlist* PTR32 listp, struct ihadcb* PTR32 dcbp, enum stowtype type)
 {
   /*
    * Need to set the bits on the dcb and list pointers, so make
@@ -30,17 +39,17 @@ int STOW(union stowlist* __ptr32 listp, struct ihadcb* __ptr32 dcbp, enum stowty
       /* list and dcb should be positive - nothing required */
       break;
     case STOW_R:
-      /* list positive, dcb negative */
-      dcb |= 0x80000000;
+      /* list positive, dcb complement */
+      dcb = complement(dcb);
       break;
     case STOW_D:
-      /* list negative, dcb positive */
-      list |= 0x80000000;
+      /* list complement, dcb positive */
+      list = complement(list);
       break;
     case STOW_C:
-      /* list negative, dcb negative */
-      list |= 0x80000000;
-      dcb |= 0x80000000;
+      /* list complement, dcb complement */
+      list = complement(list);
+      dcb = complement(list);
       break;
     case STOW_I:
       /* list should be NULL, dcb positive */
@@ -63,11 +72,11 @@ int STOW(union stowlist* __ptr32 listp, struct ihadcb* __ptr32 dcbp, enum stowty
   return STOWA(list, dcb);
 }
 
-int S99(struct s99rb* __ptr32 s99rb)
+int S99(struct s99rb* PTR32 s99rb)
 {
   return S99A(s99rb);
 }
-int S99MSG(struct s99_em* __ptr32 s99em)
+int S99MSG(struct s99_em* PTR32 s99em)
 {
   return S99MSGA(s99em);
 }
@@ -76,67 +85,75 @@ int SYEXENQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len)
   return SYEXENQA(qname, rname, rname_len);
 }
 
-int OPEN(struct opencb* __ptr32 opencb)
+int OPEN(struct opencb* PTR32 opencb)
 {
   return OPENA(opencb);
 }
-int FIND(struct findcb* __ptr32 findcb, struct ihadcb* __ptr32 dcb)
+int FIND(struct findcb* PTR32 findcb, struct ihadcb* PTR32 dcb)
 {
   return FINDA(findcb, dcb);
 }
-int READ(struct decb* __ptr32 decb)
+int READ(struct decb* PTR32 decb)
 {
   return READA(decb);
 }
-int WRITE(struct decb* __ptr32 decb)
+int WRITE(struct decb* PTR32 decb)
 {
   return WRITEA(decb);
 }
-int CHECK(struct decb* __ptr32 decb)
+int CHECK(struct decb* PTR32 decb)
 {
   return CHECKA(decb);
 }
-unsigned NOTE(struct ihadcb* __ptr32 dcb)
+unsigned NOTE(struct ihadcb* PTR32 dcb)
 {
   return NOTEA(dcb);
 }
-unsigned DESERV(struct desp* __ptr32 desp)
+unsigned DESERV(struct desp* PTR32 desp)
 {
   return DESERVA(desp);
 }
-int CLOSE(struct closecb* __ptr32 closecb)
+int CLOSE(struct closecb* PTR32 closecb)
 {
   return CLOSEA(closecb);
 }
-void* __ptr32 MALLOC24(size_t bytes)
+void* PTR32 MALLOC24(size_t bytes)
 {
   int ptr24;
   ptr24 = MALOC24A(bytes);
-  void* __ptr32 ptr = (void* __ptr32) ptr24;
+  void* PTR32 ptr = (void* PTR32) ptr24;
+  if (ptr24 == 0) {
+    fprintf(stderr, "Internal Error: Unable to allocate %d bytes below the bar\n", bytes);
+  } else {
 #ifdef DEBUG
   memset(ptr, 0xFE, bytes);
 #else
   memset(ptr, 0x00, bytes);
 #endif
+  }
   return ptr;
 }
 
-int FREE24(void* __ptr32 addr, size_t len)
+int FREE24(void* PTR32 addr, size_t len)
 {
   return FREE24A(addr, len);
 }
 
-void* __ptr32 MALLOC31(size_t bytes)
+void* PTR32 MALLOC31(size_t bytes)
 {
-  void* __ptr32 p = __malloc31(bytes);
+  void* PTR32 p = __malloc31(bytes);
+  if (p == 0) {
+    fprintf(stderr, "Internal Error: Unable to allocate %d bytes below the line\n", bytes);
+  } else {
 #ifdef DEBUG
   memset(p, 0xFE, bytes);
 #else
   memset(p, 0x00, bytes);
 #endif
+  }
   return p;
 }
-void FREE31(void* __ptr32 addr)
+void FREE31(void* PTR32 addr)
 {
   return free(addr);
 }

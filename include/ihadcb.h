@@ -1,12 +1,15 @@
 #ifndef __IHADCB__
 #define __IHADCB__ 1
 
+#include "asmdiocommon.h"
+
+#include <stdio.h>
 #include "dcbe.h"
 
-#pragma pack(packed)
+#pragma pack(1)
 struct ihadcb {
   union {
-    struct dcbe* __ptr32 dcbdcbe;     /* DCBE ADDRESS ASSOCIATED WITH THIS    @L5A */
+    struct dcbe* PTR32 dcbdcbe;     /* DCBE ADDRESS ASSOCIATED WITH THIS    @L5A */
     unsigned char  dcbrelad[4]; /* --- PARTITIONED ORGANIZATION DATA SET -   */
     };
   char           dcbkeycn;     /* KEYED BLOCK OVERHEAD CONSTANT             */
@@ -179,8 +182,8 @@ struct ihadcb {
   unsigned char  dcboffsr;     /* OFFSET OF READ CCW FROM BSAM/BPAM PREFIX  */
   unsigned char  dcboffsw;     /* OFFSET OF WRITE CCW FROM BSAM/BPAM PREFIX */
   union {
-    void * __ptr32 dcbcicb; /* SAME AS DCBCICBA BELOW                    */
-    void * __ptr32 dcbioba; /* FOR NORMAL SCHEDULING, ADDRESS OF QSAM OR */
+    void * PTR32 dcbcicb; /* SAME AS DCBCICBA BELOW                    */
+    void * PTR32 dcbioba; /* FOR NORMAL SCHEDULING, ADDRESS OF QSAM OR */
     struct {
       unsigned char  _filler19;    /* @L4A                                      */
       unsigned int   dcbiobb : 24; /* SAME AS DCBIOBA ABOVE                @L4A */
@@ -204,18 +207,18 @@ struct ihadcb {
         char           dcbncp;        /* NUMBER OF CHANNEL PROGRAMS.               */
         unsigned int   dcbeobra : 24; /* ADDRESS OF END-OF-BLOCK MODULE FOR READ   */
         } dcbeobr;                    /* ADDRESS OF END-OF-BLOCK MODULE FOR READ   */
-      void * __ptr32 dcbeobw;      /* ADDRESS OF END-OF-BLOCK MODULE FOR WRITE. */
+      void * PTR32 dcbeobw;      /* ADDRESS OF END-OF-BLOCK MODULE FOR WRITE. */
       short int      _filler23;    /* DCBDIRCT - NUMBER OF BYTES USED IN LAST   */
       };
     };
   short int      dcblrecl;     /* LOGICAL RECORD LENGTH                     */
   union {
-    void * __ptr32 dcbcntrl; /* ADDRESS OF CNTRL MODULE      */
-    void * __ptr32 dcbnote;  /* ADDRESS OF NOTE/POINT MODULE */
-    void * __ptr32 dcbpoint; /* ADDRESS OF NOTE/POINT MODULE */
+    void * PTR32 dcbcntrl; /* ADDRESS OF CNTRL MODULE      */
+    void * PTR32 dcbnote;  /* ADDRESS OF NOTE/POINT MODULE */
+    void * PTR32 dcbpoint; /* ADDRESS OF NOTE/POINT MODULE */
     };
 };
-#pragma pack(reset)
+#pragma pack(pop)
 
 /* Values for field "_filler8" */
 #define dcbdv311 0x21 /* 2311 DISK STORAGE                @ZA46311        */
@@ -392,9 +395,9 @@ struct ihadcb {
 #define dcblngbs 0x58 /* LENGTH OF DCB FOR BSAM INTERFACE     @L1A        */
 #define dcblngpo 0x58 /* LENGTH OF DCB FOR BPAM INTERFACE     @L1A        */
 
-struct ihadcb* __ptr32 dcb_init(const char* ddname);
-void dcb_free(struct ihadcb* __ptr32 dcb);
-void dcb_fmt_dmp(FILE* stream, struct ihadcb* __ptr32 dcb);
+struct ihadcb* PTR32 dcb_init(const char* ddname);
+void dcb_free(struct ihadcb* PTR32 dcb);
+void dcb_fmt_dmp(FILE* stream, struct ihadcb* PTR32 dcb);
 
 #define DCB_ADDR_UNSET   ((void*)(1))
 #define DCB_ADDR24_UNSET (1)

@@ -1,7 +1,9 @@
 #ifndef __SMDE_H__
 #define __SMDE_H__ 1
 
-#pragma pack(packed)
+#include "asmdiocommon.h"
+
+#pragma pack(1)
 
 struct smde {
   union {
@@ -247,17 +249,17 @@ struct pmarl {
       unsigned char  pmarl_mpgs[4];   /* Total length of program on       */
       struct {
         unsigned char  pmarl_txtl[4]; /* Length of initial load text on   */
-        void * __ptr32 pmarl_txto;    /* Offset to text                   */
+        void * PTR32 pmarl_txto;    /* Offset to text                   */
         unsigned char  pmarl_bdrl[4]; /* Length of Binder index           */
-        void * __ptr32 pmarl_bdro;    /* Offset to Binder index           */
+        void * PTR32 pmarl_bdro;    /* Offset to Binder index           */
         unsigned char  pmarl_rdtl[4]; /* Length of PRDT                   */
-        void * __ptr32 pmarl_rdto;    /* Offset to PRDT                   */
+        void * PTR32 pmarl_rdto;    /* Offset to PRDT                   */
         unsigned char  pmarl_ratl[4]; /* Length of PRAT                   */
-        void * __ptr32 pmarl_rato;    /* Offset to PRAT                   */
+        void * PTR32 pmarl_rato;    /* Offset to PRAT                   */
         struct {
           unsigned char  pmarl_lmdl[4]; /* Length of LSLoader data,         */
           } pmarl_nvspgs;               /* Number of virtual storage   @L2A */
-        void * __ptr32 pmarl_lmdo;    /* Offset to LSLoader data          */
+        void * PTR32 pmarl_lmdo;    /* Offset to LSLoader data          */
         } pmarl_mdat;                 /* DASD program descriptors         */
       };
     struct {
@@ -403,7 +405,7 @@ struct pmara {
 #define pmarl_lvl4len       0x6A /* @LAA */
 #define pmarl_lvl5len       0x6A /* @LAA */
 
-#pragma pack(reset)
+#pragma pack(pop)
 
 #endif // __SMDE_H__
 

@@ -1,7 +1,9 @@
 #ifndef __STOW__
 #define __STOW__ 1
 
-#pragma pack(packed)
+#include "asmdiocommon.h"
+
+#pragma pack(1)
 
 struct stowlist_add {
   char mem_name[8];
@@ -25,14 +27,15 @@ struct stowlist_generic_includes_dcb {
   /* more stuff */
 };
 
+#define STOWLIST_IFF_TIMESTAMP_LEN (8)
 struct stowlist_iff {
   unsigned short list_len;
   unsigned char type;
   unsigned char reserved;
   int dcbHOB: 8;
   int dcb24: 24;
-  char timestamp[8];
-  void* __ptr32 direntry;
+  char timestamp[STOWLIST_IFF_TIMESTAMP_LEN];
+  void* PTR32 direntry;
   char user_descriptor[16];
   unsigned short ccsid;
 };
@@ -59,9 +62,11 @@ enum stowtype {
 enum stowcc {
   STOW_CC_OK=0,
   STOW_IFF_CC_CREATE_OK=4,
-  STOW_IFF_CC_UPDATE_FAILED=8,
-  STOW_IFF_CC_PDS_UPDATE_UNSUPPORTED=28
+  STOW_IFF_CC_MEMBER_EXISTS=8,
+  STOW_IFF_CC_PDS_UPDATE_UNSUPPORTED=0x40028
 };
+#define STOW_REPLACE_MEMBER_DOES_NOT_EXIST (8)
+
 #pragma pack(pop)
 
 #endif

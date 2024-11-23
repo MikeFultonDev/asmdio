@@ -1,7 +1,9 @@
 #ifndef __IHAPDS_H__
 #define __IHAPDS_H__
 
-#pragma pack(packed)
+#include "asmdiocommon.h"
+
+#pragma pack(1)
 
 struct pds2 {
   unsigned char  pds2name[8];             /* MEMBER NAME OR ALIAS NAME                 */
@@ -164,6 +166,6 @@ struct pds2 {
 #define pds2xattr 0x49 /* Start of extended attributes         @LBA */
 #define pds2xattr_opt 0x4C /* Start of optional fields. Number of       */
 
-#pragma pack(reset)
+#pragma pack(pop)
 
 #endif // __IHAPDS_H__

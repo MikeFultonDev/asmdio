@@ -2,6 +2,8 @@
  * wrappers for C 31-bit or 64-bit functions
  */
 
+#include "asmdiocommon.h"
+
 #if AMODE==31
   #pragma linkage(STOWA,    OS)
   #pragma linkage(NOTEA,    OS)
@@ -22,19 +24,20 @@
   struct closecb;
   struct desp;
 
-  int S99A(struct s99rb* __ptr32 rb);
-  int S99MSGA(struct s99_em* __ptr32 em);
-  int OPENA(struct opencb* __ptr32 opencb);
-  int FINDA(struct findcb* __ptr32 findcb, struct ihadcb* __ptr32 dcb);
-  int READA(struct decb* __ptr32 decb);
-  int WRITEA(struct decb* __ptr32 decb);
-  int CHECKA(struct decb* __ptr32 decb);
-  unsigned int NOTEA(struct ihadcb* __ptr32 dcb);
-  int DESERVA(struct desp* __ptr32 desp);
+  int S99A(struct s99rb* PTR32 rb);
+  int S99MSGA(struct s99_em* PTR32 em);
+  int OPENA(struct opencb* PTR32 opencb);
+  int FINDA(struct findcb* PTR32 findcb, struct ihadcb* PTR32 dcb);
+  int READA(struct decb* PTR32 decb);
+  int WRITEA(struct decb* PTR32 decb);
+  int CHECKA(struct decb* PTR32 decb);
+  unsigned int NOTEA(struct ihadcb* PTR32 dcb);
+  int DESERVA(struct desp* PTR32 desp);
   int STOWA(unsigned int list, unsigned int dcb);
-  int CLOSEA(struct closecb* __ptr32 dcb);
+  int CLOSEA(struct closecb* PTR32 dcb);
 
   int MALOC24A(size_t len);
+
   int FREE24A(void* __ptr32 addr, size_t len);
   int SYEXENQA(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
 
@@ -71,7 +74,7 @@
 	#define S99MSGA(ptr)      call31asm("S99MSGA", &S99MSGA, 1, ptr)
 	#define SYEXENQA(qname,rname,rnamelen)      call31asm("SYEXENQA", &SYEXENQA, 3, qname, rname, rnamelen)
 	#define OPENA(opencb)     call31asm("OPENA", &OPENA, 1, opencb)
-	#define FIND(findcb,dcb)  call31asm("FINDA", &FINDA, 2, findcb, dcb)
+	#define FINDA(findcb,dcb) call31asm("FINDA", &FINDA, 2, findcb, dcb)
 	#define READA(decb)       call31asm("READA", &READA, 1, decb)
 	#define WRITEA(decb)      call31asm("WRITEA", &WRITEA, 1, decb)
 	#define CHECKA(decb)      call31asm("CHECKA", &CHECKA, 1, decb)

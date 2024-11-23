@@ -8,3 +8,4 @@ set -e
 
 gmake -C src clean
 gmake -C test clean
+gmake -C sample clean

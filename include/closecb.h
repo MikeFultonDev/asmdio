@@ -1,12 +1,14 @@
 #ifndef __CLOSECB__
 #define __CLOSECB__ 1
 
-#pragma pack(packed)
+#include "asmdiocommon.h"
+
+#pragma pack(1)
 struct closecb {
   int last_entry:1;
   int opts:7;
   int reserved:24;
-  void* __ptr32 dcb24;
+  void* PTR32 dcb24;
 };
 
 #pragma pack(pop)

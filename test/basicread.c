@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "asmdiocommon.h"
 #include "dio.h"
 #include "ihadcb.h"
-#include "ioservices.h"
+#include "iosvcs.h"
 #include "s99.h"
 #include "iob.h"
 #include "util.h"
 
-#define MYDD "MYDD"
 
 /*
  * Basic Read of a PDS Member:
@@ -28,25 +28,27 @@ const struct decb decb_template = { 0, 0x8080 };
 const struct closecb closecb_template = { 1 };
 
 int main(int argc, char* argv[]) {
-  struct opencb* __ptr32 opencb;
-  struct findcb* __ptr32 findcb;
-  struct closecb* __ptr32 closecb;
-  struct ihadcb* __ptr32 dcb;
-  struct desp* __ptr32 desp;
-  struct desl* __ptr32 desl;
-  struct desl_name* __ptr32 desl_name;
-  struct desb* __ptr32 desb;
-  struct smde* __ptr32 smde;
-  struct decb* __ptr32 decb;
-  struct iob* __ptr32 iob;
-  void* __ptr32 block;
+  struct opencb* PTR32 opencb;
+  struct findcb* PTR32 findcb;
+  struct closecb* PTR32 closecb;
+  struct ihadcb* PTR32 dcb;
+  struct desp* PTR32 desp;
+  struct desl* PTR32 desl;
+  struct desl_name* PTR32 desl_name;
+  struct desb* PTR32 desb;
+  struct smde* PTR32 smde;
+  struct decb* PTR32 decb;
+  struct iob* PTR32 iob;
+  void* PTR32 block;
   int rc;
   char* ds;
   char* mem;
   size_t memlen;
 
+  char ddname[8+1];
+
   struct s99_common_text_unit dsn = { DALDSNAM, 1, 0, 0 };
-  struct s99_common_text_unit dd = { DALDDNAM, 1, sizeof(MYDD)-1, MYDD };
+  struct s99_common_text_unit dd = { DALRTDDN, 1, sizeof(DD_SYSTEM)-1, DD_SYSTEM };
   struct s99_common_text_unit stats = { DALSTATS, 1, 1, {0x8} };
 
   if (argc != 3) {
@@ -54,17 +56,33 @@ int main(int argc, char* argv[]) {
     return 4;
   }
 
+  memlen = strlen(argv[2]);
+  if (memlen == 0 || memlen > 8) {
+    fprintf(stderr, "Member must be 1 to 8 characters long\n");
+    return 4;
+  }
+
   rc = uppercase(argv[1]);
   rc = uppercase(argv[2]);
 
-  ds = argv[1];
-  rc = init_dsnam_text_unit(ds, &dsn);
+  rc = init_dsnam_text_unit(argv[1], &dsn);
   if (rc) {
     return rc;
   }
-  rc = pdsdd_alloc(&dsn, &dd, &stats);
+  rc = dsdd_alloc(&dsn, &dd, &stats);
   if (rc) {
     return rc;
+  }
+  memcpy(ddname, dd.s99tupar, dd.s99tulng);
+  ddname[dd.s99tulng] = '\0';
+
+  rc = init_dsnam_text_unit(argv[1], &dsn);
+  if (rc) {
+    return 4;
+  }
+  rc = dsdd_alloc(&dsn, &dd, &stats);
+  if (rc) {
+    return 4;
   }
 
   mem = argv[2];
@@ -75,7 +93,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "Unable to obtain storage for OPEN cb\n");
     return 4;
   }
-  dcb = dcb_init(MYDD);
+  dcb = dcb_init(ddname);
   if (!dcb) {
     fprintf(stderr, "Unable to obtain storage for OPEN dcb\n");
     return 4;
@@ -162,14 +180,14 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
     return 4;
   }
 
-  smde = (struct smde* __ptr32) (desp->desp_area_ptr->desb_data);
+  smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
   if (smde->smde_ext_attr_off == 0) {
     fprintf(stdout, "No extended attributes for %s(%s)\n", ds, mem);
     fprintf(stdout, "SMDE Address:%p SMDE Eye-catcher %8.8s\n", smde, smde->smde_id);
   } else {
-    struct smde_ext_attr* __ptr32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
+    struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
     fprintf(stdout, "CCSID: 0x%x%x last change userid: %8.8s change timestamp: 0x%llx\n",
-      ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ext_attr->smde_change_timestamp);
+      ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, *((long long*) ext_attr->smde_change_timestamp));
   }
 
   /* Call FIND to find the start of the member */
@@ -221,7 +239,7 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
   dumpstg(stdout, block, dcb->dcbblksi);
   fprintf(stdout, "\n");
 
-  iob = (struct iob* __ptr32) decb->stat_addr;
+  iob = (struct iob* PTR32) decb->stat_addr;
   fprintf(stdout, "Residual count:%d\n", iob->iobcsw.iobresct);
 
   /* Read another block (should fail) */

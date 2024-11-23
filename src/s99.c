@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include "asmdiocommon.h"
 #include "dio.h"
 #include "s99.h"
 #include "wrappers.h"
@@ -25,9 +26,9 @@ static size_t text_unit_size(struct s99_text_unit* inunit)
 	return tunitsize;
 }
 
-static struct s99_text_unit* __ptr32 calloc_text_unit(struct s99_text_unit* inunit) 
+static struct s99_text_unit* PTR32 calloc_text_unit(struct s99_text_unit* inunit) 
 {
-	struct s99_text_unit* __ptr32 outunit;
+	struct s99_text_unit* PTR32 outunit;
 	int i;
 
 	size_t tunitsize;
@@ -39,14 +40,14 @@ static struct s99_text_unit* __ptr32 calloc_text_unit(struct s99_text_unit* inun
 	return outunit;
 }
 
-void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms) 
+void s99_fmt_dmp(FILE* stream, struct s99rb* PTR32 parms) 
 {
 	size_t tunitsize;
-	unsigned int* __ptr32 p;
-	unsigned int* __ptr32 pp;
+	unsigned int* PTR32 p;
+	unsigned int* PTR32 pp;
 	struct s99_text_unit* wtu;
-	struct s99_text_unit* __ptr32 * __ptr32 textunit = parms->s99txtpp;
-	struct s99_rbx* __ptr32 rbx = parms->s99s99x;
+	struct s99_text_unit* PTR32 * PTR32 textunit = parms->s99txtpp;
+	struct s99_rbx* PTR32 rbx = parms->s99s99x;
 	int i=0;
 	char* s99verb = (char*)&parms->s99verb;
 	unsigned short* s99flag1 = (unsigned short*)&parms->s99flag1;
@@ -73,7 +74,7 @@ void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms)
 		fprintf(stream, "\n");
 	}
 	do {
-		pp = (unsigned int* __ptr32) &textunit[i];
+		pp = (unsigned int* PTR32) &textunit[i];
 		wtu = (struct s99_text_unit*) textunit[i];
 		tunitsize = text_unit_size(wtu);
 		fprintf(stream, "  textunit[%d] %X %3zu ", i, *pp, tunitsize);
@@ -84,16 +85,16 @@ void s99_fmt_dmp(FILE* stream, struct s99rb* __ptr32 parms)
 	return;
 }
 
-struct s99rb* __ptr32 s99_init(enum s99_verb verb, struct s99_flag1 flag1, struct s99_flag2 flag2, struct s99_rbx* rbxin, size_t num_text_units, ...)
+struct s99rb* PTR32 s99_init(enum s99_verb verb, struct s99_flag1 flag1, struct s99_flag2 flag2, struct s99_rbx* rbxin, size_t num_text_units, ...)
 {
 	va_list arg_ptr;
 	size_t i;
-	struct s99rb* __ptr32 parms;
-	struct s99_rbx* __ptr32 rbxp;
-	struct s99_text_unit* __ptr32 * __ptr32 textunit;
-	unsigned int* __ptr32 pp;
+	struct s99rb* PTR32 parms;
+	struct s99_rbx* PTR32 rbxp;
+	struct s99_text_unit* PTR32 * PTR32 textunit;
+	unsigned int* PTR32 pp;
 
-	textunit = MALLOC31(num_text_units * (sizeof(struct s99_text_unit* __ptr32)));
+	textunit = MALLOC31(num_text_units * (sizeof(struct s99_text_unit* PTR32)));
 	if (!textunit) {
 		return 0;
 	}
@@ -111,7 +112,7 @@ struct s99rb* __ptr32 s99_init(enum s99_verb verb, struct s99_flag1 flag1, struc
 		struct s99_text_unit* inunit = (struct s99_text_unit*) va_arg(arg_ptr, void*);
 		textunit[i] = calloc_text_unit(inunit);
 	}
-	pp = (unsigned int* __ptr32) (&textunit[num_text_units-1]);	
+	pp = (unsigned int* PTR32) (&textunit[num_text_units-1]);	
 	*pp |= 0x80000000;
 
 	va_end(arg_ptr);
@@ -128,12 +129,12 @@ struct s99rb* __ptr32 s99_init(enum s99_verb verb, struct s99_flag1 flag1, struc
 	return parms;
 }
 
-void s99_free(struct s99rb* __ptr32 parms) 
+void s99_free(struct s99rb* PTR32 parms) 
 {
 	int i=0;
 	unsigned int txtunit;
 	do {
-		unsigned int* __ptr32 txtunitp = (unsigned int* __ptr32) (&parms->s99txtpp[i]);
+		unsigned int* PTR32 txtunitp = (unsigned int* PTR32) (&parms->s99txtpp[i]);
 		txtunit = *txtunitp;
 		free(parms->s99txtpp[i]); 
 		++i;
@@ -143,16 +144,16 @@ void s99_free(struct s99rb* __ptr32 parms)
 	free(parms);
 }
 
-void s99_em_fmt_dmp(FILE* stream, struct s99_em* __ptr32 parms) {
+void s99_em_fmt_dmp(FILE* stream, struct s99_em* PTR32 parms) {
 	char* funct = (char* ) parms;
 	fprintf(stream, "SVC99 EM Parms Dump\n");
 	fprintf(stream, "  EMParms %8.8X FUNCT:%2.2X IDNUM:%2.2X NMSGBAK:%d S99RBP:%8.8X RETCOD:%8.8X CPPLP:%8.8X BUFP:%8.8X WTPCDP:%8.8X\n", 
 		funct, *funct, parms->emidnum, parms->emnmsgbk, parms->ems99rbp, parms->emretcod, parms->emcpplp, parms->embufp, parms->emwtpcdp);
 }
 
-int s99_prt_msg(FILE* stream, struct s99rb* __ptr32 svc99parms, int svc99rc) 
+int s99_prt_msg(FILE* stream, struct s99rb* PTR32 svc99parms, int svc99rc) 
 {
-	struct s99_em* __ptr32 msgparms; 
+	struct s99_em* PTR32 msgparms; 
 	int rc;
 
 	msgparms = MALLOC31(sizeof(struct s99_em));
@@ -168,9 +169,12 @@ int s99_prt_msg(FILE* stream, struct s99rb* __ptr32 svc99parms, int svc99rc)
 	msgparms->emwtpcdp = &msgparms->emwtdert;
 	msgparms->embufp = &msgparms->embuf;
 
+#if 0
 	fprintf(stream, "SVC99 parms:%p rc:0x%x\n", svc99parms, svc99rc);
 	fprintf(stream, "SVC99 failed with error:%d (0x%x) info: %d (0x%x)\n", 
 		svc99parms->s99error, svc99parms->s99error, svc99parms->s99info, svc99parms->s99info);
+#endif
+
 	rc = S99MSG(msgparms);
 	if (rc) {
 		fprintf(stream, "SVC99MSG rc:0x%x\n", rc);
