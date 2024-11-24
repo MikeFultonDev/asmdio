@@ -17,6 +17,7 @@
 
 #define DD_SYSTEM "????????"
 #define DS_MAX (44)
+
 #define MEM_MAX (8)
 #define DD_MAX (8)
 #define REC_LEN_MAX (32760)
@@ -30,6 +31,8 @@ unsigned int NOTE(struct ihadcb* PTR32 dcb);
 unsigned int DESERV(struct desp* PTR32 desp);
 int STOW(union stowlist* PTR32 list, struct ihadcb* PTR32 dcb, enum stowtype type);
 int CLOSE(struct closecb* PTR32 closecb);
+int SYEXENQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
+int SYEXDEQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
 
 #pragma map(OPEN, "DOPEN")
 #pragma map(FIND, "DFIND")

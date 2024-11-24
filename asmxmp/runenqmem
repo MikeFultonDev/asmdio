@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -e
+
+hlq=$(hlq)
+
+wrtlib="${hlq}.ASMXMP.DATA"
+#drm -f "${wrtlib}"
+#dtouch "${wrtlib}"
+#decho "Text" "${wrtlib}(MEMBER)"
+
+xmplib="${hlq}.ASMXMP.LOAD"
+
+mvscmd --steplib=$xmplib --pgm=ENQMEM
