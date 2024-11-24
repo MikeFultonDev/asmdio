@@ -84,6 +84,10 @@ int SYEXENQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len)
 {
   return SYEXENQA(qname, rname, rname_len);
 }
+int SYEXDEQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len)
+{
+  return SYEXDEQA(qname, rname, rname_len);
+}
 
 int OPEN(struct opencb* PTR32 opencb)
 {

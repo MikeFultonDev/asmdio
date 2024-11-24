@@ -477,6 +477,45 @@ S99MSGA_PARMS   DSECT
 S99MSGAP DS     AL4
 S99MSGA_DSAL    EQU 0
 
+**| SYEXDEQA..... SYSTEMS EXCLUSIVE DEQ
+**| https://tech.mikefulton.ca/DEQMacro
+**| Input:
+**|   R1 -> pointer to QNAME, RNAME, RNAME Length
+**| Output:
+**|   R15 -> RC 0 if successful, non-zero otherwise
+
+DIOA     CSECT
+         ENTRY SYEXDEQA
+SYEXDEQA ASDPRO BASE_REG=3,USR_DSAL=SYEXDEQA_DSAL
+         USING SYEXDEQA_PARMS,R1
+         LA    R10,SYEXDEQS
+*
+         LA  6,SYEXDEQS
+         MVC SYEXDEQS,SYEXDEQT
+         L   R7,DQNAMEA
+         L   R8,DRNAMEA
+         L   R9,DRNAMEL
+         DEQ ((7),(8),(9),SYSTEMS),RET=HAVE,MF=(E,SYEXDEQS)
+
+         ASDEPI
+
+* Template for ENQ
+
+SYEXDEQT  DEQ (7,8,9,SYSTEMS),RET=HAVE,MF=L
+
+         DROP
+         LTORG
+
+SYEXDEQA_PARMS   DSECT
+DQNAMEA DS        AL4
+DRNAMEA DS        AL4
+DRNAMEL DS        1F
+
+SYEXDEQS DS 0F
+         ENQ (2,3,E,4,SYSTEMS),RET=HAVE,MF=L
+SYEXDEQL         EQU *-SYEXDEQS
+SYEXDEQA_DSAL    EQU SYEXDEQL
+
 **| SYEXENQA..... SYSTEMS EXCLUSIVE ENQ
 **| https://tech.mikefulton.ca/ENQMacro
 **| Input:
@@ -492,9 +531,9 @@ SYEXENQA ASDPRO BASE_REG=3,USR_DSAL=SYEXENQA_DSAL
 *
          LA  6,SYEXENQS
          MVC SYEXENQS,SYEXENQT
-         L   R7,QNAMEA
-         L   R8,RNAMEA
-         L   R9,RNAMEL
+         L   R7,EQNAMEA
+         L   R8,ERNAMEA
+         L   R9,ERNAMEL
          ENQ ((7),(8),E,(9),SYSTEMS),RET=USE,MF=(E,SYEXENQS)
 
          ASDEPI
@@ -507,9 +546,9 @@ SYEXENQT  ENQ (7,8,E,9,SYSTEMS),RET=USE,MF=L
          LTORG
 
 SYEXENQA_PARMS   DSECT
-QNAMEA DS        AL4
-RNAMEA DS        AL4
-RNAMEL DS        1F
+EQNAMEA DS        AL4
+ERNAMEA DS        AL4
+ERNAMEL DS        1F
 
 SYEXENQS DS 0F
          ENQ (2,3,E,4,SYSTEMS),RET=USE,MF=L

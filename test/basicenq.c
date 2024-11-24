@@ -35,6 +35,11 @@ static int pass(void)
   int rc = SYEXENQ(qname, rname, rname_len);
 
   printf("Return code from SYEXENQ :%d\n", rc);
+
+  if (rc == 0) {
+    rc = SYEXDEQ(qname, rname, rname_len);
+    printf("Return code from SYEXDEQ :%d\n", rc);
+  }
   return rc;
 }
 
