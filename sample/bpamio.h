@@ -25,6 +25,8 @@
   struct mem_node* pds_mem(FM_BPAMHandle* bh, const DBG_Opts* opts);
   struct desp* PTR32 get_desp_all(const FM_BPAMHandle* bh, const DBG_Opts* opts);
   struct mem_node* find_mem(FM_BPAMHandle* bh, const char* memname, struct mem_node* match_node, const DBG_Opts* opts);
+  struct desp* PTR32 find_desp(FM_BPAMHandle* bh, const char* memname, const DBG_Opts* opts);
+  void free_desp(struct desp* PTR32, const DBG_Opts* opts);
 
   int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);
   int open_pds_for_read(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);

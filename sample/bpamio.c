@@ -336,14 +336,6 @@ struct desp* PTR32 init_desp(const FM_BPAMHandle* bh, const char* mem, const DBG
   return desp;
 }
 
-void free_desp(struct desp* PTR32 desp, const FM_Opts* opts)
-{
-  free(desp->desp_name_list_ptr->desl_name_ptr);
-  free(desp->desp_name_list_ptr);
-  free(desp->desp_area_ptr);
-  free(desp);
-}
-
 int find_member(FM_BPAMHandle* bh, const char* mem, const DBG_Opts* opts)
 {
   const struct findcb findcb_template = { "        " };
@@ -850,4 +842,86 @@ void free_mem(struct mem_node* node)
      node = next_node;
   }
   return;
+}
+
+struct desp* PTR32 find_desp(FM_BPAMHandle* bh, const char* memname, const DBG_Opts* opts)
+{
+  const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
+  size_t memlen = strlen(memname);
+
+  /*
+   * Allocate the data structures and call DESERVE GET
+   */
+  struct desp* PTR32 desp;
+  struct desl* PTR32 desl;
+  struct desl_name* PTR32 desl_name;
+  struct desb* PTR32 desb;
+  struct smde* PTR32 smde;
+  struct decb* PTR32 decb;
+
+  desp = MALLOC31(sizeof(struct desp));
+  if (!desp) {
+    fprintf(stderr, "Unable to obtain storage for DESERV\n");
+    return NULL;
+  }
+  desl = MALLOC31(sizeof(struct desl));
+  if (!desl) {
+    fprintf(stderr, "Unable to obtain storage for DESERV DESL\n");
+    return NULL;
+  }
+  desl_name = MALLOC31(sizeof(struct desl_name));
+  if (!desl_name) {
+    fprintf(stderr, "Unable to obtain storage for DESERV DESL NAME\n");
+    return NULL;
+  }
+  desl_name->desl_name_len = memlen;
+  memcpy(desl_name->desl_name, memname, memlen);
+
+  desl->desl_name_ptr = desl_name;
+
+  /*
+   * DESERV GET BYPASS_LLA LIBTYPE DCB CONN_INTENT HOLD EXT_ATTR NAME_LIST AREA
+   */
+  *desp = desp_template;
+  desp->desp_func = desp_func_get;
+  desp->desp_bypass_lla = 1;
+  desp->desp_ext_attr = 1;
+  desp->desp_libtype = desp_libtype_dcb;
+  desp->desp_gettype = desp_gettype_name_list;
+  desp->desp_conn_intent = desp_conn_intent_hold;
+
+  /* setup DCB */
+  desp->desp_dcb_ptr = bh->dcb;
+
+  /* setup DESERV area */
+  int desb_len = sizeof(struct desb) + SMDE_NAME_MAXLEN;
+  desb = MALLOC31(desb_len);
+  if (!desb) {
+    fprintf(stderr, "Unable to obtain storage for DESB area\n");
+    return NULL;
+  }
+  desp->desp_area_ptr = desb;
+  desp->desp_area2 = desb_len;
+
+  /* setup NAMELIST */
+  /* set up DESL list of 1 entry for member to GET */
+  desp->desp_name_list_ptr = desl;
+  desp->desp_name_list2 = 1;
+
+  /* call DESERV and get extended attributes */
+  int rc = DESERV(desp);
+  if (rc) {
+    fprintf(stderr, "Unable to PERFORM DESERV. rc:0x%x\n", rc);
+    return NULL;
+  }
+
+  return desp;;
+}
+
+void free_desp(struct desp* PTR32 desp, const DBG_Opts* opts)
+{
+  free(desp->desp_area_ptr);
+  free(desp->desp_name_list_ptr->desl_name_ptr);
+  free(desp->desp_name_list_ptr);
+  free(desp);
 }

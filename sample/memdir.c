@@ -668,74 +668,15 @@ int writememdir_entry(FM_BPAMHandle* bh, const struct mstat* mstat, const DBG_Op
 
 int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, const DBG_Opts* opts)
 {
-  const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
-  size_t memlen = strlen(mem);
 
   /*
-   * Allocate the data structures and call DESERVE GET
-   */
-  struct desp* PTR32 desp;
-  struct desl* PTR32 desl;
-  struct desl_name* PTR32 desl_name;
-  struct desb* PTR32 desb;
-  struct smde* PTR32 smde;
-  struct decb* PTR32 decb;
+   * Find the SMDE for the member and then find the mem_node for the member.
+   * Merge the contents together.
+   * Free up the 31-bit storage allocated for desp
+   */ 
 
-  desp = MALLOC31(sizeof(struct desp));
-  if (!desp) {
-    fprintf(stderr, "Unable to obtain storage for DESERV\n");
-    return 4;
-  }
-  desl = MALLOC31(sizeof(struct desl));
-  if (!desl) {
-    fprintf(stderr, "Unable to obtain storage for DESERV DESL\n");
-    return 4;
-  }
-  desl_name = MALLOC31(sizeof(struct desl_name));
-  if (!desl_name) {
-    fprintf(stderr, "Unable to obtain storage for DESERV DESL NAME\n");
-    return 4;
-  }
-  desl_name->desl_name_len = memlen;
-  memcpy(desl_name->desl_name, mem, memlen);
-
-  desl->desl_name_ptr = desl_name;
-
-  /*
-   * DESERV GET BYPASS_LLA LIBTYPE DCB CONN_INTENT HOLD EXT_ATTR NAME_LIST AREA
-   */
-  *desp = desp_template;
-  desp->desp_func = desp_func_get;
-  desp->desp_bypass_lla = 1;
-  desp->desp_ext_attr = 1;
-  desp->desp_libtype = desp_libtype_dcb;
-  desp->desp_gettype = desp_gettype_name_list;
-  desp->desp_conn_intent = desp_conn_intent_hold;
-
-  /* setup DCB */
-  desp->desp_dcb_ptr = bh->dcb;
-
-  /* setup DESERV area */
-  int desb_len = sizeof(struct desb) + SMDE_NAME_MAXLEN;
-  desb = MALLOC31(desb_len);
-  if (!desb) {
-    fprintf(stderr, "Unable to obtain storage for DESB area\n");
-    return 4;
-  }
-  desp->desp_area_ptr = desb;
-  desp->desp_area2 = desb_len;
-
-  /* setup NAMELIST */
-  /* set up DESL list of 1 entry for member to GET */
-  desp->desp_name_list_ptr = desl;
-  desp->desp_name_list2 = 1;
-
-  /* call DESERV and get extended attributes */
-  int rc = DESERV(desp);
-  if (rc) {
-    fprintf(stderr, "Unable to PERFORM DESERV. rc:0x%x\n", rc);
-    return 4;
-  }
+  struct desp* PTR32 desp = find_desp(bh, mem, opts);
+  struct smde* PTR32 smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
 
   smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
 
@@ -767,6 +708,9 @@ int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, co
     mstat->ext_ccsid = smde_mstat.ext_ccsid;
     mstat->ext_changed = smde_mstat.ext_changed;
   }
+
+  free_desp(desp, opts);
+
   if (opts->debug) {
     print_members(mstat, 1);
   }
