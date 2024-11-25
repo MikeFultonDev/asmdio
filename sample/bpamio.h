@@ -16,11 +16,12 @@
   struct mem_node {
     struct mem_node *next;
     char name[MEM_MAX+1];
-    char userdata_len;
     int is_alias:1;
     char ttr[TTR_LEN];
+    char userdata_len;
     char userdata[64];
   };
+  struct mstat;
 
   struct mem_node* pds_mem(FM_BPAMHandle* bh, const DBG_Opts* opts);
   struct desp* PTR32 get_desp_all(const FM_BPAMHandle* bh, const DBG_Opts* opts);
@@ -32,7 +33,7 @@
   int open_pds_for_read(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);
 
   int find_member(FM_BPAMHandle* bh, const char* mem, const DBG_Opts* opts);
-  int write_member_dir_entry(const struct file_tag* tag, const char* member, FM_BPAMHandle* bh, const DBG_Opts* opts);
+  int write_member_dir_entry(const struct mstat* mstat, FM_BPAMHandle* bh, const DBG_Opts* opts);
 
   int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
   int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts);

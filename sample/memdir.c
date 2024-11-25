@@ -11,57 +11,12 @@
 #include "memdir.h"
 #include "ztime.h"
 #include "bpamio.h"
-
-#pragma pack(1)
-struct ispf_disk_stats {
-  char encoded_userdata_length;
-
-  unsigned char ver_num;
-  unsigned char mod_num;
-  int sclm:1;
-  int reserve_a:1;
-  int extended:1;
-  int reserve_b:5;
-  unsigned char pd_mod_seconds;
-
-  unsigned char create_century;
-  char pd_create_julian[3];
-
-  unsigned char mod_century;
-  char pd_mod_julian[3];
-
-  unsigned char pd_mod_hours;
-  unsigned char pd_mod_minutes;
-  unsigned short curr_num_lines;
-
-  unsigned short init_num_lines;
-  unsigned short mod_num_lines;
-
-  char userid[8];
-
-  /* following is available only in extended format */
-  unsigned int full_curr_num_lines;
-  unsigned int full_init_num_lines;
-  unsigned int full_mod_num_lines;
-};
-#pragma pack(pop)
-
-struct ispf_stats {
-  struct tm create_time;
-  struct tm mod_time;
-  unsigned int curr_num_lines;
-  unsigned int init_num_lines;
-  unsigned int mod_num_lines;
-  unsigned char userid[8+1];
-  unsigned char ver_num;
-  unsigned char mod_num;
-  unsigned char sclm;
-};
+#include "ispf.h"
 
 /*
  * msf - need to implement check of ranges of values
  */
-static int valid_ispf_disk_stats(const struct ispf_disk_stats* ids)
+static int valid_ispf_disk_stats(unsigned char userdata_len, const struct ispf_disk_stats* ids)
 {
   return 0; 
 }
@@ -85,7 +40,7 @@ static void set_mod_time(struct ispf_stats* is, struct ispf_disk_stats* id)
 static int ispf_stats(const struct mem_node* np, struct ispf_stats* is)
 {
   struct ispf_disk_stats* id = (struct ispf_disk_stats*) (np->userdata);
-  int rc = valid_ispf_disk_stats(id);
+  int rc = valid_ispf_disk_stats(np->userdata_len, id);
 
   if (rc) {
     return rc;
@@ -187,7 +142,6 @@ static struct mstat* memnode_to_mstat(const struct mem_node* np, struct mstat* m
     mstat->name = name;
   }
 
-printf("userdata length:%d\n", np->userdata_len);
   if (np->userdata_len == 31 || np->userdata_len == 41) {
     /* ISPF USER DATA */
     /* https://tech.mikefulton.ca/ISPFStatsLayout */
@@ -661,9 +615,14 @@ int closememdir(MEMDIR* memdir, const DBG_Opts* opts)
   return 0;
 }
 
+/*
+ * msf - may want to either push read/write member directory services to bpamio
+ * or pull them all back and put them into memdir.
+ * Right now, it's odd having a bit of both in both.
+ */
 int writememdir_entry(FM_BPAMHandle* bh, const struct mstat* mstat, const DBG_Opts* opts)
 {
-  return 0;
+  return write_member_dir_entry(mstat, bh, opts);
 }
 
 int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, const DBG_Opts* opts)
@@ -717,3 +676,64 @@ int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, co
   return 0;
 }
 
+static char* PTR32 ispf_rname(const char* ds, const char* mem)
+{
+  unsigned int rname_len = strlen(ds) + strlen(mem);
+
+  if (rname_len > 44+8) {
+    fprintf(stderr, "Invalid dataset or member name passed to ENQ/DEQ %s(%s)\n", ds, mem);
+    return NULL;
+  }
+
+  char* __ptr32 rname;
+  rname = MALLOC31(52+1);
+  if (!rname) {
+    fprintf(stderr, "Unable to obtain storage for ENQ/DEQ\n");
+    return NULL;
+  }
+  sprintf(rname, "%-44s%-8s", ds, mem);
+
+  return rname;
+}
+
+static char* PTR32 ispf_qname(const char* qn)
+{
+  unsigned int qname_len = strlen(qn);
+
+  if (qname_len > 8) {
+    fprintf(stderr, "Invalid queue name passed to ENQ/DEQ %s\n", qn);
+    return NULL;
+  }
+
+  char* __ptr32 qname;
+  qname = MALLOC31(8+1);
+  if (!qname) {
+    fprintf(stderr, "Unable to obtain storage for ENQ/DEQ\n");
+    return NULL;
+  }
+  sprintf(qname, "%-8s", qn);
+
+  return qname;
+}
+
+int ispf_enq_dataset_member(const char* ds, const char* wmem) 
+{
+  char* __ptr32 rname = ispf_rname(ds, wmem);
+  char* __ptr32 qname = ispf_qname("SPFEDIT");
+
+  if (!rname || !qname) {
+    return 4;
+  }
+  return SYEXENQ(qname, rname, strlen(rname));
+}
+
+int ispf_deq_dataset_member(const char* ds, const char* wmem) 
+{
+  char* __ptr32 rname = ispf_rname(ds, wmem);
+  char* __ptr32 qname = ispf_qname("SPFEDIT");
+
+  if (!rname || !qname) {
+    return 4;
+  }
+  return SYEXDEQ(qname, rname, strlen(rname));
+}

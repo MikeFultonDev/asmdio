@@ -38,9 +38,9 @@
   struct ispf_stats {
     struct tm create_time;
     struct tm mod_time;
-    unsigned short curr_num_lines;
-    unsigned short init_num_lines;
-    unsigned short mod_num_lines;
+    unsigned int curr_num_lines;
+    unsigned int init_num_lines;
+    unsigned int mod_num_lines;
     unsigned char userid[8+1];
     unsigned char ver_num;
     unsigned char mod_num;

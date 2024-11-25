@@ -31,7 +31,10 @@ int main(int argc, char* argv[])
   size_t rmem_len = strlen(rmem);
 
   DBG_Opts opts = { 0 };
+
+#if 0
   opts.debug = 1;
+#endif
   FM_BPAMHandle bh;
   int rc;
 
@@ -99,13 +102,22 @@ int main(int argc, char* argv[])
   struct mstat write_mstat = read_mstat;
   write_mstat.name = wmem;
 
+  if (ispf_enq_dataset_member(ds, wmem)) {
+    fprintf(stderr, "Unable to obtain ENQ for PDS member %s(%s). Member not written\n", ds, wmem);
+    return 8;
+  }
   if (writememdir_entry(&bh, &write_mstat, &opts)) {
     fprintf(stderr, "Unable to write directory entry for member %s(%s)\n", ds, wmem);
+    return 8;
+  }
+  if (ispf_deq_dataset_member(ds, wmem)) {
+    fprintf(stderr, "Unable to obtain ENQ for PDS member %s(%s). Member not written\n", ds, wmem);
     return 8;
   }
 
   rc = close_pds(&bh, &opts);
 
+  printf("New member %s written out\n", wmem);
   printf("Read %d blocks and wrote %d blocks\n", blocks_read, blocks_written);
   return 0;
 }

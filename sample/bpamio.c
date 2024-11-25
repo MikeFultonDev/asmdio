@@ -23,6 +23,7 @@
 #include "findcb.h"
 #include "ispf.h"
 #include "ztime.h"
+#include "memdir.h"
 
 static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
 {
@@ -456,12 +457,12 @@ static int update_pdse_member_dir_entry(FM_BPAMHandle* bh, const char* member, u
   return rc;
 }
 
-int write_member_dir_entry(const struct file_tag* tag, const char* member, FM_BPAMHandle* bh, const DBG_Opts* opts)
+int write_member_dir_entry(const struct mstat* mstat, FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
   union stowlist* stowlist;
   struct stowlist_add* stowlistadd;
-  size_t memlen = strlen(member);
+  size_t memlen = strlen(mstat->name);
   stowlist = MALLOC24(sizeof(struct stowlist_iff));
   stowlistadd = MALLOC24(sizeof(struct stowlist_add));
   int rc;
@@ -471,14 +472,14 @@ int write_member_dir_entry(const struct file_tag* tag, const char* member, FM_BP
     return 4;
   }
 
-  add_mem_stats(stowlistadd, member, memlen, bh->ttr);
+  add_mem_stats(stowlistadd, mstat->name, memlen, bh->ttr);
 
   stowlist->iff = stowlistiff_template;
 
   SET_24BIT_PTR(stowlist->iff.dcb24, bh->dcb);
   stowlist->iff.type = STOW_IFF;
   stowlist->iff.direntry = stowlistadd;
-  stowlist->iff.ccsid = tag->ft_ccsid;
+  stowlist->iff.ccsid = mstat->ext_ccsid;
 
   /*
    * Assume the is a PDSE and we can STOW with IFF.
@@ -490,16 +491,16 @@ int write_member_dir_entry(const struct file_tag* tag, const char* member, FM_BP
       rc = 0;
       break;
     case STOW_IFF_CC_PDS_UPDATE_UNSUPPORTED:
-      debug(opts, "Member %s is in a PDS - do a STOW and not a STOW_IFF\n", member);
+      debug(opts, "Member %s is in a PDS - do a STOW and not a STOW_IFF\n", mstat->name);
       free(stowlist);
-      rc = write_pds_member_dir_entry(bh->dcb, member, stowlistadd, opts);
+      rc = write_pds_member_dir_entry(bh->dcb, mstat->name, stowlistadd, opts);
       break;
     case STOW_IFF_CC_MEMBER_EXISTS:
-      debug(opts, "Member %s already exists - update it.\n", member);
-      rc = update_pdse_member_dir_entry(bh, member, stowlist, opts);
+      debug(opts, "Member %s already exists - update it.\n", mstat->name);
+      rc = update_pdse_member_dir_entry(bh, mstat->name, stowlist, opts);
       break;
     default:
-      fprintf(stderr, "STOW failed for member %s create. rc:0x%x\n", member, rc);
+      fprintf(stderr, "STOW failed for member %s create. rc:0x%x\n", mstat->name, rc);
       break;
   }
   return rc;
