@@ -3,6 +3,7 @@
 
   #include <time.h>
   #include "dbgopts.h"
+  #include "fm.h"
 
   /*
    * MEMDIR: opaque structure (like FILE or DIR)
@@ -51,5 +52,8 @@
   MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const DBG_Opts* opts);
   struct mstat* readmemdir(MEMDIR* memdir, const DBG_Opts* opts);
   int closememdir(MEMDIR* memdir, const DBG_Opts* opts);
+
+  int writememdir_entry(FM_BPAMHandle* bh, const struct mstat* mstat, const DBG_Opts* opts);
+  int readmemdir_entry(FM_BPAMHandle* bh, const char* memname, struct mstat* mstat, const DBG_Opts* opts);
 
 #endif

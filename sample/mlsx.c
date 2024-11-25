@@ -1,5 +1,12 @@
+#define _XOPEN_SOURCE
+#define _ISOC99_SOURCE
+#define _POSIX_SOURCE
+#define _OPEN_SYS_FILE_EXT
+#define _XOPEN_SOURCE_EXTENDED 1
+
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "dio.h"
 #include "mlsxopts.h"
 #include "memdir.h"

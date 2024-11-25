@@ -22,13 +22,18 @@
     char userdata[64];
   };
 
-  struct mem_node* pds_mem(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);
+  struct mem_node* pds_mem(FM_BPAMHandle* bh, const DBG_Opts* opts);
   struct desp* PTR32 get_desp_all(const FM_BPAMHandle* bh, const DBG_Opts* opts);
-  int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
-  int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
-  int write_member_dir_entry(const FM_BPAMHandle* bh, const FM_FileHandle* fh, const char* ds, const char* member, const DBG_Opts* opts);
-  int read_dir(const FM_BPAMHandle* bh, const char* ds, const DBG_Opts* opts);
+  struct mem_node* find_mem(FM_BPAMHandle* bh, const char* memname, struct mem_node* match_node, const DBG_Opts* opts);
+
   int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);
   int open_pds_for_read(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);
-  int close_pds(const char* dataset, const FM_BPAMHandle* bh, const DBG_Opts* opts);
+
+  int find_member(FM_BPAMHandle* bh, const char* mem, const DBG_Opts* opts);
+  int write_member_dir_entry(const struct file_tag* tag, const char* member, FM_BPAMHandle* bh, const DBG_Opts* opts);
+
+  int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
+  int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
+
+  int close_pds(FM_BPAMHandle* bh, const DBG_Opts* opts);
 #endif

@@ -448,7 +448,7 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
   }
   rc = write_block(bh, &opts->dbg);
   
-  memrc = write_member_dir_entry(bh, &fh, dataset, member, &opts->dbg);
+  memrc = write_member_dir_entry(&fh.tag, member, bh, &opts->dbg);
 
   rc = close_file(&fh, opts);
 
@@ -528,7 +528,7 @@ static int copy_files_to_multiple_dataset_members(const FM_Table* table, const c
     }
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
 
-    if (close_pds(dataset, &dd, &opts->dbg)) {
+    if (close_pds(&dd, &opts->dbg)) {
       fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
       rc |= 8;
       continue;
@@ -561,7 +561,7 @@ static int copy_files_to_one_dataset_members(glob_t* glob_set, const FM_Table* t
   for (ext=0; ext < table->size; ext++) {
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
   }
-  if (close_pds(dataset, &dd, &opts->dbg)) {
+  if (close_pds(&dd, &opts->dbg)) {
     fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
     rc |= 8;
   }
