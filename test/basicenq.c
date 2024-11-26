@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "dio.h"
+#include "mem.h"
 
 /*
  * BasicEnq gets the ENQ for dataset member SYS1.MACLIB(ADRDEX01) 

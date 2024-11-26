@@ -3,6 +3,7 @@
 #include <string.h>
 #include "asmdiocommon.h"
 #include "dio.h"
+#include "mem.h"
 #include "s99.h"
 #include "iosvcs.h"
 

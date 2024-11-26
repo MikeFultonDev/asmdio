@@ -43,15 +43,7 @@ int SYEXDEQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
 #pragma map(STOW, "DSTOW")
 #pragma map(CLOSE, "DCLOSE")
 
-void* PTR32 MALLOC24(size_t len);
-int FREE24(void* PTR32 addr, size_t len);
-
 int S99(struct s99rb* PTR32 s99rbp);
 int S99MSG(struct s99_em* PTR32 s99em);
-
-void dumpstg(FILE* stream, void* p, size_t len);
-
-void* PTR32 MALLOC31(size_t len);
-void FREE31(void* PTR32 addr);
 
 #endif

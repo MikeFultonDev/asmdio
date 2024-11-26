@@ -5,6 +5,7 @@
 #include "asmdiocommon.h"
 
 #if AMODE==31
+  #if 0
   #pragma linkage(STOWA,    OS)
   #pragma linkage(NOTEA,    OS)
   #pragma linkage(DESERVA,  OS)
@@ -14,6 +15,7 @@
   #pragma linkage(CLOSEA,   OS)
   #pragma linkage(MALOC24A, OS)
   #pragma linkage(FREE24A,  OS)
+  #endif
 
   struct s99rb;
   struct opencb;
@@ -36,13 +38,15 @@
   int STOWA(unsigned int list, unsigned int dcb);
   int CLOSEA(struct closecb* PTR32 dcb);
 
-  int MALOC24A(size_t len);
+  int MALOC24A(unsigned int len);
 
-  int FREE24A(void* __ptr32 addr, size_t len);
+  int FREE24A(void* __ptr32 addr, unsigned int len);
   int SYEXENQA(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
   int SYEXDEQA(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
 
 #elif AMODE == 64
+  int call31asm(const char* fn_name, int* fn, unsigned int num_parms, ...);
+
   extern int S99A;
   extern int S99MSGA;
   extern int SYEXENQA;
@@ -73,6 +77,7 @@
   #pragma variable(CLOSEA,   NORENT)
   #pragma variable(MALOC24A, NORENT)
   #pragma variable(FREE24A,  NORENT)
+  
 	#define S99A(ptr)         call31asm("S99A", &S99A, 1, ptr)
 	#define S99MSGA(ptr)      call31asm("S99MSGA", &S99MSGA, 1, ptr)
 	#define SYEXENQA(qname,rname,rnamelen)      call31asm("SYEXENQA", &SYEXENQA, 3, qname, rname, rnamelen)

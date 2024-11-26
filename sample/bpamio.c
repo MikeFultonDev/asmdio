@@ -16,6 +16,7 @@
 
 #include "util.h"
 #include "dio.h"
+#include "mem.h"
 #include "iosvcs.h"
 #include "fm.h"
 #include "fmopts.h"
@@ -618,6 +619,7 @@ static void copy_node(struct mem_node* node, const char *name, int is_alias, cha
   node->is_alias = is_alias ? 1 : 0;
   memcpy(node->userdata, userdata, userdata_len);
   node->userdata_len = userdata_len;
+
 }
 
 /*

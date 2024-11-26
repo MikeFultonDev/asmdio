@@ -17,6 +17,7 @@
 
 #include "util.h"
 #include "dio.h"
+#include "mem.h"
 #include "iosvcs.h"
 #include "fm.h"
 #include "fmopts.h"
