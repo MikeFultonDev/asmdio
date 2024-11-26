@@ -717,7 +717,7 @@ static int gen_node(struct mem_node** node, const RECORD *rec, struct mem_node**
      info_byte = (unsigned int) (*ptr);
      alias = info_byte & ALIAS_MASK;
      skip = (info_byte & SKIP_MASK) * 2 + 1;
-     add_member_node(node, name, alias, ttr, last_ptr, ptr, skip);
+     add_member_node(node, name, alias, ttr, last_ptr, ptr+1, skip);
      ptr += skip;
      count += (TTR_LEN + MEM_MAX + skip);
    }
@@ -784,7 +784,7 @@ static int find_node(const char* memname, struct mem_node* match_node, const REC
      skip = (info_byte & SKIP_MASK) * 2 + 1;
 
      if (!memcmp(memname, name, 8)) {
-       copy_node(match_node, name, alias, ttr, ptr, skip);
+       copy_node(match_node, name, alias, ttr, ptr+1, skip);
        done = 1;
        break;
      }

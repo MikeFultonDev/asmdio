@@ -3,7 +3,7 @@
 
   #include <time.h>
 
-  #pragma pack(full)
+  #pragma pack(1)
   struct ispf_disk_stats {
     unsigned char ver_num;
     unsigned char mod_num;

@@ -166,7 +166,11 @@ static struct mstat* memnode_to_mstat(const struct mem_node* np, struct mstat* m
       mstat->ispf_current_lines = is.curr_num_lines;
       mstat->ispf_initial_lines = is.init_num_lines;
       mstat->ispf_modified_lines = is.mod_num_lines;
+    } else {
+      mstat->ispf_stats = 0;
     }
+  } else {
+    mstat->ispf_stats = 0;
   }
   return mstat;
 }
@@ -633,7 +637,6 @@ int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, co
    * Merge the contents together.
    * Free up the 31-bit storage allocated for desp
    */ 
-
   struct desp* PTR32 desp = find_desp(bh, mem, opts);
   struct smde* PTR32 smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
 

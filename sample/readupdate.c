@@ -65,6 +65,10 @@ int main(int argc, char* argv[])
     return 8;
   }
   printf("Member %s last modified at %s\n", rmem, ctime(&read_mstat.ext_changed));
+  printf("Member %s has ISPF statistics? %c \n", rmem, read_mstat.ispf_stats ? 'Y' : 'N');
+  if (read_mstat.ispf_stats) {
+    printf("Member %s has %d current lines\n", rmem, read_mstat.ispf_current_lines);
+  }
 
   rc = find_member(&bh, rmem, &opts);
   if (rc) {
