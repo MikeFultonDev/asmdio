@@ -1,13 +1,17 @@
 #define _XOPEN_SOURCE
 #define _ISOC99_SOURCE
 #define _POSIX_SOURCE
-#define _OPEN_SYS_FILE_EXT
+#define _OPEN_SYS_FILE_EXT 1
+#define _OPEN_SYS_EXT
+#define _XOPEN_SOURCE_EXTENDED 1
+
 #include <glob.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "asmdiocommon.h"
 
@@ -19,6 +23,7 @@
 #include "msg.h"
 #include "filemap.h"
 #include "bpamio.h"
+#include "memdir.h"
 
 static void syntax(FILE* stream)
 {
@@ -447,8 +452,16 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
     fh.line_num++;
   }
   rc = write_block(bh, &opts->dbg);
-  
-  memrc = write_member_dir_entry(bh, &fh, dataset, member, &opts->dbg);
+
+  /*
+   * msf - this partial_mstat needs to be filled out with additional information for the
+   * ISPF stats if f2m wants to provide ISPF stats in the target dataset member.
+   */
+  struct mstat partial_mstat = { 0 };
+  partial_mstat.name = member;
+  partial_mstat.ext_ccsid = fh.tag.ft_ccsid;
+
+  memrc = write_member_dir_entry(&partial_mstat, bh, &opts->dbg);
 
   rc = close_file(&fh, opts);
 
@@ -528,7 +541,7 @@ static int copy_files_to_multiple_dataset_members(const FM_Table* table, const c
     }
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
 
-    if (close_pds(dataset, &dd, &opts->dbg)) {
+    if (close_pds(&dd, &opts->dbg)) {
       fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
       rc |= 8;
       continue;
@@ -561,7 +574,7 @@ static int copy_files_to_one_dataset_members(glob_t* glob_set, const FM_Table* t
   for (ext=0; ext < table->size; ext++) {
     rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
   }
-  if (close_pds(dataset, &dd, &opts->dbg)) {
+  if (close_pds(&dd, &opts->dbg)) {
     fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
     rc |= 8;
   }

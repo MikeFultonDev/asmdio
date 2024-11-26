@@ -1,9 +1,12 @@
-all: f2m m2f mlsx mchtag
+all: f2m m2f mlsx mchtag readupdate
 
 clean:
-	rm -f f2m m2f mlsx mchtag *.o *.lst *.dbg
+	rm -f f2m m2f mlsx mchtag readupdate *.o *.lst *.dbg
 
 INCDIR=../include
+
+readupdate: readupdate.o msg.o bpamio.o ztime.o memdir.o ../src/*.o
+	$(LD) $(LDFLAGS) -o $@ $< msg.o bpamio.o ztime.o memdir.o ../src/*.o >$@.lst
 
 f2m: f2m.o msg.o fmopts.o filemap.o bpamio.o ztime.o ../src/*.o
 	$(LD) $(LDFLAGS) -o $@ $< msg.o fmopts.o filemap.o bpamio.o ztime.o ../src/*.o >$@.lst
@@ -16,6 +19,9 @@ mlsx: mlsx.o mlsxopts.o bpamio.o memdir.o ztime.o
 
 mchtag: mchtag.o
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
+
+readupdate.o: readupdate.c $(INCDIR)/iosvcs.h $(INCDIR)/*.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
 
 f2m.o: f2m.c fm.h msg.h fmopts.h filemap.h bpamio.h dbgopts.h $(INCDIR)/*.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<

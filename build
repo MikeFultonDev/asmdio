@@ -29,6 +29,6 @@ export CPPFLAGS="-DAMODE=${MODE}"
 export LD=xlc
 export LDFLAGS="-Wl,${DATA_MODEL},edit=yes,map,case=mixed"
 
-gmake -j -C src
-gmake -j -C test
-gmake -j -C sample
+gmake -C src
+gmake -C test
+gmake -C sample

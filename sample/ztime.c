@@ -153,7 +153,7 @@ void tm_to_pdjd(unsigned char* century, char* pdjd, struct tm* ltime)
   int year,month,day;
   int ordinal;
 
-  *century = (ltime->tm_year / 100) - 19;
+  *century = (ltime->tm_year / 100);
 
   year = ltime->tm_year + 1900;
   month = ltime->tm_mon;
