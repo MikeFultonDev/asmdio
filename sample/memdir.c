@@ -702,7 +702,7 @@ static char* PTR32 ispf_rname(const char* ds, const char* mem)
     return NULL;
   }
 
-  char* __ptr32 rname;
+  char* PTR32 rname;
   rname = MALLOC31(52+1);
   if (!rname) {
     fprintf(stderr, "Unable to obtain storage for ENQ/DEQ\n");
@@ -722,7 +722,7 @@ static char* PTR32 ispf_qname(const char* qn)
     return NULL;
   }
 
-  char* __ptr32 qname;
+  char* PTR32 qname;
   qname = MALLOC31(8+1);
   if (!qname) {
     fprintf(stderr, "Unable to obtain storage for ENQ/DEQ\n");
@@ -735,8 +735,8 @@ static char* PTR32 ispf_qname(const char* qn)
 
 int ispf_enq_dataset_member(const char* ds, const char* wmem) 
 {
-  char* __ptr32 rname = ispf_rname(ds, wmem);
-  char* __ptr32 qname = ispf_qname("SPFEDIT");
+  char* PTR32 rname = ispf_rname(ds, wmem);
+  char* PTR32 qname = ispf_qname("SPFEDIT");
 
   if (!rname || !qname) {
     return 4;
@@ -749,8 +749,8 @@ int ispf_enq_dataset_member(const char* ds, const char* wmem)
 
 int ispf_deq_dataset_member(const char* ds, const char* wmem) 
 {
-  char* __ptr32 rname = ispf_rname(ds, wmem);
-  char* __ptr32 qname = ispf_qname("SPFEDIT");
+  char* PTR32 rname = ispf_rname(ds, wmem);
+  char* PTR32 qname = ispf_qname("SPFEDIT");
 
   if (!rname || !qname) {
     return 4;

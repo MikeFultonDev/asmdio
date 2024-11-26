@@ -81,11 +81,11 @@ int S99MSG(struct s99_em* PTR32 s99em)
 {
   return S99MSGA(s99em);
 }
-int SYEXENQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len)
+int SYEXENQ(char* PTR32 qname, char* PTR32 rname, unsigned int rname_len)
 {
   return SYEXENQA(qname, rname, rname_len);
 }
-int SYEXDEQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len)
+int SYEXDEQ(char* PTR32 qname, char* PTR32 rname, unsigned int rname_len)
 {
   return SYEXDEQA(qname, rname, rname_len);
 }
