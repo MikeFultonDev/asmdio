@@ -16,8 +16,6 @@ MALOC24A ASDPRO BASE_REG=3,USR_DSAL=MALOC24A_DSAL
          LR    R7,R1
          USING MALOC24A_PARMS,R7
          L     R8,MALOC24A_LEN
-         L     R8,0(,R8)
-
 * Get 24-bit storage
 
          STORAGE OBTAIN,LENGTH=(8),LOC=24,COND=YES
@@ -35,7 +33,7 @@ MALOC24A_EXIT    DS    0H
          LTORG
 
 MALOC24A_PARMS   DSECT
-MALOC24A_LEN     DS  AL4
+MALOC24A_LEN     DS  F
 MALOC24A_DSAL    EQU 0
 
 **| FREE24A.... free storage below the line
@@ -50,7 +48,6 @@ FREE24A  ASDPRO BASE_REG=3,USR_DSAL=FREE24A_DSAL
          USING FREE24A_PARMS,R7
          L     R8,FREE24A_PTR
          L     R9,FREE24A_LEN
-         L     R9,0(,R9)
 
 * Get 24-bit storage
 
@@ -63,7 +60,7 @@ FREE24A_EXIT    DS    0H
 
 FREE24A_PARMS DSECT
 FREE24A_PTR   DS  AL4
-FREE24A_LEN   DS  AL4
+FREE24A_LEN   DS  F
 FREE24A_DSAL  EQU 0
 
 **| Finish off the CSECT

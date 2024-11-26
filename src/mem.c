@@ -6,7 +6,7 @@
 
 //#define DEBUG 1
 
-void* PTR32 MALLOC24(size_t bytes)
+void* PTR32 MALLOC24(unsigned int bytes)
 {
   int ptr24;
   ptr24 = MALOC24A(bytes);
@@ -23,12 +23,12 @@ void* PTR32 MALLOC24(size_t bytes)
   return ptr;
 }
 
-int FREE24(void* PTR32 addr, size_t len)
+int FREE24(void* PTR32 addr, unsigned int len)
 {
   return FREE24A(addr, len);
 }
 
-void* PTR32 MALLOC31(size_t bytes)
+void* PTR32 MALLOC31(unsigned int bytes)
 {
   void* PTR32 p = __malloc31(bytes);
   if (p == 0) {

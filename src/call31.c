@@ -13,9 +13,9 @@
 
 //#define DEBUG_CALL31ASM 1
 
-	int call31asm(const char* fn_name, int* fn, size_t num_parms, ...) {
+	int call31asm(const char* fn_name, int* fn, unsigned int num_parms, ...) {
 		   va_list args;
-		   size_t i;
+		   unsigned int i;
 		   int rc;
 		   unsigned int* r1_31bit_parms = __malloc31(num_parms*sizeof(unsigned int));
 		   char* r13_31bit_dsa = __malloc31(MAX_DSA_SIZE);

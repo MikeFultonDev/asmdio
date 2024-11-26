@@ -17,7 +17,7 @@ if [ "${MODE}" = "64" ]; then
 fi
 
 ASAMODE="AMODE${MODE}"
-LIST="list'()',source,offset"
+LIST="list'()',source,offset,flag'(i)'"
 INFO="info'(cmp,cnv,cns,enu,lan,por,pro,ret)'"
 
 export AS=as

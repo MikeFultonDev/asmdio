@@ -366,10 +366,8 @@ STOWA    ASDPRO BASE_REG=3,USR_DSAL=STOWA_DSAL
 
          USING STOWA_PARMS,R1
 
-         L   R3,STOWA_LST
-         L   R4,STOWA_DCB
-         L   R0,0(,R3)
-         L   R1,0(,R4)
+         L   R0,STOWA_LST
+         L   R1,STOWA_DCB
          LR  R15,R0          # R15 also needs to be set
          STOW (1),(0)
 
@@ -387,8 +385,8 @@ STOWA_EXIT   DS    0H
          LTORG
 
 STOWA_PARMS   DSECT
-STOWA_LST     DS AL4
-STOWA_DCB     DS AL4
+STOWA_LST     DS F
+STOWA_DCB     DS F
 STOWA_DSAL    EQU 0         
 
 **| S99MSGA..... SVC99MSG
