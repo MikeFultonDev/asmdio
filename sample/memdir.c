@@ -631,14 +631,18 @@ int writememdir_entry(FM_BPAMHandle* bh, const struct mstat* mstat, const DBG_Op
 
 int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, const DBG_Opts* opts)
 {
-
   /*
    * Find the SMDE for the member and then find the mem_node for the member.
    * Merge the contents together.
    * Free up the 31-bit storage allocated for desp
    */ 
-  struct desp* PTR32 desp = find_desp(bh, mem, opts);
-  struct smde* PTR32 smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
+  struct desp* PTR32 desp;
+  struct smde* PTR32 smde;
+
+  desp = find_desp(bh, mem, opts);
+  if (!desp) {
+    return 4;
+  }
 
   smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
 

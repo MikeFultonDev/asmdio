@@ -941,7 +941,7 @@ struct desp* PTR32 find_desp(FM_BPAMHandle* bh, const char* memname, const DBG_O
     return NULL;
   }
 
-  return desp;;
+  return desp;
 }
 
 void free_desp(struct desp* PTR32 desp, const DBG_Opts* opts)
