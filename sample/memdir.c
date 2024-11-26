@@ -727,7 +727,10 @@ int ispf_enq_dataset_member(const char* ds, const char* wmem)
   if (!rname || !qname) {
     return 4;
   }
-  return SYEXENQ(qname, rname, strlen(rname));
+  int rc = SYEXENQ(qname, rname, strlen(rname));
+  free(rname);
+  free(qname);
+  return rc;
 }
 
 int ispf_deq_dataset_member(const char* ds, const char* wmem) 
@@ -738,5 +741,8 @@ int ispf_deq_dataset_member(const char* ds, const char* wmem)
   if (!rname || !qname) {
     return 4;
   }
-  return SYEXDEQ(qname, rname, strlen(rname));
+  int rc = SYEXDEQ(qname, rname, strlen(rname));
+  free(rname);
+  free(qname);
+  return rc;
 }

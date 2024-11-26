@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <sys/ps.h>
 #include <sys/stat.h>
+#include <limits.h>
 
 #include "asmdiocommon.h"
 
@@ -386,11 +387,11 @@ int read_member_dir_entry(struct desp* PTR32 desp, const DBG_Opts* opts)
 }
 
 const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
-static void add_mem_stats(struct stowlist_add* PTR32 sla, const char* memname, size_t memlen, unsigned int ttr)
+static void add_mem_stats(struct stowlist_add* PTR32 sla, const struct mstat* mstat, unsigned int ttr)
 {
   char userid[8+1] = "        "; 
   *sla = stowlistadd_template;
-  memcpy(sla->mem_name, memname, memlen);
+  memcpy(sla->mem_name, mstat->name, strlen(mstat->name)); 
   STOW_SET_TTR((*sla), ttr);
 
   unsigned int userdata_len = sizeof(struct ispf_disk_stats)/2; /* number of halfwords of ISPF statistics */
@@ -406,12 +407,37 @@ static void add_mem_stats(struct stowlist_add* PTR32 sla, const char* memname, s
   time ( &t );
   ltime = localtime ( &t );
 
-  tm_to_pdjd(&ids.create_century, ids.pd_create_julian, ltime);
   tm_to_pdjd(&ids.mod_century, ids.pd_mod_julian, ltime);
   ids.pd_mod_hours = d_to_pd(ltime->tm_hour, 0);
   ids.pd_mod_minutes = d_to_pd(ltime->tm_min, 0);
   ids.pd_mod_seconds = d_to_pd(ltime->tm_sec, 0);
   memcpy(&ids.userid, userid, sizeof(userid)-1);
+
+  if (mstat->ispf_stats) {
+    struct tm* create_time;
+    create_time = localtime(&mstat->ispf_created);
+
+    tm_to_pdjd(&ids.create_century, ids.pd_create_julian, create_time);
+
+    ids.ver_num = mstat->ispf_version;
+    ids.mod_num = mstat->ispf_modification;
+
+    ids.full_curr_num_lines = mstat->ispf_current_lines; 
+    ids.full_init_num_lines = mstat->ispf_initial_lines; 
+    ids.full_mod_num_lines = mstat->ispf_modified_lines;
+
+    if (mstat->ispf_current_lines < SHRT_MAX) {
+      ids.curr_num_lines = mstat->ispf_current_lines;
+    }
+    if (mstat->ispf_initial_lines < SHRT_MAX) {
+      ids.init_num_lines = mstat->ispf_initial_lines;
+    }
+    if (mstat->ispf_modified_lines < SHRT_MAX) {
+      ids.mod_num_lines = mstat->ispf_modified_lines;
+    }
+  } else {
+    tm_to_pdjd(&ids.create_century, ids.pd_create_julian, ltime);
+  }
 
   memcpy(sla->user_data, &ids, sizeof(struct ispf_disk_stats));
 }
@@ -462,7 +488,6 @@ int write_member_dir_entry(const struct mstat* mstat, FM_BPAMHandle* bh, const D
   const struct stowlist_iff stowlistiff_template = { sizeof(struct stowlist_iff), 0, 0, 0, 0, 0, 0, 0 };
   union stowlist* stowlist;
   struct stowlist_add* stowlistadd;
-  size_t memlen = strlen(mstat->name);
   stowlist = MALLOC24(sizeof(struct stowlist_iff));
   stowlistadd = MALLOC24(sizeof(struct stowlist_add));
   int rc;
@@ -472,7 +497,7 @@ int write_member_dir_entry(const struct mstat* mstat, FM_BPAMHandle* bh, const D
     return 4;
   }
 
-  add_mem_stats(stowlistadd, mstat->name, memlen, bh->ttr);
+  add_mem_stats(stowlistadd, mstat, bh->ttr);
 
   stowlist->iff = stowlistiff_template;
 
