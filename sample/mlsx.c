@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "dio.h"
+#include "mem.h"
 #include "mlsxopts.h"
 #include "memdir.h"
 #include "util.h"

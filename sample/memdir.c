@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include "mem.h"
 #include "memdir.h"
 #include "ztime.h"
 #include "bpamio.h"
@@ -346,7 +347,7 @@ static struct mstat* desp_to_mstats(const struct desp* PTR32 desp, const DBG_Opt
      */
     struct smde* PTR32 smde = (struct smde* PTR32) (cur_desb->desb_data);
     for (i=0; i<sub_members; ++i) {
-      if (smde_to_mstat(smde, &mstat[entry], opts)) {
+      if (!smde_to_mstat(smde, &mstat[entry], opts)) {
         return NULL;
       }
       smde = (struct smde* PTR32) (((char*) smde) + smde->smde_len);
@@ -485,6 +486,9 @@ static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mst
       mn_members, de_members);
     return NULL;
   }
+  if (mn_members == 0) {
+    return NULL;
+  }
 
   /*
    * Sort the two arrays so they can be walked together
@@ -596,6 +600,12 @@ MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const D
   }
   struct mstat* de_mstat = desp_to_mstats(desp, opts, &de_members);
   struct mstat* mn_mstat = memnodes_to_mstats(np, opts, &mn_members);
+
+  if (opts->debug) {
+    printf("Members before merge:\n");
+    print_members(mn_mstat, mn_members);
+    print_members(de_mstat, de_members);
+  }
 
   return merge_mstat(mn_mstat, mn_members, de_mstat, de_members, sort_time, sort_reverse, opts);
 }

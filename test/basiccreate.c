@@ -6,6 +6,7 @@
 #include "asmdiocommon.h"
 #include "decb.h"
 #include "dio.h"
+#include "mem.h"
 #include "ihadcb.h"
 #include "iosvcs.h"
 #include "s99.h"

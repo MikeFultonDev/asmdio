@@ -5,6 +5,7 @@
 #include "asmdiocommon.h"
 #include "ihadcb.h"
 #include "dio.h"
+#include "mem.h"
 
 const struct ihadcb dcb_template = { 0 };
 const struct dcbe dcbe_template = { "DCBE", sizeof(struct dcbe) };
