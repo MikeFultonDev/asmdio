@@ -27,6 +27,7 @@
 #include "ztime.h"
 #include "memdir.h"
 
+
 static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
 {
   struct ihadcb* PTR32 dcb;
