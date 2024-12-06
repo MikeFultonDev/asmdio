@@ -3,6 +3,7 @@
 *.a
 *.x
 *.so
+*.d
 
 # Compiler listings
 *.lst

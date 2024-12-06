@@ -1,9 +1,10 @@
+csource = readupdate.c f2m.c msg.c filemap.c memdir.c ztime.c bpamio.c fmopts.c m2f.c mlsx.c mlsxopts.c mchtag.c
+objects = $(csource:.c=.o) $(asource:.s=.o)$
+
 all: f2m m2f mlsx mchtag readupdate
 
 clean:
 	rm -f f2m m2f mlsx mchtag readupdate *.o *.lst *.dbg
-
-INCDIR=../include
 
 readupdate: readupdate.o msg.o bpamio.o ztime.o memdir.o ../src/*.o
 	$(LD) $(LDFLAGS) -o $@ $< msg.o bpamio.o ztime.o memdir.o ../src/*.o >$@.lst
@@ -20,38 +21,35 @@ mlsx: mlsx.o mlsxopts.o bpamio.o memdir.o ztime.o
 mchtag: mchtag.o
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
-readupdate.o: readupdate.c $(INCDIR)/iosvcs.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+%.d: %.c
+	@set -e; rm -f $@; \
+	clang -MM $(CPPFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
 
-f2m.o: f2m.c fm.h msg.h fmopts.h filemap.h bpamio.h dbgopts.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+include $(csource:.c=.d)
 
-msg.o: msg.c msg.h fm.h fmopts.h dbgopts.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+readupdate.o: readupdate.c
 
-filemap.o: filemap.c msg.h fm.h fmopts.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+f2m.o: f2m.c
 
-memdir.o: memdir.c ztime.h dbgopts.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+msg.o: msg.c
 
-ztime.o: ztime.c ztime.h dbgopts.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+filemap.o: filemap.c
 
-bpamio.o: bpamio.c msg.h fm.h fmopts.h dbgopts.h bpamio.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+memdir.o: memdir.c
 
-fmopts.o: fmopts.c fm.h fmopts.h dbgopts.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+ztime.o: ztime.c
 
-m2f.o: m2f.c $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+bpamio.o: bpamio.c
 
-mlsx.o: mlsx.c memdir.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+fmopts.o: fmopts.c
 
-mlsxopts.o: mlsxopts.c mlsxopts.h dbgopts.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+m2f.o: m2f.c
 
-mchtag.o: mchtag.c $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+mlsx.o: mlsx.c
+
+mlsxopts.o: mlsxopts.c
+
+mchtag.o: mchtag.c
+
