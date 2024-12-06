@@ -1,44 +1,42 @@
-all: call31.o call31a.o dio.o mem.o s99.o dioa.o mema.o ihadcb.o util.o iosvcs.o
+csource = call31.c util.c dio.c mem.c s99.c iosvcs.c ihadcb.c
+asource = dioa.s mema.s call31a.s
+objects = $(csource:.c=.o) $(asource:.s=.o)
+
+all: $(objects)
 
 clean:
 	rm -f *.o *.lst *.dbg
 
-IINCDIR=../intinclude
-INCDIR=../include
 MACDIR=../maclib
 
-call31.o: call31.c $(IINCDIR)/wrappers.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(IINCDIR) -I$(INCDIR) -c $<
+%.d: %.c
+	@set -e; rm -f $@; \
+	clang -MM $(CPPFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
 
-util.o: util.c $(INCDIR)/util.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(IINCDIR) -I$(INCDIR) -c $<
+include $(csource:.c=.d)
 
-call31a.o: call31a.s
-	$(AS) $(ASFLAGS) -I$(MACDIR) $< >$*.lst
+call31.o: call31.c
 
-dio.o: dio.c $(IINCDIR)/wrappers.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(IINCDIR) -c $<
+util.o: util.c
 
-mem.o: mem.c $(IINCDIR)/wrappers.h $(INCDIR)/*.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(IINCDIR) -c $<
+dio.o: dio.c
 
-s99.o: s99.c $(IINCDIR)/wrappers.h $(INCDIR)/dio.h $(INCDIR)/s99.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(IINCDIR) -c $<
+mem.o: mem.c
 
-iosvcs.o: iosvcs.c $(INCDIR)/iosvcs.h $(INCDIR)/dio.h $(INCDIR)/s99.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+s99.o: s99.c
 
-memdir.o: memdir.c $(INCDIR)/memdir.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
+iosvcs.o: iosvcs.c
 
-ztime.o: ztime.c $(INCDIR)/ztime.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -c $<
-
-ihadcb.o: ihadcb.c $(IINCDIR)/wrappers.h $(INCDIR)/dio.h $(INCDIR)/ihadcb.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(INCDIR) -I$(IINCDIR) -c $<
+ihadcb.o: ihadcb.c
 
 dioa.o: dioa.s
 	$(AS) $(ASFLAGS) -I$(MACDIR) $< >$*.lst
 
 mema.o: mema.s
 	$(AS) $(ASFLAGS) -I$(MACDIR) $< >$*.lst
+
+call31a.o: call31a.s
+	$(AS) $(ASFLAGS) -I$(MACDIR) $< >$*.lst
+
