@@ -8,9 +8,9 @@
 //#define DEBUG 1
 
 #ifdef DEBUG
-MEMPATTERN 0xFE
+#define MEMPATTERN 0xFE
 #else
-MEMPATTERN 0x00
+#define MEMPATTERN 0x00
 #endif
 
 /**
