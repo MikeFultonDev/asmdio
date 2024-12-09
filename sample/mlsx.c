@@ -7,26 +7,32 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+
 #include "dio.h"
 #include "mem.h"
-#include "mlsxopts.h"
 #include "memdir.h"
+#include "mlsxopts.h"
 #include "util.h"
 
+/**
+ * @brief Display syntax help.
+ *
+ * @param stream File stream for output.
+ */
 static void syntax(FILE* stream)
 {
   fprintf(stream,
 "usage: mlsx [OPTION]... <dataset>\n\
 \n\
 Options:\n\
-  -h, --help          Print out this help.\n\
-  -v, --verbose       Provide verbose output.\n\
-  -d, --debug         Provide debug output.\n\
   -a, --alias         Print aliases.\n\
-  -T, --tag           Print CCSID.\n\
-  -t, --time          Sort by time file last changed.\n\
-  -r, --reverse       Reverse the sort.\n\
+  -d, --debug         Provide debug output.\n\
+  -h, --help          Print out this help.\n\
   -l, --long          Provide long-form output.\n\
+  -r, --reverse       Reverse the sort.\n\
+  -t, --time          Sort by time file last changed.\n\
+  -T, --tag           Print CCSID.\n\
+  -v, --verbose       Provide verbose output.\n\
 \n\
 <dataset>             The dataset to list members from.\n\
 \n\
