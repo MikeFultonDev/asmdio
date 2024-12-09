@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "asmdiocommon.h"
 #include "dio.h"
-#include "mem.h"
 #include "ihadcb.h"
 #include "iosvcs.h"
+#include "mem.h"
 #include "s99.h"
 
 #define DD_SYSTEM "????????"

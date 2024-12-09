@@ -8,6 +8,6 @@ set -e
 
 . ./setenv
 
-gmake -C src
-gmake -C test
+gmake -j -C src
+gmake -j -C test
 gmake -C sample

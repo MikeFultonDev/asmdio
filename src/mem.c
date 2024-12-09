@@ -1,11 +1,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "mem.h"
 #include "wrappers.h"
 
 //#define DEBUG 1
 
+#ifdef DEBUG
+MEMPATTERN 0xFE
+#else
+MEMPATTERN 0x00
+#endif
+
+/**
+ * @brief Allocate 24-bit memory.
+ *
+ * @param bytes Size of memory to allocate.
+ * @return void* Pointer to 24-bit memory.
+ */
 void* PTR32 MALLOC24(unsigned int bytes)
 {
   int ptr24;
@@ -14,43 +27,64 @@ void* PTR32 MALLOC24(unsigned int bytes)
   if (ptr24 == 0) {
     fprintf(stderr, "Internal Error: Unable to allocate %d bytes below the bar\n", bytes);
   } else {
-#ifdef DEBUG
-  memset(ptr, 0xFE, bytes);
-#else
-  memset(ptr, 0x00, bytes);
-#endif
+    memset(ptr, MEMPATTERN, bytes);
   }
   return ptr;
 }
 
+/**
+ * @brief Free a pointer to 24-bit memory.
+ *
+ * @param addr Pointer to memory to free.
+ * @param len Size of memory to free.
+ * @return int Return code
+ */
 int FREE24(void* PTR32 addr, unsigned int len)
 {
   return FREE24A(addr, len);
 }
 
+/**
+ * @brief Allocate 31-bit memory
+ *
+ * @param bytes Size of memory to allocate.
+ * @return void* Pointer to 31-bit memory.
+ */
 void* PTR32 MALLOC31(unsigned int bytes)
 {
   void* PTR32 p = __malloc31(bytes);
+
   if (p == 0) {
     fprintf(stderr, "Internal Error: Unable to allocate %d bytes below the line\n", bytes);
   } else {
-#ifdef DEBUG
-  memset(p, 0xFE, bytes);
-#else
-  memset(p, 0x00, bytes);
-#endif
+    memset(p, MEMPATTERN, bytes);
   }
+
   return p;
 }
+
+/**
+ * @brief Free a pointer to 31-bit memory.
+ *
+ * @param addr Pointer to 31-bit memory.
+ */
 void FREE31(void* PTR32 addr)
 {
   return free(addr);
 }
 
+/**
+ * @brief
+ *
+ * @param stream
+ * @param p
+ * @param len
+ */
 void dumpstg(FILE* stream, void* p, size_t len)
 {
   char* buff = p;
   size_t i;
+
   for (i=0; i<len; ++i) {
     if ((i != 0) && (i % 16 == 0)) {
       fprintf(stream, "\n");

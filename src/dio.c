@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "asmdiocommon.h"
 #include "dio.h"
 #include "mem.h"
+#include "s99.h"
 #include "stow.h"
 #include "util.h"
-#include "s99.h"
 #include "wrappers.h"
 
 //#define DEBUG 1
