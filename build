@@ -10,5 +10,5 @@ set -e
 
 gmake -j -C src
 gmake -j -C test
-gmake -j -C sample
+gmake -C sample
 
