@@ -1,5 +1,5 @@
-#ifndef __OPENCB__
-#define __OPENCB__ 1
+#ifndef __OPENCB_H__
+#define __OPENCB_H__
 
 #include "asmdiocommon.h"
 

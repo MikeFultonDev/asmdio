@@ -1,5 +1,5 @@
-#ifndef __STOW__
-#define __STOW__ 1
+#ifndef __STOW_H__
+#define __STOW_H__
 
 #include "asmdiocommon.h"
 
@@ -69,4 +69,4 @@ enum stowcc {
 
 #pragma pack(pop)
 
-#endif
+#endif // __STOW_H__

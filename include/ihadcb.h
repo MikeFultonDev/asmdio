@@ -1,9 +1,9 @@
-#ifndef __IHADCB__
-#define __IHADCB__ 1
-
-#include "asmdiocommon.h"
+#ifndef __IHADCB_H__
+#define __IHADCB_H__
 
 #include <stdio.h>
+
+#include "asmdiocommon.h"
 #include "dcbe.h"
 
 #pragma pack(1)

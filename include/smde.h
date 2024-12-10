@@ -1,5 +1,5 @@
 #ifndef __SMDE_H__
-#define __SMDE_H__ 1
+#define __SMDE_H__
 
 #include "asmdiocommon.h"
 
@@ -408,4 +408,3 @@ struct pmara {
 #pragma pack(pop)
 
 #endif // __SMDE_H__
-

@@ -1,14 +1,16 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
+
 #include "asmdiocommon.h"
-#include "ihadcb.h"
 #include "dio.h"
+#include "ihadcb.h"
 #include "mem.h"
 
 const struct ihadcb dcb_template = { 0 };
 const struct dcbe dcbe_template = { "DCBE", sizeof(struct dcbe) };
+
 struct ihadcb* PTR32 dcb_init(const char* ddname)
 {
   struct ihadcb* PTR32 dcb;
@@ -52,16 +54,16 @@ struct ihadcb* PTR32 dcb_init(const char* ddname)
     memset(&dcb->dcbddnam, ' ', sizeof(dcb->dcbddnam));
     memcpy(dcb->dcbddnam, ddname, ddname_len);
   }
-  dcb->dcbbufcb.dcbbufca = DCB_ADDR24_UNSET; 
-  dcb->dcbiobad.dcbicqe.dcbodeb.dcbodeba = DCB_ADDR24_UNSET; 
-  dcb->dcbeodad.dcbeoda = DCB_ADDR24_UNSET; 
+  dcb->dcbbufcb.dcbbufca = DCB_ADDR24_UNSET;
+  dcb->dcbiobad.dcbicqe.dcbodeb.dcbodeba = DCB_ADDR24_UNSET;
+  dcb->dcbeodad.dcbeoda = DCB_ADDR24_UNSET;
   dcb->dcbeodad.dcbhiarc.dcbbftek.dcbbfaln = (dcbh0 | dcbh1);
-  dcb->dcbeobr.dcbeobra = DCB_ADDR24_UNSET; 
+  dcb->dcbeobr.dcbeobra = DCB_ADDR24_UNSET;
   dcb->dcbgerr.dcbperr.dcbcheck.dcbchcka = DCB_ADDR24_UNSET;
-  dcb->dcbsynad.dcbsyna = DCB_ADDR24_UNSET; 
-  dcb->dcbcicba = DCB_ADDR24_UNSET; 
-  dcb->dcbeobw = DCB_ADDR_UNSET; 
-  dcb->dcbpoint = DCB_ADDR_UNSET; 
+  dcb->dcbsynad.dcbsyna = DCB_ADDR24_UNSET;
+  dcb->dcbcicba = DCB_ADDR24_UNSET;
+  dcb->dcbeobw = DCB_ADDR_UNSET;
+  dcb->dcbpoint = DCB_ADDR_UNSET;
 
   return dcb;
 }
@@ -73,6 +75,6 @@ void dcb_free(struct ihadcb* PTR32 dcb)
 
 void dcb_fmt_dmp(FILE* stream, struct ihadcb* PTR32 dcb)
 {
-  dumpstg(stream, dcb, sizeof(struct ihadcb)); 
+  dumpstg(stream, dcb, sizeof(struct ihadcb));
 }
 

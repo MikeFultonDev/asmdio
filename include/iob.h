@@ -1,5 +1,5 @@
-#ifndef __IOB__
-#define __IOB__ 1
+#ifndef __IOB_H__
+#define __IOB_H__
 
 #include "asmdiocommon.h"
 

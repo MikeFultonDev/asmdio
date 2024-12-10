@@ -1,10 +1,18 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "asmdiocommon.h"
 #include "util.h"
 
+/**
+ * @brief Convert a string to all capital letters.
+ *
+ * @param string The string to be converted.
+ * @return int 0 on success; -1 on error.
+ */
 int uppercase(char *string) {
+  
   if (!string) {
     return -1;
   }
@@ -17,4 +25,3 @@ int uppercase(char *string) {
 
   return 0;
 }
-
