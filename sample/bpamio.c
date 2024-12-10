@@ -13,19 +13,18 @@
 #include <limits.h>
 
 #include "asmdiocommon.h"
-
-#include "util.h"
+#include "bpamio.h"
 #include "dio.h"
-#include "mem.h"
-#include "iosvcs.h"
+#include "findcb.h"
 #include "fm.h"
 #include "fmopts.h"
-#include "msg.h"
-#include "bpamio.h"
-#include "findcb.h"
+#include "iosvcs.h"
 #include "ispf.h"
-#include "ztime.h"
+#include "mem.h"
 #include "memdir.h"
+#include "msg.h"
+#include "util.h"
+#include "ztime.h"
 
 static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
 {
@@ -126,7 +125,7 @@ static void validate_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
   debug(opts, "Validate Block: Block Size: %d\n", block_size);
   char* next_rec_start = &(((char*)block_hw)[4]);
   while ((next_rec_start - block_char) < block_size) {
-    unsigned short rec_length = *((unsigned short*) next_rec_start); 
+    unsigned short rec_length = *((unsigned short*) next_rec_start);
     debug(opts, "Record %d Length: %d\n", bh->line_num, rec_length);
     if (rec_length < 4) {
       fprintf(stderr, "Unexpected record length. Validation Failed.\n");
@@ -179,15 +178,15 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
   SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
   bh->decb->area = bh->block;
 
-  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n", 
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N', 
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N', 
-    bh->bytes_used, 
+  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n",
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N',
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N',
+    bh->bytes_used,
     bh->block_size
   );
   if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
     /*
-     * Specify the block size for the variable length records 
+     * Specify the block size for the variable length records
      */
     unsigned short* halfword = (unsigned short*) (bh->block);
     halfword[0] = bh->bytes_used;  /* size of block */
@@ -198,7 +197,7 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     validate_block(bh, opts);
     debug(opts, "(Block Write) First Record length:%d bytes used:%d\n", halfword[2], halfword[0]);
 
-  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) { 
+  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
     bh->dcb->dcbblksi = bh->bytes_used;
   } else {
     fprintf(stderr, "Not sure how to write a block that is not recv or recf\n");
@@ -390,9 +389,9 @@ int read_member_dir_entry(struct desp* PTR32 desp, const DBG_Opts* opts)
 const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
 static void add_mem_stats(struct stowlist_add* PTR32 sla, const struct mstat* mstat, unsigned int ttr)
 {
-  char userid[8+1] = "        "; 
+  char userid[8+1] = "        ";
   *sla = stowlistadd_template;
-  memcpy(sla->mem_name, mstat->name, strlen(mstat->name)); 
+  memcpy(sla->mem_name, mstat->name, strlen(mstat->name));
   STOW_SET_TTR((*sla), ttr);
 
   unsigned int userdata_len = sizeof(struct ispf_disk_stats)/2; /* number of halfwords of ISPF statistics */
@@ -423,8 +422,8 @@ static void add_mem_stats(struct stowlist_add* PTR32 sla, const struct mstat* ms
     ids.ver_num = mstat->ispf_version;
     ids.mod_num = mstat->ispf_modification;
 
-    ids.full_curr_num_lines = mstat->ispf_current_lines; 
-    ids.full_init_num_lines = mstat->ispf_initial_lines; 
+    ids.full_curr_num_lines = mstat->ispf_current_lines;
+    ids.full_init_num_lines = mstat->ispf_initial_lines;
     ids.full_mod_num_lines = mstat->ispf_modified_lines;
 
     if (mstat->ispf_current_lines < SHRT_MAX) {
@@ -763,9 +762,9 @@ struct mem_node* pds_mem(FM_BPAMHandle* bh, const DBG_Opts* opts)
   int offset;
 
   /*
-   * Read the PDS directory one block at a time until either the 
-   * end of the directory or end-of-file is detected. 
-   * Break the block into records and call up gen_node() with every 
+   * Read the PDS directory one block at a time until either the
+   * end of the directory or end-of-file is detected.
+   * Break the block into records and call up gen_node() with every
    * record read, to add member names to the linked list.
   */
 
@@ -835,9 +834,9 @@ struct mem_node* find_mem(FM_BPAMHandle* bh, const char* memname, struct mem_nod
   memcpy(padmem, memname, memlen);
 
   /*
-   * Read the PDS directory one block at a time until either the 
-   * end of the directory or end-of-file is detected. 
-   * Break the block into records and call up gen_node() with every 
+   * Read the PDS directory one block at a time until either the
+   * end of the directory or end-of-file is detected.
+   * Break the block into records and call up gen_node() with every
    * record read, to add member names to the linked list.
   */
 

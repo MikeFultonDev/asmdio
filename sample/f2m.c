@@ -5,13 +5,13 @@
 #define _OPEN_SYS_EXT
 #define _XOPEN_SOURCE_EXTENDED 1
 
+#include <fcntl.h>
 #include <glob.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "asmdiocommon.h"
 #include "bpamio.h"
