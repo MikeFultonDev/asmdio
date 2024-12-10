@@ -14,7 +14,6 @@
 #include <sys/stat.h>
 
 #include "asmdiocommon.h"
-
 #include "bpamio.h"
 #include "dio.h"
 #include "filemap.h"
