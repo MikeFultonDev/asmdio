@@ -2,22 +2,23 @@
 #define _ISOC99_SOURCE
 #define _POSIX_SOURCE
 #define _OPEN_SYS_FILE_EXT
+
+#include <fcntl.h>
 #include <glob.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "asmdiocommon.h"
-#include "util.h"
 #include "dio.h"
-#include "mem.h"
-#include "iosvcs.h"
+#include "filemap.h"
 #include "fm.h"
 #include "fmopts.h"
+#include "iosvcs.h"
+#include "mem.h"
 #include "msg.h"
-#include "filemap.h"
+#include "util.h"
 
 static int errfunc(const char *epath, int eerrno)
 {
@@ -28,7 +29,7 @@ static int errfunc(const char *epath, int eerrno)
 
 static FM_Table* allocate_table(size_t num_entries)
 {
-  /* 
+  /*
    * This is inefficient, but allocate the table assuming one entry
    * for each extension, so guaranteed to be big enough
    */
@@ -62,7 +63,7 @@ static FM_Entry* find(const char* key, FM_Table* table)
 }
 
 /*
- * add: low perf implementation - should use hand-written bsearch if this is 
+ * add: low perf implementation - should use hand-written bsearch if this is
  * important to find the spot to insert.
  */
 static FM_Entry* add(FM_Entry* entry, FM_Table* table)
@@ -172,7 +173,7 @@ FM_Table* fill_table(glob_t* globset, FM_Table* table)
     if (entry) {
       entry->table->values[entry->table->cur_value++] = globset->gl_pathv[i];
     } else {
-      /* 
+      /*
        * Error - should have been added already
        */
        fprintf(stderr, "Internal Error: file %s not in table\n", globset->gl_pathv[i]);
@@ -258,8 +259,8 @@ int check_for_duplicate_members(glob_t* globset, const FM_Table* table, const FM
   qsort(mem_file_pair, num_members, sizeof(FM_MemFilePair), cmp_mem_file_pair);
   for (i=0; i<num_members-1; ++i) {
     if (!strcmp(mem_file_pair[i].member, mem_file_pair[i+1].member)) {
-      fprintf(stderr, "Error. File %s and file %s would both be copied to the same member %s\n", 
-        mem_file_pair[i].filename, mem_file_pair[i+1].filename, mem_file_pair[i].member); 
+      fprintf(stderr, "Error. File %s and file %s would both be copied to the same member %s\n",
+        mem_file_pair[i].filename, mem_file_pair[i+1].filename, mem_file_pair[i].member);
       rc = 1;
     }
   }

@@ -4,22 +4,23 @@
 #define _OPEN_SYS_FILE_EXT 1
 #define _XOPEN_SOURCE_EXTENDED 1
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+#include "bpamio.h"
+#include "ispf.h"
 #include "mem.h"
 #include "memdir.h"
 #include "ztime.h"
-#include "bpamio.h"
-#include "ispf.h"
 
 /*
  * msf - need to implement check of ranges of values
  */
 static int valid_ispf_disk_stats(unsigned char userdata_len, const struct ispf_disk_stats* ids)
 {
-  return 0; 
+  return 0;
 }
 
 const struct tm zerotime = { 0 };
@@ -64,7 +65,7 @@ static int ispf_stats(const struct mem_node* np, struct ispf_stats* is)
     is->init_num_lines = id->init_num_lines;
     is->mod_num_lines = id->mod_num_lines;
   }
-    
+
   return 0;
 }
 
@@ -109,9 +110,9 @@ static void print_members(struct mstat* mstat_arr, size_t members)
     }
     char* ispf_id = (mstat->ispf_id) ? mstat->ispf_id : "NULL";
 
-    printf("%6.6x %4s %3s %5s %8s %8s %8s %8x %21s %3d %3d %10d %10d %10d %11s %21s %8s\n", 
-      memid, ispf, ext, alias, name, alias_name, ext_id, ccsid, exttime_buff, 
-      ver_num, mod_num, cur, init, mod, 
+    printf("%6.6x %4s %3s %5s %8s %8s %8s %8x %21s %3d %3d %10d %10d %10d %11s %21s %8s\n",
+      memid, ispf, ext, alias, name, alias_name, ext_id, ccsid, exttime_buff,
+      ver_num, mod_num, cur, init, mod,
       crttime_buff, modtime_buff, ispf_id);
   }
 }
@@ -226,8 +227,8 @@ static struct mstat* desp_copy_name_and_alias(struct mstat* mstat, const struct 
   int len = varname->smde_name_len;
 
   /*
-   * If the SMDE entry is from a PDS, there will be no name offset if this entry is for 
-   * an alias. 
+   * If the SMDE entry is from a PDS, there will be no name offset if this entry is for
+   * an alias.
    * However, if the SMDE entry is from a PDSE, there _will_ be a name offset if the entry
    * is for an alias.
    */
@@ -334,7 +335,7 @@ static struct mstat* desp_to_mstats(const struct desp* PTR32 desp, const DBG_Opt
    * Walk through the nodes and populate corresponding entries with the information
    * available.
    * Unlike the PDS directory entries, a DES directory entry will have an alias AND a name
-   * or just a name (if there are no aliases for the name). 
+   * or just a name (if there are no aliases for the name).
    */
   cur_desb = desp->desp_area_ptr;
   int entry = 0;
@@ -481,8 +482,8 @@ static void free_mstat(struct mstat* mstat, size_t entries)
 static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mstat* de_mstat, size_t de_members, int sort_time, int sort_reverse, const DBG_Opts* opts)
 {
   if (mn_members != de_members) {
-    fprintf(stderr, 
-      "Internal error: Directory has %d members and alias but Directory Entry Services reports %d members aliases. These should be the same.\n", 
+    fprintf(stderr,
+      "Internal error: Directory has %d members and alias but Directory Entry Services reports %d members aliases. These should be the same.\n",
       mn_members, de_members);
     return NULL;
   }
@@ -504,7 +505,7 @@ static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mst
   mdi->entries = entries;
   mdi->cur = 0;
   struct mstat* merge_mstat = mdi->head;
- 
+
   /*
    * Copy the mn member info over first and then copy the extended
    * information and the alias if it is missing
@@ -581,7 +582,7 @@ static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mst
   if (opts->debug) {
     print_members(merge_mstat, entries);
   }
-    
+
   return (MEMDIR*) mdi;
 }
 
@@ -645,7 +646,7 @@ int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, co
    * Find the SMDE for the member and then find the mem_node for the member.
    * Merge the contents together.
    * Free up the 31-bit storage allocated for desp
-   */ 
+   */
   struct desp* PTR32 desp;
   struct smde* PTR32 smde;
 
@@ -673,10 +674,10 @@ int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, co
   /*
    * Copy over all the ISPF stats from mnode_mstat
    * and if there are also extended attributes, copy
-   * them. 
+   * them.
    * This leaves a few wrinkles with aliases, which
    * could be supported when necessary. (msf tbd)
-   */ 
+   */
   *mstat = memnode_mstat;
   if (smde_mstat.has_ext) {
     mstat->has_ext = 1;
@@ -733,7 +734,7 @@ static char* PTR32 ispf_qname(const char* qn)
   return qname;
 }
 
-int ispf_enq_dataset_member(const char* ds, const char* wmem) 
+int ispf_enq_dataset_member(const char* ds, const char* wmem)
 {
   char* PTR32 rname = ispf_rname(ds, wmem);
   char* PTR32 qname = ispf_qname("SPFEDIT");
@@ -747,7 +748,7 @@ int ispf_enq_dataset_member(const char* ds, const char* wmem)
   return rc;
 }
 
-int ispf_deq_dataset_member(const char* ds, const char* wmem) 
+int ispf_deq_dataset_member(const char* ds, const char* wmem)
 {
   char* PTR32 rname = ispf_rname(ds, wmem);
   char* PTR32 qname = ispf_qname("SPFEDIT");

@@ -65,12 +65,12 @@ struct desp {
   struct desb* PTR32 desp_area_ptr;       /* buffer address                   */
   int            desp_area2;              /* buffer length                    */
   void* PTR32 desp_de_list_ptr;           /* DE_LIST address            @L2A  */
-  int            desp_de_list2;             /* DE_LIST entry count        @L2A  */
-  int            desp_entry_gap;            /* entry gap size                   */
+  int            desp_de_list2;           /* DE_LIST entry count        @L2A  */
+  int            desp_entry_gap;          /* entry gap size                   */
   void * PTR32 desp_mem_data_ptr;         /* MEM_DATA address                 */
-  int            desp_mem_data2;            /* MEM_DATA entry count             */
+  int            desp_mem_data2;          /* MEM_DATA entry count             */
   struct desl * PTR32 desp_name_list_ptr; /* name list address                */
-  int            desp_name_list2;           /* input list number of entries     */
+  int            desp_name_list2;         /* input list number of entries     */
   void * PTR32 desp_name_ptr;             /* name address               @L2A  */
   union {
     void * PTR32 desp_pdsde_ptr; /* bldl directory entry address    */
@@ -149,7 +149,7 @@ struct desl {
       unsigned char  desl_code;                    /* result code             */
       unsigned short desl_errcode;                 /* low order halfword of   */
       int            _filler1;                     /* reserved                */
-      void * PTR32 desl_smde_ptr;                /* pointer to smde         */
+      void * PTR32 desl_smde_ptr;                  /* pointer to smde         */
       unsigned char  _filler2[4];
       };
     struct {
@@ -209,8 +209,8 @@ struct desd {
       unsigned char  desd_errcode[2];     /* low order half word of          */
       short int      desd_index;          /* Index number for name. required */
       short int      desd_data_len;       /* length of data area             */
-      void * PTR32 desd_data_ptr;       /* address of data                 */
-      void * PTR32 desd_name_ptr;       /* address of varying length name  */
+      void * PTR32 desd_data_ptr;         /* address of data                 */
+      void * PTR32 desd_name_ptr;         /* address of varying length name  */
       };
     };
   };
@@ -222,7 +222,7 @@ struct desd {
 
 struct desx {
   union {
-    unsigned char  desx_header[16]; /* Standard Header */
+    unsigned char  desx_header[16];   /* Standard Header */
     struct {
       unsigned char  desx_id[8];      /* eyecatcher (IGWDESX) */
       int            desx_len;        /* length of buffer     */
@@ -231,8 +231,8 @@ struct desx {
       unsigned char  _filler1[3];     /* RESERVED             */
       };
     };
-  void * PTR32 desx_desp_ptr;     /* Address of DESP               */
-  void * PTR32 desx_dst_ptr;      /* DESERV Screen Table, DST      */
+  void * PTR32 desx_desp_ptr;       /* Address of DESP               */
+  void * PTR32 desx_dst_ptr;        /* DESERV Screen Table, DST      */
   unsigned char  desx_caller_key;   /* High order nibble is DESERV's */
   unsigned int   desx_bldl_bit : 1, /* DESERV BLDL path              */
                  desx_pre_bit  : 1, /* Exit invoked prior to DESERV  */
@@ -248,7 +248,7 @@ struct desx {
 
 struct dst {
   union {
-    unsigned char  dst_header[15]; /* Standard Header */
+    unsigned char  dst_header[15];       /* Standard Header */
     struct {
       unsigned char  dst_id[8];          /* eyecatcher (IGWDST) */
       int            dst_len;            /* length of buffer    */
@@ -425,4 +425,3 @@ struct desr {
 #pragma pack(pop)
 
 #endif // __DESERV__H
-

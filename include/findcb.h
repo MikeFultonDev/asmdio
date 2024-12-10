@@ -1,5 +1,5 @@
-#ifndef __FINDCB__
-#define __FINDCB__ 1
+#ifndef __FINDCB_H__
+#define __FINDCB_H__
 
 #include "asmdiocommon.h"
 

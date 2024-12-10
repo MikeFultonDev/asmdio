@@ -1,5 +1,5 @@
-#ifndef __DECB__
-#define __DECB__ 1
+#ifndef __DECB_H__
+#define __DECB_H__
 
 #include "asmdiocommon.h"
 

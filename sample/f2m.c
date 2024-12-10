@@ -5,40 +5,39 @@
 #define _OPEN_SYS_EXT
 #define _XOPEN_SOURCE_EXTENDED 1
 
+#include <fcntl.h>
 #include <glob.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "asmdiocommon.h"
-
-#include "util.h"
+#include "bpamio.h"
 #include "dio.h"
-#include "mem.h"
-#include "iosvcs.h"
+#include "filemap.h"
 #include "fm.h"
 #include "fmopts.h"
-#include "msg.h"
-#include "filemap.h"
-#include "bpamio.h"
+#include "iosvcs.h"
+#include "mem.h"
 #include "memdir.h"
+#include "msg.h"
+#include "util.h"
 
 static void syntax(FILE* stream)
 {
-  fprintf(stream, 
+  fprintf(stream,
 "usage: f2m [OPTION]... <directory> <dataset> [file ...]\n\
 \n\
 Options:\n\
-  -h, --help          Print out this help.\n\
-  -v, --verbose       Provide verbose output.\n\
   -d, --debug         Provide debug output.\n\
-  -m, --mapexttollq   Treat the dataset name as a dataset prefix and\n\
-                      map the extension to a a low-level qualifier (default).\n\
+  -h, --help          Print out this help.\n\
   -i, --ignoreext     Do not perform any mapping with the extension\n\
                       and copy all files to the dataset as specified..\n\
+  -m, --mapexttollq   Treat the dataset name as a dataset prefix and\n\
+                      map the extension to a a low-level qualifier (default).\n\
+  -v, --verbose       Provide verbose output.\n\
 \n\
 <directory>           The directory to copy files from.\n\
 <dataset>             The dataset (or dataset prefix, if -m specified)\n\
@@ -65,7 +64,7 @@ will copy:\n\
 }
 
 /*
- * Open the file and initialize the file handle 
+ * Open the file and initialize the file handle
  */
 static FM_FileHandle* open_file(const char* filename, FM_FileHandle* fh, const FM_Opts* opts)
 {
@@ -114,7 +113,7 @@ static int close_file(FM_FileHandle* fh, const FM_Opts* opts)
 static ssize_t scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* opts)
 {
   int i;
-  debug(&opts->dbg, "scan record from %d to %d looking for newline character 0x%x\n", 
+  debug(&opts->dbg, "scan record from %d to %d looking for newline character 0x%x\n",
     fb->record_offset, fb->data_length, fh->newline_char);
   for (i = fb->record_offset; i < fb->data_length; ++i) {
     if (fb->data[i] == fh->newline_char) {
@@ -128,7 +127,7 @@ static ssize_t scan_buffer(FM_FileHandle* fh, FM_FileBuffer* fb, const FM_Opts* 
  * Slightly tricky code.
  * We want to avoid doing data copy so we maintain 2 data buffers.
  * When the last part of the buffer is scanned, there will be no
- * newline found, and we will need to then read data into the 
+ * newline found, and we will need to then read data into the
  * other buffer and mark that some of the record is in the first
  * (active) buffer and the rest is in the second (inactive) buffer.
  * Since the target is a dataset that has a maximum record length,
@@ -150,8 +149,8 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
     fh->active.record_length = newline_offset - fh->active.record_offset;
     fh->inactive.record_offset = 0;
     fh->inactive.record_length = 0;
-    debug(&opts->dbg, "newline_offset: %d full line: active_offset: %d active_length: %d\n", 
-      newline_offset, fh->active.record_offset, fh->active.record_length);  
+    debug(&opts->dbg, "newline_offset: %d full line: active_offset: %d active_length: %d\n",
+      newline_offset, fh->active.record_offset, fh->active.record_length);
   } else {
     fh->active.record_length = fh->active.data_length - fh->active.record_offset;
     /*
@@ -182,17 +181,17 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
     } else {
       fh->inactive.record_length = newline_offset;
     }
-    debug(&opts->dbg, "scattered line: newline_offset:%d active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n", 
-      newline_offset, fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);  
+    debug(&opts->dbg, "scattered line: newline_offset:%d active_offset: %d active_length: %d and inactive_offset: %d inactive_length:%d\n",
+      newline_offset, fh->active.record_offset, fh->active.record_length, fh->inactive.record_offset, fh->inactive.record_length);
 
   }
-  return more_data; 
+  return more_data;
 }
 
 /*
  * This code will calculate the newline character based
  * on looking at the file tag of the file being copied and,
- * if the file tag isn't specified, it will read the 
+ * if the file tag isn't specified, it will read the
  * active data buffer for 'clues'.
  */
 static void calc_tag(FM_FileHandle* fh, const FM_Opts* opts)
@@ -234,13 +233,13 @@ static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
 }
 
 /*
- * open_debug_file, write_debug_line, close_debug_file 
+ * open_debug_file, write_debug_line, close_debug_file
  * are functions to make it easier to debug problems in the
  * code that reads in files using buffers for performance.
  * By default, the code is not active. If you specify '-d'
  * as an option, it will write out files of the form: /tmp/<dataset>.<member>
  * that should be the same as the original file read (but with a
- * different name). 
+ * different name).
  * The file may or may not have the right file tag on it, so to read
  * it, you may need to issue: chtag -tcXXXXX /tmp/<dataset>.<member> to set
  * the file tag before looking at it.
@@ -303,21 +302,21 @@ static int copy_at_most(void* dest, void* src, size_t length, size_t max)
 
 /*
  * add_line and read_line need to work together with their state because
- * they are sharing a common set of buffers for efficiency. 
+ * they are sharing a common set of buffers for efficiency.
  * This means that read_line is responsible for setting up the active and
- * inactive buffer state information and add_line is responsible for 
+ * inactive buffer state information and add_line is responsible for
  * cleaning up the state after it has processed the information.
  */
 static int add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
 {
   int truncated = 0;
-  debug(&opts->dbg, "Add Line. Active (%d,%d) Inactive (%d,%d) bytes_used:%d\n", 
-    fh->active.record_offset, fh->active.record_length, 
+  debug(&opts->dbg, "Add Line. Active (%d,%d) Inactive (%d,%d) bytes_used:%d\n",
+    fh->active.record_offset, fh->active.record_length,
     fh->inactive.record_offset, fh->inactive.record_length,
     bh->bytes_used
   );
   write_debug_line(bh, fh, opts);
- 
+
   char* block_char = (char*) (bh->block);
   int rec_hdr_size;
   unsigned short rec_len;
@@ -327,7 +326,7 @@ static int add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
     if (bh->bytes_used == 0) {
       /*
        * First word is block length - clear it to 0 for now
-       * Set the block size to be the full block size since the 
+       * Set the block size to be the full block size since the
        * WRITE routine knows to get the logical block size from the
        * first word.
        */
@@ -395,7 +394,7 @@ static int add_line(FM_BPAMHandle* bh, FM_FileHandle* fh, const FM_Opts* opts)
     fh->inactive.data = tmp_buff;
 
     fh->active.record_offset = fh->inactive.record_offset;
-    fh->active.record_length = fh->inactive.record_length; 
+    fh->active.record_length = fh->inactive.record_length;
     fh->active.data_length = fh->inactive.data_length;
     fh->inactive.record_offset = 0;
     fh->inactive.record_length = 0;
@@ -415,7 +414,7 @@ static int can_add_line(FM_FileHandle* fh, FM_BPAMHandle* bh, const FM_Opts* opt
     line_length = bh->dcb->dcblrecl;
   }
   int rc = (line_length + bh->bytes_used <= bh->block_size);
-  debug(&opts->dbg, "Can Add Line:%c (active record length:%d inactive record length:%d bytes_used:%d block_size:%d lrecl:%d)\n", 
+  debug(&opts->dbg, "Can Add Line:%c (active record length:%d inactive record length:%d bytes_used:%d block_size:%d lrecl:%d)\n",
     rc == 1 ? 'Y' : 'N', fh->active.record_length, fh->inactive.record_length, bh->bytes_used, bh->block_size, bh->dcb->dcblrecl);
   return rc;
 }
@@ -472,7 +471,7 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
     rc = memrc;
   }
   if (truncated) {
-    fprintf(stderr, "One or more lines were truncated copying %s to %s(%s). Specify -v for more details\n", 
+    fprintf(stderr, "One or more lines were truncated copying %s to %s(%s). Specify -v for more details\n",
       filename, dataset, member);
   }
   return rc;
@@ -593,7 +592,7 @@ static int copy_files_to_members(glob_t* globset, const FM_Table* table, const c
 
 /*
  * main program:
- * -process options, directory, dataset_pattern, and then expand the file patterns 
+ * -process options, directory, dataset_pattern, and then expand the file patterns
  *  storing the expanded set of files into globset via 'expand_file_patterns'
  * -create a table, with one entry for each extension in the list of files, e.g
  *  if there are .h, .c, .lst files there would be one entry for each of .h, .c, and .lst
@@ -601,7 +600,7 @@ static int copy_files_to_members(glob_t* globset, const FM_Table* table, const c
  *  extension.
  * -copy all the files to corresponding datasets, typically by mapping extensions to LLQ's
  *  of datasets (this is why we went to the trouble of organizing the table with extension entries)
- */ 
+ */
 int main(int argc, char* argv[])
 {
   glob_t globset;

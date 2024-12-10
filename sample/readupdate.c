@@ -3,25 +3,28 @@
  * Use services from bpamio.h and memdir.h
  *
  */
-#define _XOPEN_SOURCE
 #define _ISOC99_SOURCE
-#define _POSIX_SOURCE
-#define _OPEN_SYS_FILE_EXT 1
 #define _OPEN_SYS_EXT
+#define _OPEN_SYS_FILE_EXT 1
+#define _POSIX_SOURCE
+#define _XOPEN_SOURCE
 #define _XOPEN_SOURCE_EXTENDED 1
 
 #include <stdio.h>
 #include <string.h>
-#include "util.h"
+
 #include "bpamio.h"
-#include "memdir.h"
 #include "dbgopts.h"
+#include "memdir.h"
+#include "util.h"
 
 int main(int argc, char* argv[])
 {
   if (argc != 3) {
     printf("Usage: %s <dataset> <member>\n", argv[0]);
-    printf("  Read a member, get the directory info, then write out a new member <member>@ with just one block, updating ISPF statistics and setting the CCSID (ASCII)\n");
+    printf("\n"
+           "  Read a member, get the directory info, then write out a new member <member>@\n"
+           "  with just one block, updating ISPF statistics and setting the CCSID (ASCII).\n");
     return 4;
   }
 
