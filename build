@@ -1,6 +1,19 @@
-#!/bin/sh
+#!/bin/env bash
 #
 # Basic script to compile / link code to test dataset listing services
+#
+
+#
+# Start of PLPSC specific settings
+#
+export _CC_PLIB_PREFIX=SYS1.CEE
+export _C89_PLIB_PREFIX=SYS1.CEE
+export _CC_CLIB_PREFIX=SYS1.CBC
+export _C89_CLIB_PREFIX=SYS1.CBC
+export XL_CONFIG=/etc/xlc.cfg
+
+#
+# End of PLPSC specific settings
 #
 
 # Use set -e to force failure if something doesn't build
