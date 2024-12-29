@@ -16,6 +16,6 @@ set -e
 
 . ./setenv
 
-gmake -C src
-gmake -C test
-gmake -C sample
+gmake --makefile=Makefile_src
+gmake --makefile=Makefile_test
+#gmake -C sample

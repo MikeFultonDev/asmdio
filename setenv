@@ -20,7 +20,7 @@ export ASFLAGS="--SYSPARM'(${ASAMODE})',GOFF,LIST,SUPRWARN'(425,434)'"
 export CC=xlc
 export CFLAGS="-Wc,OPT'(3)',${DATA_MODEL},AGGR,${LIST},${INFO}"
 export CFLAGS="-Wc,debug,${DATA_MODEL},AGGR,${LIST},${INFO}"
-export CPPFLAGS="-DAMODE=${MODE} -I../intinclude -I../include"
+export CPPFLAGS="-DAMODE=${MODE} -Iintinclude -Iinclude"
 export LD=xlc
 export LDFLAGS="-Wl,${DATA_MODEL},edit=yes,map,case=mixed"
 

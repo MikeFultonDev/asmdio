@@ -1,0 +1,47 @@
+SRCDIR=test
+BLDDIR=obj
+BINDIR=bin
+archive=asmdio.a
+
+csource := $(shell find $(SRCDIR) -type f -name *.c)
+cobjs   := $(patsubst $(SRCDIR)/%,$(BLDDIR)/%,$(csource:.c=.o))
+objects := $(cobjs)
+cdeps   := $(cobjs:.o=.d)
+pgms    := $(BINDIR)/basiccreate $(BINDIR)/basicread $(BINDIR)/basicrddir $(BINDIR)/basicalloc $(BINDIR)/basicenq $(BINDIR)/basicmem
+all: $(pgms)
+
+clean:
+	rm -f $(objects) $(pgms)
+
+$(BLDDIR)/%.d: $(SRCDIR)/%.c
+	mkdir -p $(BLDDIR) ; \
+	rm -f $@; \
+	clang -MM $(CPPFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+include $(deps)
+
+INCDIR=include
+
+$(BINDIR)/basicrddir: $(BLDDIR)/basicrddir.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$(@D)/$@.lst
+
+$(BINDIR)/basicread: $(BLDDIR)/basicread.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$(@D)/$@.lst
+
+$(BINDIR)/basiccreate: $(BLDDIR)/basiccreate.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$(@D)/$@.lst
+
+$(BINDIR)/basicenq: $(BLDDIR)/basicenq.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$(@D)/$@.lst
+
+$(BINDIR)/basicmem: $(BLDDIR)/basicmem.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$(@D)/$@.lst
+
+$(BINDIR)/basicalloc: $(BLDDIR)/basicalloc.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$(@D)/$@.lst
+
+$(BLDDIR)/%.o: $(SRCDIR)/%.c
+	mkdir -p $(BLDDIR) ;
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
