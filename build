@@ -1,7 +1,15 @@
-#!/bin/sh
+#!/bin/env bash
 #
 # Basic script to compile / link code to test dataset listing services
 #
+
+ME=$(basename $0)
+MYDIR="$(cd "$(dirname "$0")" > /dev/null 2>&1 && pwd -P)"
+
+host_config="${MYDIR}/$(hostname -s).cfg"
+if [ -e "${host_config}" ]; then
+  source "${host_config}"
+fi
 
 # Use set -e to force failure if something doesn't build
 set -e
