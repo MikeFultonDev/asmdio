@@ -5,9 +5,9 @@
 *.so
 *.d
 
-# Compiler listings
+# Compiler and linker listings
 *.lst
-*.map
+*.llst
 
 # Debug side files
 *.dbg

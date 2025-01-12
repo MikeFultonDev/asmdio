@@ -1,0 +1,44 @@
+SRCDIR=sample
+BLDDIR=obj
+BINDIR=bin
+archive=asmdio.a
+
+csource := $(shell find $(SRCDIR) -type f -name *.c)
+cobjs   := $(patsubst $(SRCDIR)/%,$(BLDDIR)/%,$(csource:.c=.o))
+objects := $(cobjs)
+cdeps   := $(cobjs:.o=.d)
+pgms    := $(BINDIR)/f2m $(BINDIR)/m2f $(BINDIR)/mlsx $(BINDIR)/mchtag $(BINDIR)/readupdate
+all: $(pgms)
+
+clean:
+	rm -f $(objects) $(pgms)
+
+$(BLDDIR)/%.d: $(SRCDIR)/%.c
+	mkdir -p $(BLDDIR) ; \
+	rm -f $@; \
+	clang -MM $(CPPFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+include $(deps)
+
+$(BINDIR)/readupdate: $(BLDDIR)/readupdate.o $(BLDDIR)/msg.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/memdir.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
+
+$(BINDIR)/f2m: $(BLDDIR)/f2m.o $(BLDDIR)/msg.o $(BLDDIR)/fmopts.o $(BLDDIR)/filemap.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
+
+$(BINDIR)/mlsx: $(BLDDIR)/mlsx.o $(BLDDIR)/mlsxopts.o $(BLDDIR)/bpamio.o $(BLDDIR)/msg.o $(BLDDIR)/memdir.o $(BLDDIR)/ztime.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
+
+$(BINDIR)/mchtag: $(BLDDIR)/mchtag.o
+	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
+
+$(BINDIR)/m2f: $(BLDDIR)/m2f.o
+	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
+
+$(BLDDIR)/%.o: $(SRCDIR)/%.c
+	mkdir -p $(BLDDIR) ;
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+.PHONY: all clean

@@ -43,6 +43,7 @@ int SYEXDEQ(char* PTR32 qname, char* PTR32 rname, unsigned int rname_len);
 #pragma map(STOW, "DSTOW")
 #pragma map(CLOSE, "DCLOSE")
 
+
 int S99(struct s99rb* PTR32 s99rbp);
 int S99MSG(struct s99_em* PTR32 s99em);
 
