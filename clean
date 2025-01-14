@@ -5,6 +5,6 @@
 
 . ./setenv
 
-gmake -C src clean
-gmake -C test clean
-gmake -C sample clean
+gmake --makefile=Makefile_src clean
+gmake --makefile=Makefile_test clean
+gmake --makefile=Makefile_sample clean
