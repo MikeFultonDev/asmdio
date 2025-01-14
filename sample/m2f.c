@@ -165,7 +165,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
     if (mem->is_alias) {
       printf("create symbolic link %s to member: %s\n", mem->alias_name, mem->name);
     } else {
-      printf("copy member: %s", mem->name);
+      printf("copy member: %s\n", mem->name);
     }
   }
   if (closememdir(md, &opts->dbg)) {

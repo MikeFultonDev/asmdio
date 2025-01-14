@@ -20,4 +20,4 @@ set -e
 
 gmake --makefile=Makefile_src
 gmake --makefile=Makefile_test
-gmake -d --makefile=Makefile_sample
+gmake --makefile=Makefile_sample
