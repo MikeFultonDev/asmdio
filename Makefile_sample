@@ -20,7 +20,7 @@ $(BLDDIR)/%.d: $(SRCDIR)/%.c
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-include $(deps)
+include $(cdeps)
 
 $(BINDIR)/readupdate: $(BLDDIR)/readupdate.o $(BLDDIR)/msg.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/memdir.o $(BLDDIR)/$(archive)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
