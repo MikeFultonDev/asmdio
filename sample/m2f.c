@@ -138,7 +138,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
 {
   int rc = 0;
   int ext;
-  FM_BPAMHandle dd;
+  FM_BPAMHandle bh;
   int sorttime = 0;
   int sortreverse = 0;
 
@@ -149,7 +149,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
   uppercase(dataset_buffer);
   dataset = dataset_buffer;
 
-  if (open_pds_for_read(dataset, &dd, &opts->dbg)) {
+  if (open_pds_for_read(dataset, &bh, &opts->dbg)) {
     fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
     return 4;
   }
@@ -166,6 +166,15 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
       printf("create symbolic link %s to member: %s\n", mem->alias_name, mem->name);
     } else {
       printf("copy member: %s\n", mem->name);
+      if (find_member(&bh, mem->name, &opts->dbg)) {
+        fprintf(stderr, "Unable to locate PDS member %s\n", mem->name);
+        continue;
+      }
+      int blocks_read = 0;
+      while (!read_block(&bh, &opts->dbg)) {
+        blocks_read++;
+      }
+      fprintf(stderr, "Read %d blocks from member %s\n", blocks_read, mem->name);
     }
   }
   if (closememdir(md, &opts->dbg)) {
@@ -173,7 +182,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
     return 12;
   }
 
-  if (close_pds(&dd, &opts->dbg)) {
+  if (close_pds(&bh, &opts->dbg)) {
     fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
     rc |= 8;
   }

@@ -166,7 +166,7 @@ int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
   }
   rc = CHECK(bh->decb);
 
-  return 0;
+  return rc;
 }
 
 /*
