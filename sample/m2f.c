@@ -160,6 +160,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
     fprintf(stderr, "Unable to open memdir for dataset %s\n", dataset);
     return 4;
   }
+  
   struct mstat* mem;
   while (mem = readmemdir(md, &opts->dbg)) {
     if (mem->is_alias) {
