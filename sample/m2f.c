@@ -173,6 +173,9 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
       int blocks_read = 0;
       while (!read_block(&bh, &opts->dbg)) {
         blocks_read++;
+        while (next_record(&bh, &opts->dbg)) {
+          printf("record <%.*s>\n", bh.next_record_len, bh.next_record_start);
+        }
       }
       fprintf(stderr, "Read %d blocks from member %s\n", blocks_read, mem->name);
     }

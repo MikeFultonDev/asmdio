@@ -26,6 +26,7 @@
 #include "ispf.h"
 #include "ztime.h"
 #include "memdir.h"
+#include "iob.h"
 
 static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
 {
@@ -113,7 +114,7 @@ static int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
 }
 
 
-static void validate_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
+static void validate_var_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   if (!opts->debug) {
     return;
@@ -151,12 +152,6 @@ int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
   SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
   bh->decb->area = bh->block;
 
-  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n",
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N',
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N',
-    bh->bytes_used,
-    bh->block_size
-  );
 
   /* Read one block */
   int rc = READ(bh->decb);
@@ -165,6 +160,19 @@ int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     return rc;
   }
   rc = CHECK(bh->decb);
+
+  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n",
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N',
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N',
+    bh->bytes_used,
+    bh->block_size
+  );
+
+  /*
+   * Initialize record offset information so that next_record can be called.
+   */
+  bh->next_record_start = NULL;
+  bh->next_record_len = 0;
 
   return rc;
 }
@@ -195,7 +203,7 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     halfword[3] = 0;
     bh->dcb->dcbblksi = bh->block_size;
 
-    validate_block(bh, opts);
+    validate_var_block(bh, opts);
     debug(opts, "(Block Write) First Record length:%d bytes used:%d\n", halfword[2], halfword[0]);
 
   } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) { 
@@ -218,6 +226,65 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 
   bh->bytes_used = 0;
   return 0;
+}
+
+/*
+ * Read a record. Return non-zero when no next record.
+ * Fixed Block Short blocks need special consideration: https://tech.mikefulton.ca/BlockLengthReadDetermination
+ */
+
+int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  char* block_char = (char*) (bh->block);
+  unsigned short* block_hw = (unsigned short*) (bh->block);
+  unsigned short block_size = block_hw[0];  
+
+  if (bh->next_record_start == NULL) {
+    /*
+     * Skip over header of block
+     */
+    if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+      bh->next_record_start = &block_char[4];
+    } else {
+      bh->next_record_start = block_char;
+    }
+  } else {
+    bh->next_record_start = &bh->next_record_start[bh->next_record_len];
+  }
+
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    if (bh->next_record_start >= &block_char[block_size]) {
+      return 0;
+    }
+
+    /*
+     * If variable record length, then length is in first half word.
+     * Also note the length includes the 4 byte prefix as well.
+     */
+    unsigned short* vreclenp = (unsigned short*) (bh->next_record_start);
+    bh->next_record_len = (*vreclenp - 4);
+    bh->next_record_start += 4;
+  } else {
+    /*
+     * The residual count indicates how many pad bytes are at the end
+     * of the last block of a fixed block member. This needs to be
+     * subtracted from the block size to determine if you are at the 
+     * end of the block.
+     */
+    struct iob* PTR32 iob = (struct iob* PTR32) bh->decb->stat_addr;
+    unsigned short residual = iob->iobcsw.iobresct;
+    unsigned short bytes_in_block = block_size - residual;
+    if (bh->next_record_start >= &block_char[bytes_in_block]) {
+      return 0;
+    }
+
+    /*
+     * The record is fixed length, so the length of the record is always
+     * the same.
+     */
+    bh->next_record_len = bh->dcb->dcblrecl;
+  }
+  return 1;
 }
 
 const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
