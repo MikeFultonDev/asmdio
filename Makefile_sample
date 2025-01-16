@@ -25,7 +25,7 @@ include $(cdeps)
 $(BINDIR)/readupdate: $(BLDDIR)/readupdate.o $(BLDDIR)/msg.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/memdir.o $(BLDDIR)/$(archive)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
 
-$(BINDIR)/f2m: $(BLDDIR)/f2m.o $(BLDDIR)/msg.o $(BLDDIR)/fmopts.o $(BLDDIR)/filemap.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/$(archive)
+$(BINDIR)/f2m: $(BLDDIR)/f2m.o $(BLDDIR)/fsio.o $(BLDDIR)/msg.o $(BLDDIR)/fmopts.o $(BLDDIR)/filemap.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/$(archive)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
 
 $(BINDIR)/mlsx: $(BLDDIR)/mlsx.o $(BLDDIR)/mlsxopts.o $(BLDDIR)/bpamio.o $(BLDDIR)/msg.o $(BLDDIR)/memdir.o $(BLDDIR)/ztime.o $(BLDDIR)/$(archive)
@@ -34,7 +34,7 @@ $(BINDIR)/mlsx: $(BLDDIR)/mlsx.o $(BLDDIR)/mlsxopts.o $(BLDDIR)/bpamio.o $(BLDDI
 $(BINDIR)/mchtag: $(BLDDIR)/mchtag.o
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
-$(BINDIR)/m2f: $(BLDDIR)/m2f.o $(BLDDIR)/msg.o $(BLDDIR)/fmopts.o $(BLDDIR)/filemap.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/memdir.o $(BLDDIR)/$(archive)
+$(BINDIR)/m2f: $(BLDDIR)/m2f.o $(BLDDIR)/fsio.o $(BLDDIR)/msg.o $(BLDDIR)/fmopts.o $(BLDDIR)/filemap.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/memdir.o $(BLDDIR)/$(archive)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
 
 $(BLDDIR)/%.o: $(SRCDIR)/%.c

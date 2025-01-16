@@ -13,6 +13,7 @@
     unsigned int version;
   } MEMDIR;
 
+
   /*
    * struct mstat: provide information for a given
    * member of a PDS or PDSE.

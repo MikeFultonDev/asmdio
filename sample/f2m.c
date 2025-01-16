@@ -25,6 +25,7 @@
 #include "filemap.h"
 #include "bpamio.h"
 #include "memdir.h"
+#include "fsio.h"
 
 static void syntax(FILE* stream)
 {
@@ -62,47 +63,6 @@ will copy:\n\
   the .lst files to corresponding dataset members IBMUSER.PROJ23.SRC.LST\n\
 ");
   return;
-}
-
-/*
- * Open the file and initialize the file handle 
- */
-static FM_FileHandle* open_file(const char* filename, FM_FileHandle* fh, const FM_Opts* opts)
-{
-  struct stat stat_info;
-  struct f_cnvrt req = {SETCVTOFF, 0, 0};
-  int fd = open(filename, O_RDONLY);
-  if (fd < 0) {
-    return NULL;
-  }
-  /*
-   * Turn auto-convert off
-   */
-  fcntl(fd, F_CONTROL_CVT, &req);
-
-  memset(fh, 0, sizeof(FM_FileHandle));
-
-  fh->fd = fd;
-
-  if (fstat(fd, &stat_info) < 0) {
-    close(fd);
-    return NULL;
-  }
-  fh->tag = stat_info.st_tag;
-
-  fh->active.data = fh->data_a;
-  fh->inactive.data = fh->data_b;
-
-  info(&opts->dbg, "Code page of input file:%d\n", fh->tag.ft_ccsid);
-  return fh;
-}
-
-/*
- * Close the file. Returns zero on success, non-zero otherwise
- */
-static int close_file(FM_FileHandle* fh, const FM_Opts* opts)
-{
-  return close(fh->fd);
 }
 
 /*
@@ -189,27 +149,6 @@ static int get_record(FM_FileHandle* fh, const FM_Opts* opts)
   return more_data; 
 }
 
-/*
- * This code will calculate the newline character based
- * on looking at the file tag of the file being copied and,
- * if the file tag isn't specified, it will read the 
- * active data buffer for 'clues'.
- */
-static void calc_tag(FM_FileHandle* fh, const FM_Opts* opts)
-{
-  if (fh->tag.ft_ccsid == 819) {
-    fh->newline_char = 0x0A; /* ASCII newline */
-    fh->space_char = 0x20;   /* ASCII space   */
-  } else if (fh->tag.ft_ccsid == 1047) {
-    fh->newline_char = 0x15; /* EBCDIC newline */
-    fh->space_char = 0x40;   /* EBCDIC space   */
-  } else {
-    /* msf: this needs to be fleshed out */
-    fh->newline_char = 0x15; /* default to EBCDIC right now */
-    fh->space_char = 0x40;   /* default to EBCDIC right now */
-  }
-}
-
 static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
 {
   ssize_t rc;
@@ -225,7 +164,7 @@ static int read_line(FM_FileHandle* fh, const FM_Opts* opts)
     }
     fh->active.data_length = rc;
     if (fh->newline_char == 0) {
-      calc_tag(fh, opts);
+      calc_tag(fh, fh->tag.ft_ccsid, opts);
     }
   } else {
     fh->active.record_offset += (fh->active.record_length + 1);
@@ -436,7 +375,7 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
   int truncated = 0;
 
   open_debug_file(dataset, member, opts);
-  if (!open_file(filename, &fh, opts)) {
+  if (!open_file_read(filename, &fh, opts)) {
     return 4;
   }
 

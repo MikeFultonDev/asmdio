@@ -7,6 +7,16 @@
   #include "asmdiocommon.h"
   #include "dio.h"
 
+  #define BINARY_CCSID 65535
+  #define UNTAG_CCSID      0
+  #define ISO8859_CCSID  819
+  #define IBM1047_CCSID 1047
+
+  #define ISO8859_NL    0x0A
+  #define IBM1047_NL    0x15
+  #define ISO8859_SPACE 0x20
+  #define IBM1047_SPACE 0x40
+  
   typedef struct {
     int cur_value;
     char* values[0];

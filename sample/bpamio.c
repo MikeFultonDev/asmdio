@@ -161,13 +161,6 @@ int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
   }
   rc = CHECK(bh->decb);
 
-  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n",
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N',
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N',
-    bh->bytes_used,
-    bh->block_size
-  );
-
   /*
    * Initialize record offset information so that next_record can be called.
    */
@@ -237,7 +230,6 @@ int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   char* block_char = (char*) (bh->block);
   unsigned short* block_hw = (unsigned short*) (bh->block);
-  unsigned short block_size = block_hw[0];  
 
   if (bh->next_record_start == NULL) {
     /*
@@ -253,6 +245,7 @@ int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts)
   }
 
   if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    unsigned short block_size = block_hw[0];
     if (bh->next_record_start >= &block_char[block_size]) {
       return 0;
     }
@@ -273,7 +266,9 @@ int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts)
      */
     struct iob* PTR32 iob = (struct iob* PTR32) bh->decb->stat_addr;
     unsigned short residual = iob->iobcsw.iobresct;
+    unsigned short block_size = bh->dcb->dcbblksi;
     unsigned short bytes_in_block = block_size - residual;
+
     if (bh->next_record_start >= &block_char[bytes_in_block]) {
       return 0;
     }

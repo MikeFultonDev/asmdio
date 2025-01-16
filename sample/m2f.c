@@ -25,6 +25,8 @@
 #include "filemap.h"
 #include "bpamio.h"
 #include "memdir.h"
+#include "fm.h"
+#include "fsio.h"
 
 static void syntax(FILE* stream)
 {
@@ -72,67 +74,33 @@ where <member> is the member name, in lower-case.\n\
   return;
 }
 
-/*
- * Open the file and initialize the file handle 
- */
-static FM_FileHandle* open_file(const char* filename, FM_FileHandle* fh, const FM_Opts* opts)
+static const char* filename_from_member(char* file_name, size_t file_name_len, const char* dir, const char* umem, const char* ext)
 {
-  struct stat stat_info;
-  struct f_cnvrt req = {SETCVTOFF, 0, 0};
-  int fd = open(filename, O_RDONLY);
-  if (fd < 0) {
-    return NULL;
-  }
+  int rc;
+  char mem[MEM_MAX+1];
+
   /*
-   * Turn auto-convert off
+   * Change uppercase blank padded name to lower-case name with no padded blanks.
    */
-  fcntl(fd, F_CONTROL_CVT, &req);
-
-  memset(fh, 0, sizeof(FM_FileHandle));
-
-  fh->fd = fd;
-
-  if (fstat(fd, &stat_info) < 0) {
-    close(fd);
+  strcpy(mem, umem);
+  lowercase(mem);
+  char* first_blank = strchr(mem, IBM1047_SPACE);
+  if (first_blank) {
+    *first_blank = '\0';
+  }
+  if (ext == NULL) {
+    rc = snprintf(file_name, file_name_len, "%s/%s", dir, mem);
+  } else {
+    rc = snprintf(file_name, file_name_len, "%s/%s.%s", dir, mem, ext);
+  }
+  if (rc == file_name_len) {
+    fprintf(stderr, "File name: <%s/%s> is too large\n", dir, mem);
     return NULL;
   }
-  fh->tag = stat_info.st_tag;
-
-  fh->active.data = fh->data_a;
-  fh->inactive.data = fh->data_b;
-
-  info(&opts->dbg, "Code page of input file:%d\n", fh->tag.ft_ccsid);
-  return fh;
+  return file_name;
 }
 
-/*
- * Close the file. Returns zero on success, non-zero otherwise
- */
-static int close_file(FM_FileHandle* fh, const FM_Opts* opts)
-{
-  return close(fh->fd);
-}
-
-/*
- * This code will calculate the newline character based
- * on looking at the file tag of the file being copied and,
- * if the file tag isn't specified, it will read the 
- * active data buffer for 'clues'.
- */
-static void calc_tag(FM_FileHandle* fh, const FM_Opts* opts)
-{
-  if (fh->tag.ft_ccsid == 819) {
-    fh->newline_char = 0x0A; /* ASCII newline */
-    fh->space_char = 0x20;   /* ASCII space   */
-  } else if (fh->tag.ft_ccsid == 1047) {
-    fh->newline_char = 0x15; /* EBCDIC newline */
-    fh->space_char = 0x40;   /* EBCDIC space   */
-  } else {
-    /* msf: this needs to be fleshed out */
-    fh->newline_char = 0x15; /* default to EBCDIC right now */
-    fh->space_char = 0x40;   /* default to EBCDIC right now */
-  }
-}
+#define MY_PATH_MAX (1024)
 
 static int copy_members_to_files(const char* dataset_pattern, const char* dir, FM_Opts* opts)
 {
@@ -144,15 +112,11 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
 
   char dataset_buffer[DS_MAX+1];
   const char* dataset;
+  char file_name[MY_PATH_MAX+1];
 
   strcpy(dataset_buffer, dataset_pattern);
   uppercase(dataset_buffer);
   dataset = dataset_buffer;
-
-  if (open_pds_for_read(dataset, &bh, &opts->dbg)) {
-    fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
-    return 4;
-  }
 
   MEMDIR* md = openmemdir(dataset_buffer, sorttime, sortreverse, &opts->dbg);
   struct mstat* me;
@@ -160,13 +124,26 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
     fprintf(stderr, "Unable to open memdir for dataset %s\n", dataset);
     return 4;
   }
+
+  if (open_pds_for_read(dataset, &bh, &opts->dbg)) {
+    fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
+    return 4;
+  }  
   
   struct mstat* mem;
   while (mem = readmemdir(md, &opts->dbg)) {
     if (mem->is_alias) {
       printf("create symbolic link %s to member: %s\n", mem->alias_name, mem->name);
     } else {
-      printf("copy member: %s\n", mem->name);
+      FM_FileHandle fh;
+      unsigned short ccsid = mem->ext_ccsid;
+      const char* ext = NULL; /* msf - for now - no fancy extension generation */
+      const char* filenamep = filename_from_member(file_name, sizeof(file_name), dir, mem->name, ext);
+      debug(&opts->dbg, "copy member %s to file %s\n", mem->name, filenamep);
+      if (!open_file_create(filenamep, &fh, ccsid, opts)) {
+        fprintf(stderr, "Unable to create file %s\n", filenamep);
+        return 12;
+      }
       if (find_member(&bh, mem->name, &opts->dbg)) {
         fprintf(stderr, "Unable to locate PDS member %s\n", mem->name);
         continue;
@@ -175,10 +152,11 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
       while (!read_block(&bh, &opts->dbg)) {
         blocks_read++;
         while (next_record(&bh, &opts->dbg)) {
-          printf("record <%.*s>\n", bh.next_record_len, bh.next_record_start);
+          write(fh.fd, bh.next_record_start, bh.next_record_len);
+          write(fh.fd, &fh.newline_char, 1);
         }
       }
-      fprintf(stderr, "Read %d blocks from member %s\n", blocks_read, mem->name);
+      close_file(&fh, opts);
     }
   }
   if (closememdir(md, &opts->dbg)) {
