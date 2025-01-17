@@ -81,10 +81,10 @@ static const char* filename_from_member(char* file_name, size_t file_name_len, c
   char mem[MEM_MAX+1];
 
   /*
-   * Change uppercase blank padded name to lower-case name with no padded blanks.
+   * Change blank padded name to name with no padded blanks.
    */
   strcpy(mem, umem);
-  lowercase(mem);
+
   char* first_blank = strchr(mem, IBM1047_SPACE);
   if (first_blank) {
     *first_blank = '\0';

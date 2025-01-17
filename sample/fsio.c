@@ -84,21 +84,21 @@ FM_FileHandle* open_file_create(const char* filename, FM_FileHandle* fh, unsigne
 
   fh->fd = fd;
   
-#if 0
-  attrib_t attributes = { 0 };
-  int attr_len = sizeof(attributes);
+  if (ext_ccsid != UNTAG_CCSID && ext_ccsid != BINARY_CCSID) {
+    attrib_t attributes = { 0 };
+    int attr_len = sizeof(attributes);
 
-  attributes.att_filetagchg = 1;
-  attributes.att_filetag.ft_ccsid = ext_ccsid;
-  attributes.att_filetag.ft_txtflag = 1;
+    attributes.att_filetagchg = 1;
+    attributes.att_filetag.ft_ccsid = ext_ccsid;
+    attributes.att_filetag.ft_txtflag = 1;
 
-  if (__fchattr(fd, &attributes, attr_len) < 0) {
-    perror("chattr");
-    fprintf(stderr, "Unable to set attributes for filename %s.\n", filename);
-    close(fd);    
-    return NULL;
+    if (__fchattr(fd, &attributes, attr_len) < 0) {
+      perror("chattr");
+      fprintf(stderr, "Unable to set attributes for filename %s.\n", filename);
+      close(fd);    
+      return NULL;
+    }
   }
-#endif
 
   /*
    * Turn auto-convert off
