@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #include "asmdiocommon.h"
 
@@ -118,17 +119,35 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
   uppercase(dataset_buffer);
   dataset = dataset_buffer;
 
+  clock_t start;
+  clock_t finish;
+
+  unsigned long long dir_time = 0;
+  unsigned long long read_openclose_time = 0;
+  unsigned long long write_openclose_time = 0;
+
+  unsigned long long find_time = 0;
+  unsigned long long read_time = 0;
+  unsigned long long write_time = 0;
+
+  start = clock();
   MEMDIR* md = openmemdir(dataset_buffer, sorttime, sortreverse, &opts->dbg);
   struct mstat* me;
   if (!md) {
     fprintf(stderr, "Unable to open memdir for dataset %s\n", dataset);
     return 4;
   }
+  finish = clock();
+  dir_time = finish - start;
+
+  start = clock();
 
   if (open_pds_for_read(dataset, &bh, &opts->dbg)) {
     fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
     return 4;
   }  
+  finish = clock();
+  read_openclose_time = finish - start;  
   
   struct mstat* mem;
   while (mem = readmemdir(md, &opts->dbg)) {
@@ -140,23 +159,44 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
       const char* ext = NULL; /* msf - for now - no fancy extension generation */
       const char* filenamep = filename_from_member(file_name, sizeof(file_name), dir, mem->name, ext);
       debug(&opts->dbg, "copy member %s to file %s\n", mem->name, filenamep);
+      start = clock();
       if (!open_file_create(filenamep, &fh, ccsid, opts)) {
         fprintf(stderr, "Unable to create file %s\n", filenamep);
         return 12;
       }
+      finish = clock();
+      write_openclose_time += (finish - start);
+      start = clock();
       if (find_member(&bh, mem->name, &opts->dbg)) {
         fprintf(stderr, "Unable to locate PDS member %s\n", mem->name);
         continue;
       }
+      finish = clock();
+      find_time += (finish - start);
+
+      start = clock();
       int blocks_read = 0;
       while (!read_block(&bh, &opts->dbg)) {
+        finish = clock();
+        read_time += (finish - start);
         blocks_read++;
         while (next_record(&bh, &opts->dbg)) {
-          write(fh.fd, bh.next_record_start, bh.next_record_len);
-          write(fh.fd, &fh.newline_char, 1);
+          start = clock();
+          buffer_write(&fh, bh.next_record_start, bh.next_record_len);
+          buffer_write(&fh, &fh.newline_char, 1);
+          finish = clock();
+          write_time += (finish - start);
         }
+        start = clock();
       }
+      start = clock();
+      write_file(&fh, opts);
+      finish = clock();
+      write_time += (finish - start);   
+      start = clock();   
       close_file(&fh, opts);
+      finish = clock();
+      write_openclose_time += (finish - start);
     }
   }
   if (closememdir(md, &opts->dbg)) {
@@ -164,10 +204,24 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
     return 12;
   }
 
+  start = clock();
   if (close_pds(&bh, &opts->dbg)) {
     fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
     rc |= 8;
   }
+  finish = clock();
+  read_openclose_time += (finish - start);
+
+
+  printf("Relative Timings:\n");
+  printf(" Directory:        %llu\n", dir_time);
+  printf(" Find:             %llu\n", find_time);
+  printf(" Read:             %llu\n", read_time);
+  printf(" Write:            %llu\n", write_time);
+  printf(" Read Open/Close:  %llu\n", read_openclose_time);
+  printf(" Write Open/Close: %llu\n", write_openclose_time);
+
+
   return rc;
 }
 

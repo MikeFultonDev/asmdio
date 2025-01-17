@@ -16,6 +16,11 @@
   #define IBM1047_NL    0x15
   #define ISO8859_SPACE 0x20
   #define IBM1047_SPACE 0x40
+
+  /*
+   * msf: need to make this dynamic but for now, support write of text members up to 2**24 bytes (16MB)
+   */
+  #define MAX_TEXT_FILE_SIZE (1<<24) 
   
   typedef struct {
     int cur_value;
@@ -68,6 +73,9 @@
 
     char data_a[REC_LEN];
     char data_b[REC_LEN];
+    char* file_buffer;
+    size_t file_buffer_max;
+    size_t file_buffer_cur;
     size_t line_num;
   } FM_FileHandle;
 
