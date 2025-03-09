@@ -8,6 +8,7 @@
   #if 0
   #pragma linkage(STOWA,    OS)
   #pragma linkage(NOTEA,    OS)
+  #pragma linkage(POINTA,   OS)
   #pragma linkage(DESERVA,  OS)
   #pragma linkage(S99A,     OS)
   #pragma linkage(S99MSGA,  OS)
@@ -34,6 +35,7 @@
   int WRITEA(struct decb* PTR32 decb);
   int CHECKA(struct decb* PTR32 decb);
   unsigned int NOTEA(struct ihadcb* PTR32 dcb);
+  unsigned int POINTA(struct ihadcb* PTR32 dcb, unsigned int ttr);
   int DESERVA(struct desp* PTR32 desp);
   int STOWA(unsigned int list, unsigned int dcb);
   int CLOSEA(struct closecb* PTR32 dcb);
@@ -57,6 +59,7 @@
   extern int WRITEA;
   extern int CHECKA;
   extern int NOTEA;
+  extern int POINTA;
   extern int DESERVA;
   extern int STOWA;
   extern int CLOSEA;
@@ -72,6 +75,7 @@
   #pragma variable(WRITEA,   NORENT)
   #pragma variable(CHECKA,   NORENT)
   #pragma variable(NOTEA,    NORENT)
+  #pragma variable(POINTA,   NORENT)
   #pragma variable(DESERVA,  NORENT)
   #pragma variable(STOWA,    NORENT)
   #pragma variable(CLOSEA,   NORENT)
@@ -88,6 +92,7 @@
 	#define WRITEA(decb)      call31asm("WRITEA", &WRITEA, 1, decb)
 	#define CHECKA(decb)      call31asm("CHECKA", &CHECKA, 1, decb)
 	#define NOTEA(decb)       call31asm("NOTEA", &NOTEA, 1, decb)
+	#define POINTA(decb,ttr)  call31asm("POINTA", &POINTA, 2, decb, ttr)
 	#define DESERVA(desp)     call31asm("DESERVA", &DESERVA, 1, desp)
 	#define STOWA(lst,dcb)    call31asm("STOWA", &STOWA, 2, list, dcb)
 	#define CLOSEA(closecb)   call31asm("CLOSEA", &CLOSEA, 1, closecb)

@@ -37,6 +37,7 @@
 
   int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
   int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
+  int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts);
 
   int close_pds(FM_BPAMHandle* bh, const DBG_Opts* opts);
 #endif

@@ -5,5 +5,7 @@
 
 // Convert a character string to uppercase.
 int uppercase(char *string);
+// Convert a character string to lowercase.
+int lowercase(char *string);
 
 #endif

@@ -41,8 +41,8 @@ For applications that need to perform common I/O operations, the Language Enviro
   - [DESERV DFSMS Information](https://www.ibm.com/docs/en/zos/3.1.0?topic=smde-funcget-all)
 - [SMDE Macro](https://tech.mikefulton.ca/SMDEMacro): Directory Entry information returned from DESERV GET.
 - [ISITMGD](https://www.ibm.com/docs/en/zos/3.1.0?topic=pmp-using-isitmgd-determine-whether-data-set-is-system-managed) Macro: Determine if data set is SMS managed and info about a PDSE.
-- [NOTE](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-note-macro-provide-relative-position) Macro: Return the TTRz that can subsequently be used by POINT.
-- [POINT](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-point-macro-position-block) Macro: Cause the next READ or WRITE to be from the TTRz specified.
+- [NOTE](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-note-macro-provide-relative-position) [Macro](https://tech.mikefulton.ca/NOTEMacro): Return the TTRz that can subsequently be used by POINT.
+- [POINT](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-point-macro-position-block) [Macro](https://tech.mikefulton.ca/POINTMacro): Cause the next READ or WRITE to be from the TTRz specified.
 - [IHAPDS Macro](https://tech.mikefulton.ca/IHAPDSMacro) PDSD2 Directory Entry for input to STOW.
 - [STOW](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-stow-macro-update-directory) [Macro](https://tech.mikefulton.ca/STOWMacro): Modify (Add, Delete, Replace, Change) a member in the directory.
 - [DECB Macro](https://tech.mikefulton.ca/DECBMacro): Input/Output for the READ and WRITE services.

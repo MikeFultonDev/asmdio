@@ -607,7 +607,11 @@ MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const D
     print_members(de_mstat, de_members);
   }
 
-  return merge_mstat(mn_mstat, mn_members, de_mstat, de_members, sort_time, sort_reverse, opts);
+  MEMDIR* merge = merge_mstat(mn_mstat, mn_members, de_mstat, de_members, sort_time, sort_reverse, opts);
+
+  close_pds(&bh, opts);
+
+  return merge;
 }
 
 struct mstat* readmemdir(MEMDIR* memdir, const DBG_Opts* opts)

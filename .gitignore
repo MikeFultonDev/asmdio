@@ -25,7 +25,8 @@ CEEDUMP.*
 # Vim backup files
 *~
 
-.vscode
+# Mac stuff
+.DS_Store
 
 # Compiled executable files
 basicread
