@@ -265,7 +265,7 @@ NOTEA_DSAL    EQU 0
 DIOA     CSECT 
          ENTRY POINTA
 POINTA    ASDPRO BASE_REG=3,USR_DSAL=POINTA_DSAL
-         ST    0,0         *** POINT not working correctly yet ***
+*         ST    0,0         *** POINT not working correctly yet ***
 
 * Call POINT function 
          USING POINTA_PARMS,R1
@@ -273,7 +273,7 @@ POINTA    ASDPRO BASE_REG=3,USR_DSAL=POINTA_DSAL
 *
          MVC POINTS,POINTT
 
-         L   R4,POINTA_DCB
+         LA   R4,POINTA_DCB
          LA  R5,POINTA_TTR
          POINT 4,5,MF=(E,POINTS)
 *
@@ -281,7 +281,7 @@ POINTA_EXIT   DS    0H
          ASDEPI
 
 * Template for POINT
-POINTT   POINT TYPE=ABS,MF=L
+POINTT   POINT TYPE=REL,MF=L
 
          DROP
          LTORG
@@ -291,7 +291,7 @@ POINTA_DCB     DS AL4
 POINTA_TTR     DS F
 
 POINTS   DS 0F
-         POINT TYPE=ABS,MF=L
+         POINT TYPE=REL,MF=L
 POINTL        EQU *-POINTS
 POINTA_DSAL    EQU POINTL
 
