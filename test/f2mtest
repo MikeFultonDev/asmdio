@@ -17,11 +17,11 @@ dtouch "${hlq}.${mlq}.dbg"
 dtouch "${hlq}.${mlq}.o"
 dtouch -l 137 -r vba "${hlq}.${mlq}.lst"
 
-time sample/f2m src "${hlq}.${mlq}" '*.*'
-time sample/f2m include "${hlq}.${mlq}" '*.*'
+time bin/f2m src "${hlq}.${mlq}" '*.*'
+time bin/f2m include "${hlq}.${mlq}" '*.*'
 
 #
 # run again with all members already existing
 #
-time sample/f2m src "${hlq}.${mlq}" '*.*'
-time sample/f2m include "${hlq}.${mlq}" '*.*'
+time bin/f2m src "${hlq}.${mlq}" '*.*'
+time bin/f2m include "${hlq}.${mlq}" '*.*'

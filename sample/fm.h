@@ -49,8 +49,10 @@
     size_t next_record_len;
     size_t block_size;
     size_t bytes_used;
-    unsigned int ttr;
-    int ttr_known:1;
+    unsigned int memstart_ttr;
+    unsigned int pdsstart_ttr;
+    int memstart_ttr_known:1;
+    int pdsstart_ttr_known:1;
     size_t line_num;
   } FM_BPAMHandle;
 

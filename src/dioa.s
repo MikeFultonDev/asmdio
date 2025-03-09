@@ -255,6 +255,46 @@ NOTEA_PARMS   DSECT
 NOTEA_DCB     DS AL4
 NOTEA_DSAL    EQU 0
 
+*| POINTA..... POINT DCB, return results
+**| https://tech.mikefulton.ca/POINTMacro
+**| Input:
+**|   R1 -> pointer to DCB and TTR
+**| Output:
+**|   R15 -> TTRz returned if successful.
+
+DIOA     CSECT 
+         ENTRY POINTA
+POINTA    ASDPRO BASE_REG=3,USR_DSAL=POINTA_DSAL
+         ST    0,0         *** POINT not working correctly yet ***
+
+* Call POINT function 
+         USING POINTA_PARMS,R1
+         LA    R6,POINTS
+*
+         MVC POINTS,POINTT
+
+         L   R4,POINTA_DCB
+         LA  R5,POINTA_TTR
+         POINT 4,5,MF=(E,POINTS)
+*
+POINTA_EXIT   DS    0H
+         ASDEPI
+
+* Template for POINT
+POINTT   POINT TYPE=ABS,MF=L
+
+         DROP
+         LTORG
+
+POINTA_PARMS   DSECT
+POINTA_DCB     DS AL4
+POINTA_TTR     DS F
+
+POINTS   DS 0F
+         POINT TYPE=ABS,MF=L
+POINTL        EQU *-POINTS
+POINTA_DSAL    EQU POINTL
+
 **| DESERVA..... DESERV, return results
 **| https://tech.mikefulton.ca/DESERVMacro
 **| Input:
@@ -427,7 +467,6 @@ SYEXDEQA ASDPRO BASE_REG=3,USR_DSAL=SYEXDEQA_DSAL
          USING SYEXDEQA_PARMS,R1
          LA    R10,SYEXDEQS
 *
-         LA  6,SYEXDEQS
          MVC SYEXDEQS,SYEXDEQT
          L   R7,DQNAMEA
          L   R8,DRNAMEA
@@ -436,9 +475,9 @@ SYEXDEQA ASDPRO BASE_REG=3,USR_DSAL=SYEXDEQA_DSAL
 
          ASDEPI
 
-* Template for ENQ
+* Template for DEQ
 
-SYEXDEQT  DEQ (7,8,9,SYSTEMS),RET=HAVE,MF=L
+SYEXDEQT DEQ (7,8,9,SYSTEMS),RET=HAVE,MF=L         
 
          DROP
          LTORG
@@ -449,7 +488,7 @@ DRNAMEA DS        AL4
 DRNAMEL DS        1F
 
 SYEXDEQS DS 0F
-         ENQ (2,3,E,4,SYSTEMS),RET=HAVE,MF=L
+         DEQ (7,8,9,SYSTEMS),RET=HAVE,MF=L
 SYEXDEQL         EQU *-SYEXDEQS
 SYEXDEQA_DSAL    EQU SYEXDEQL
 
@@ -466,7 +505,6 @@ SYEXENQA ASDPRO BASE_REG=3,USR_DSAL=SYEXENQA_DSAL
          USING SYEXENQA_PARMS,R1
          LA    R10,SYEXENQS
 *
-         LA  6,SYEXENQS
          MVC SYEXENQS,SYEXENQT
          L   R7,EQNAMEA
          L   R8,ERNAMEA
@@ -477,7 +515,7 @@ SYEXENQA ASDPRO BASE_REG=3,USR_DSAL=SYEXENQA_DSAL
 
 * Template for ENQ
 
-SYEXENQT  ENQ (7,8,E,9,SYSTEMS),RET=USE,MF=L
+SYEXENQT ENQ (7,8,E,9,SYSTEMS),RET=USE,MF=L         
 
          DROP
          LTORG
@@ -488,7 +526,7 @@ ERNAMEA DS        AL4
 ERNAMEL DS        1F
 
 SYEXENQS DS 0F
-         ENQ (2,3,E,4,SYSTEMS),RET=USE,MF=L
+         ENQ (7,8,E,9,SYSTEMS),RET=USE,MF=L
 SYEXENQL         EQU *-SYEXENQS
 SYEXENQA_DSAL    EQU SYEXENQL
 

@@ -381,7 +381,7 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
 
   bh->line_num = 1;
   fh.line_num = 1;
-  bh->ttr_known = 0;
+  bh->memstart_ttr_known = 0;
   while (read_line(&fh, opts)) {
     if (can_add_line(&fh, bh, opts)) {
       truncated |= add_line(bh, &fh, opts);

@@ -100,6 +100,9 @@ static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
   handle->block_size = dcb->dcbblksi;
   handle->bytes_used = 0;
 
+  handle->pdsstart_ttr = NOTE(dcb);
+  handle->pdsstart_ttr_known = 1;
+
   return 0;
 }
 
@@ -212,9 +215,9 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     return rc;
   }
 
-  if (!bh->ttr_known) {
-    bh->ttr = NOTE(bh->dcb);
-    bh->ttr_known = 1;
+  if (!bh->memstart_ttr_known) {
+    bh->memstart_ttr = NOTE(bh->dcb);
+    bh->memstart_ttr_known = 1;
   }
 
   bh->bytes_used = 0;
@@ -560,7 +563,7 @@ int write_member_dir_entry(const struct mstat* mstat, FM_BPAMHandle* bh, const D
     return 4;
   }
 
-  add_mem_stats(stowlistadd, mstat, bh->ttr);
+  add_mem_stats(stowlistadd, mstat, bh->memstart_ttr);
 
   stowlist->iff = stowlistiff_template;
 
@@ -823,6 +826,12 @@ struct mem_node* pds_mem(FM_BPAMHandle* bh, const DBG_Opts* opts)
   last_ptr = NULL;
   int rc;
   int offset;
+
+  unsigned int ttr = NOTE(bh->dcb);
+  if (ttr != 0) {
+    fprintf(stderr, "Need to perform pds_mem before any read/write operations\n");
+    return NULL;
+  }
 
   /*
    * Read the PDS directory one block at a time until either the 

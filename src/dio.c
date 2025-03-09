@@ -114,6 +114,10 @@ unsigned NOTE(struct ihadcb* PTR32 dcb)
 {
   return NOTEA(dcb);
 }
+unsigned POINT(struct ihadcb* PTR32 dcb, unsigned int ttr)
+{
+  return POINTA(dcb, ttr);
+}
 unsigned DESERV(struct desp* PTR32 desp)
 {
   return DESERVA(desp);

@@ -1,10 +1,9 @@
 
 # Meant to be source'd. Set up environment variables for build and clean
 
-# Default build is 31-bit.  Use "MODE=64" envar to build a 64-bit version.
-# Unfortunately it appears 64-bit is currently broken.
+# Default build is 64-bit.  Use "MODE=31" envar to build a 31-bit version.
 if [ -z "${MODE}" ]; then
-  MODE='31'
+  MODE='64'
 fi
 
 if [ "${MODE}" = "64" ]; then
