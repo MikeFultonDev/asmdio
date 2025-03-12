@@ -229,8 +229,6 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
     return rc;
   }
 
-  
-
   rc = CHECK(decb);
   if (rc) {
     fprintf(stderr, "Read to end of member. rc:%d\n", rc);
@@ -241,10 +239,15 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
   dumpstg(stdout, block, dcb->dcbblksi);
   fprintf(stdout, "\n");
 
+#ifdef TEST_POINT
+  unsigned int mem_start = NOTE(dcb);
+  fprintf(stdout, "Member Start TTR: %d\n", mem_start);
+#endif
+
   iob = (struct iob* PTR32) decb->stat_addr;
   fprintf(stdout, "Residual count:%d\n", iob->iobcsw.iobresct);
 
-  /* Read another block (should fail) */
+  /* Read another block (CHECK should fail) */
   rc = READ(decb);
   if (rc) {
     fprintf(stderr, "Unable to perform READ. rc:%d\n", rc);
@@ -252,10 +255,35 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
   }
 
   rc = CHECK(decb);
-  if (rc) {
+  if (!rc) {
     fprintf(stderr, "Read to end of member. rc:%d\n", rc);
     return rc;
   }
+
+#ifdef TEST_POINT
+  rc = POINT(dcb, mem_start);
+  if (rc) {
+    fprintf(stderr, "Failed to move pointer back on member. rc:%d\n", rc);
+    return rc;
+  }
+
+  /* Read first block again */
+  rc = READ(decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform RE-READ. rc:%d\n", rc);
+    return rc;
+  }
+
+  rc = CHECK(decb);
+  if (rc) {
+    fprintf(stderr, "RE-Read to end of member. rc:%d\n", rc);
+    return rc;
+  }
+
+  fprintf(stdout, "Block re-read:%p (%d bytes)\n", block, dcb->dcbblksi);
+  dumpstg(stdout, block, dcb->dcbblksi);
+  fprintf(stdout, "\n");  
+#endif
 
   closecb = MALLOC31(sizeof(struct closecb));
   if (!closecb) {
@@ -276,11 +304,6 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
     return rc;
   }
   FREE31(opencb);
-
-  rc = ddfree(&dd);
-  if (rc) {
-    return 4;
-  }
 
   return 0;
 }

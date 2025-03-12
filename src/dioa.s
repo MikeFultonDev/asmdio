@@ -243,7 +243,7 @@ NOTEA    ASDPRO BASE_REG=3,USR_DSAL=NOTEA_DSAL
          USING NOTEA_PARMS,R1
          L   R1,NOTEA_DCB
          NOTE (1)
-
+         LR    R15,R1
 *
 NOTEA_EXIT   DS    0H
          ASDEPI
@@ -265,16 +265,21 @@ NOTEA_DSAL    EQU 0
 DIOA     CSECT 
          ENTRY POINTA
 POINTA    ASDPRO BASE_REG=3,USR_DSAL=POINTA_DSAL
-*         ST    0,0         *** POINT not working correctly yet ***
+         ST    0,0         *** POINT not working correctly yet ***
 
 * Call POINT function 
          USING POINTA_PARMS,R1
          LA    R6,POINTS
 *
          MVC POINTS,POINTT
-
-         LA   R4,POINTA_DCB
-         LA  R5,POINTA_TTR
+* Following is for debug
+         XGR   R4,R4
+         XGR   R5,R5
+         L     R4,POINTA_DCB
+         LA    R5,POINTA_TTR
+         XGR   R6,R6
+         ICM   15,R6,85(R4)
+* End of debug stuff
          POINT 4,5,MF=(E,POINTS)
 *
 POINTA_EXIT   DS    0H
