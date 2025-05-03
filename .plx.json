@@ -1,0 +1,14 @@
+{
+    "macros": [
+        "path1",
+        "path2",
+        {
+            "connectionName": "connection1",
+            "connectionType": "zosmf",
+            "paths": [
+                "NAME.OF.DATASET1",
+                "NAME.OF.DATASET2"
+            ]
+        }
+    ]
+}
