@@ -653,6 +653,17 @@ int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, co
   struct desp* PTR32 desp;
   struct smde* PTR32 smde;
 
+  /*
+   * It is important to find the member BEFORE anything else when the handle is just
+   * opened because I don't know how to position the file pointer to the directory
+   * other than by ensuring it is the first thing done when the dataset is opened.
+   * MSF - need to read the blocks in FB mode otherwise S002 RC A0 will occur: https://www.ibm.com/docs/en/zos/2.2.0?topic=messages-iec036i
+   */
+  struct mem_node match_node = { 0 };
+  if (!find_mem(bh, mem, &match_node, opts)) {
+    return 4;
+  }
+    
   desp = find_desp(bh, mem, opts);
   if (!desp) {
     return 4;
@@ -665,10 +676,6 @@ int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, co
     return 4;
   }
 
-  struct mem_node match_node = { 0 };
-  if (!find_mem(bh, mem, &match_node, opts)) {
-    return 4;
-  }
   struct mstat memnode_mstat = { 0 };
   if (!memnode_to_mstat(&match_node, &memnode_mstat, opts)) {
     return 4;
@@ -763,4 +770,35 @@ int ispf_deq_dataset_member(const char* ds, const char* wmem)
   free(rname);
   free(qname);
   return rc;
+}
+
+struct mstat* create_mstat(struct mstat* mstat, char* userid, char* alias_name, char* name, void* ttr, int num_lines, const DBG_Opts* opts)
+{
+  time_t cur_time;
+  unsigned int mem_id = (*(unsigned int*) ttr) >> 8;
+  mstat->mem_id = mem_id;
+  if (alias_name != NULL) {
+    mstat->is_alias = 1;
+    mstat->alias_name = alias_name;
+  } else {
+    mstat->is_alias = 0;
+    mstat->name = name;
+  }
+
+  time ( &cur_time );
+  mstat->ispf_stats = 1;
+
+  mstat->ispf_created = cur_time;
+  mstat->ispf_changed = cur_time;
+
+  __getuserid(userid, USERID_LEN);
+  mstat->ispf_id = userid;
+
+  mstat->ispf_version = 1;
+  mstat->ispf_modification = 1;
+  mstat->ispf_current_lines = num_lines;
+  mstat->ispf_initial_lines = num_lines;
+  mstat->ispf_modified_lines = num_lines;
+
+  return mstat;
 }

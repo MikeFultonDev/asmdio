@@ -1,0 +1,8 @@
+{
+    "macros": [
+    ],
+    "buildSettings": {
+        "serverBuildTool": "~/grubServer/grub-main/bin/grub_server",
+        "remoteOefDir": "/usr/lpp/IBM/foz/v1r1/bin"
+    }  
+}

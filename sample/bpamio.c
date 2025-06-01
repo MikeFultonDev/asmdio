@@ -116,7 +116,6 @@ static int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
   return bpam_open(handle, OPEN_OUTPUT, opts);
 }
 
-
 static void validate_var_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   if (!opts->debug) {
@@ -163,6 +162,7 @@ int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     return rc;
   }
   rc = CHECK(bh->decb);
+  debug(opts, "RC:%d from CHECK on READ of block.\n", rc);
 
   /*
    * Initialize record offset information so that next_record can be called.
