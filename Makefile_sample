@@ -7,7 +7,7 @@ csource := $(shell find $(SRCDIR) -type f -name *.c)
 cobjs   := $(patsubst $(SRCDIR)/%,$(BLDDIR)/%,$(csource:.c=.o))
 objects := $(cobjs)
 cdeps   := $(cobjs:.o=.d)
-pgms    := $(BINDIR)/f2m $(BINDIR)/m2f $(BINDIR)/mlsx $(BINDIR)/mchtag $(BINDIR)/readupdate
+pgms    := $(BINDIR)/f2m $(BINDIR)/m2f $(BINDIR)/mlsx $(BINDIR)/mchtag $(BINDIR)/readupdate $(BINDIR)/readwriterec
 all: $(pgms)
 
 clean:
@@ -21,6 +21,9 @@ $(BLDDIR)/%.d: $(SRCDIR)/%.c
 	rm -f $@.$$$$
 
 include $(cdeps)
+
+$(BINDIR)/readwriterec: $(BLDDIR)/readwriterec.o $(BLDDIR)/msg.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/memdir.o $(BLDDIR)/$(archive)
+	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
 
 $(BINDIR)/readupdate: $(BLDDIR)/readupdate.o $(BLDDIR)/msg.o $(BLDDIR)/bpamio.o $(BLDDIR)/ztime.o $(BLDDIR)/memdir.o $(BLDDIR)/$(archive)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst

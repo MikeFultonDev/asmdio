@@ -13,13 +13,14 @@
     unsigned int version;
   } MEMDIR;
 
-
   /*
    * struct mstat: provide information for a given
    * member of a PDS or PDSE.
    */
 
-  struct mstat {
+  #define USERID_LEN (8)
+
+   struct mstat {
     int    ispf_stats:1;                        /* true if ISPF statistics saved for this member */
     int    is_alias:1;                          /* true if this is an alias to a member          */
     int    has_ext:1;                           /* true if this member has extended attributes   */
@@ -59,4 +60,7 @@
 
   int ispf_enq_dataset_member(const char* dataset, const char* wmem);
   int ispf_deq_dataset_member(const char* dataset, const char* wmem);
+
+  struct mstat* create_mstat(struct mstat* mstat, char* userid, char* alias_name, char* name, void* ttr, int num_lines, const DBG_Opts* opts);
+
 #endif

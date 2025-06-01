@@ -764,3 +764,34 @@ int ispf_deq_dataset_member(const char* ds, const char* wmem)
   free(qname);
   return rc;
 }
+
+struct mstat* create_mstat(struct mstat* mstat, char* userid, char* alias_name, char* name, void* ttr, int num_lines, const DBG_Opts* opts)
+{
+  time_t cur_time;
+  unsigned int mem_id = (*(unsigned int*) ttr) >> 8;
+  mstat->mem_id = mem_id;
+  if (alias_name != NULL) {
+    mstat->is_alias = 1;
+    mstat->alias_name = alias_name;
+  } else {
+    mstat->is_alias = 0;
+    mstat->name = name;
+  }
+
+  time ( &cur_time );
+  mstat->ispf_stats = 1;
+
+  mstat->ispf_created = cur_time;
+  mstat->ispf_changed = cur_time;
+
+  __getuserid(userid, USERID_LEN);
+  mstat->ispf_id = userid;
+
+  mstat->ispf_version = 1;
+  mstat->ispf_modification = 1;
+  mstat->ispf_current_lines = num_lines;
+  mstat->ispf_initial_lines = num_lines;
+  mstat->ispf_modified_lines = num_lines;
+
+  return mstat;
+}
