@@ -1,7 +1,7 @@
 #ifndef __IHAPDS_H__
 #define __IHAPDS_H__
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 
 #pragma pack(1)
 

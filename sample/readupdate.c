@@ -16,6 +16,7 @@
 #include "bpamio.h"
 #include "memdir.h"
 #include "dbgopts.h"
+#include "ispf.h"
 
 int main(int argc, char* argv[])
 {

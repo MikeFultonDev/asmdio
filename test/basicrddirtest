@@ -1,0 +1,24 @@
+#!/bin/env bash
+ME=$(basename $0)
+MYDIR="$(cd "$(dirname "$0")" > /dev/null 2>&1 && pwd -P)"
+ROOT="${MYDIR}/../"
+cd "${ROOT}"
+
+set -e
+
+FBDS="$(hlq).DIO.FB.RDDIR"
+drm -f "${FBDS}"
+dtouch -rfb -l80 "${FBDS}"
+decho  "Hello There
+Joe" "${FBDS}(MEM1)"
+
+VBDS="$(hlq).DIO.VB.RDDIR"
+drm -f "${VBDS}"
+dtouch -rfb -l80 "${VBDS}"
+decho  "Hello There
+Jeff" "${VBDS}(MEM1)"
+
+bin/basicrddir "${FBDS}"
+bin/basicrddir "${VBDS}"
+
+exit $?

@@ -1,7 +1,7 @@
 #ifndef __OPENCB__
 #define __OPENCB__ 1
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 
 #pragma pack(1)
 struct opencb {

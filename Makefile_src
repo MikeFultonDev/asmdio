@@ -1,6 +1,7 @@
 MACDIR=maclib
 SRCDIR=src
 BLDDIR=obj
+DEPDIR=src/deps
 
 archive=asmdio.a
 
@@ -9,24 +10,22 @@ asource := $(shell find $(SRCDIR) -type f -name *.s)
 cobjs   := $(patsubst $(SRCDIR)/%,$(BLDDIR)/%,$(csource:.c=.o))
 aobjs   := $(patsubst $(SRCDIR)/%,$(BLDDIR)/%,$(asource:.s=.o))
 objects := $(cobjs) $(aobjs)
-cdeps   := $(cobjs:.o=.d)
+cdeps   := $(patsubst $(SRCDIR)/%,$(DEPDIR)/%,$(csource:.c=.d))
 
 all: $(BLDDIR)/$(archive)
 
 $(BLDDIR)/$(archive): $(objects)
 	ar -r $@ $^
-	
+
 clean:
-	rm -f $(objects)
+	rm -rf $(objects) $(DEPDIR) $(BLDDIR)/$(archive)
 
-$(BLDDIR)/%.d: $(SRCDIR)/%.c
-	mkdir -p $(BLDDIR) ; \
+$(DEPDIR)/%.d: $(SRCDIR)/%.c
+	mkdir -p $(DEPDIR) ; \
 	rm -f $@; \
-	clang -MM $(CPPFLAGS) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
+	clang -MM -MP $(CPPFLAGS) $< > $@;
 
-include $(deps)
+include $(cdeps)
 
 $(BLDDIR)/%.o: $(SRCDIR)/%.c
 	mkdir -p $(BLDDIR) ;

@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdio.h>
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "mlsxopts.h"
 
 void init_opts(MLSX_Opts* opts) 

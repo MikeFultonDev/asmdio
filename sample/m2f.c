@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 
 #include "util.h"
 #include "dio.h"

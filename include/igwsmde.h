@@ -1,7 +1,7 @@
 #ifndef __IGWSMDE_H__
 #define __IGWSMDE_H__
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 
 #pragma pack(1)
 

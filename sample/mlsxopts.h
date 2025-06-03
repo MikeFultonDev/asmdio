@@ -1,7 +1,7 @@
 #ifndef __MLSX_OPTS_H__
   #define __MLSX_OPTS_H__
 
-  #include "asmdiocommon.h"
+  #include "asmdio.h"
   #include "dbgopts.h"
 
   typedef struct {

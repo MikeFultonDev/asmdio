@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "dio.h"
 #include "mem.h"
 #include "ihadcb.h"
@@ -276,11 +276,6 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
     return rc;
   }
   FREE31(opencb);
-
-  rc = ddfree(&dd);
-  if (rc) {
-    return 4;
-  }
 
   return 0;
 }

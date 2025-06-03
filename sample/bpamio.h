@@ -1,7 +1,7 @@
 #ifndef __BPAMIO_H__
   #define __BPAMIO_H__ 1
 
-  #include "asmdiocommon.h"
+  #include "asmdio.h"
   #include "fm.h"
   #include "dbgopts.h"
 

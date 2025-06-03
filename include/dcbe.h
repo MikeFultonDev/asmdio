@@ -1,7 +1,7 @@
 #ifndef __DCBE__
 #define __DCBE__ 1
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 
 #pragma pack(1)
 

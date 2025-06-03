@@ -35,6 +35,9 @@
   };
   #pragma pack(pop)
 
+  #define EXTENDED_ISPF_DISK_STATS_LEN (sizeof(struct ispf_disk_stats))
+  #define ISPF_DISK_STATS_LEN (EXTENDED_ISPF_DISK_STATS_LEN - (sizeof(unsigned int)*3))
+
   struct ispf_stats {
     struct tm create_time;
     struct tm mod_time;
@@ -47,4 +50,8 @@
     unsigned char sclm;
   };
 
+  int ispf_disk_stats_to_ispf_stats(const char* userdata, int userdata_len, struct ispf_stats* is);
+  int ispf_enq_dataset_member(const char* dataset, const char* wmem);
+  int ispf_deq_dataset_member(const char* dataset, const char* wmem);
+  
 #endif

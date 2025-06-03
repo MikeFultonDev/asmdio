@@ -4,7 +4,7 @@
   #include <glob.h>
   #include <sys/stat.h>
   #include <stddef.h>
-  #include "asmdiocommon.h"
+  #include "asmdio.h"
   #include "dio.h"
 
   #define BINARY_CCSID 65535

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "dio.h"
 #include "mem.h"
 #include "ihadcb.h"
@@ -11,7 +11,6 @@
 #include "s99.h"
 #include "iob.h"
 #include "util.h"
-
 
 /*
  * Basic Read of a PDS Directory:
@@ -204,10 +203,17 @@ int main(int argc, char* argv[]) {
         unsigned long long tod = *((long long *) ext_attr->smde_change_timestamp);
         time_t ltime = convert_tod_to_ltime(tod);
 
-        fprintf(stdout, " CCSID: 0x%x%x %8.8s %s\n",
+        fprintf(stdout, " CCSID: 0x%x%x %8.8s %s ",
           ext_attr->smde_ccsid[0], ext_attr->smde_ccsid[1], ext_attr->smde_userid_last_change, ctime(&ltime));
       } else {
-        fprintf(stdout, "\n");
+        fprintf(stdout, " NO CCSID ");
+      }
+      if (smde->smde_usrd_off.smde_pmar_off != 0) {
+        char* PTR32 user_data = (((char*) smde) + smde->smde_usrd_off.smde_pmar_off);
+        int user_data_len = smde->smde_usrd_len.smde_pmar_len;
+        fprintf(stdout, " User Data:%p Length:%d\n", user_data, user_data_len);
+      } else {
+        fprintf(stdout, " No ISPF User Data\n");
       }
       smde = (struct smde* PTR32) (((char*) smde) + smde->smde_len);
     }

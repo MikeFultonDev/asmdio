@@ -1,7 +1,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "util.h"
 
 int uppercase(char *string) {

@@ -13,13 +13,14 @@
     unsigned int version;
   } MEMDIR;
 
-
   /*
    * struct mstat: provide information for a given
    * member of a PDS or PDSE.
    */
 
-  struct mstat {
+  #define USERID_LEN (8)
+
+   struct mstat {
     int    ispf_stats:1;                        /* true if ISPF statistics saved for this member */
     int    is_alias:1;                          /* true if this is an alias to a member          */
     int    has_ext:1;                           /* true if this member has extended attributes   */
@@ -50,13 +51,43 @@
     void*  _reserved;                           /* NULL (may change in the future) */
   };
 
+  /*
+   * openmemdir: given a dataset, and how to sort (defaults to name, but 'time' can be specified), and
+   *             whether to sort in reverse or not, return a sorted list of member name entries, 
+   *             or NULL if an error occurred.
+   */
   MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const DBG_Opts* opts);
+
+  /*
+   * Given a memdir, return the next member in the sorted list
+   */
   struct mstat* readmemdir(MEMDIR* memdir, const DBG_Opts* opts);
+
+  /*
+   * Given a memdir, close any open files and free any storage associated with the memdir.
+   */
   int closememdir(MEMDIR* memdir, const DBG_Opts* opts);
 
+  /*
+   * Given an open BPAM Handle for a dataset, and a corresponding mstat member directory entry,
+   * write the entry to the dataset (via STOW).
+   */
   int writememdir_entry(FM_BPAMHandle* bh, const struct mstat* mstat, const DBG_Opts* opts);
+
+  /*
+   *  Given an open BPAM Handle for a dataset, and the name of a member, read the mstat directory information
+   *  from the dataset and populate the mstat passed in.
+   */
   int readmemdir_entry(FM_BPAMHandle* bh, const char* memname, struct mstat* mstat, const DBG_Opts* opts);
 
-  int ispf_enq_dataset_member(const char* dataset, const char* wmem);
-  int ispf_deq_dataset_member(const char* dataset, const char* wmem);
+  /*
+   * Given a userid, alias name, name, TTR, and number of lines in a member, populate an mstat object and
+   * return it.
+   */
+  struct mstat* create_mstat(struct mstat* mstat, char* userid, const char* alias_name, const char* name, const void* ttr, int num_lines, int ccsid, const DBG_Opts* opts);
+
+  /*
+   * print_member - print out a member and optionally print a header for the member
+   */
+  void print_member(struct mstat* mstat, int print_header);
 #endif

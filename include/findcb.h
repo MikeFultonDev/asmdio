@@ -1,7 +1,7 @@
 #ifndef __FINDCB__
 #define __FINDCB__ 1
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 
 #pragma pack(1)
 struct findcb {

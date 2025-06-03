@@ -2,17 +2,17 @@
 #define _ISOC99_SOURCE
 #define _POSIX_SOURCE
 #define _OPEN_SYS_FILE_EXT 1
-#define _OPEN_SYS_EXT
+#define _OPEN_SYS_EXT 1
 #define _XOPEN_SOURCE_EXTENDED 1
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/ps.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <sys/ps.h>
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 
 #include "util.h"
 #include "dio.h"
@@ -116,7 +116,6 @@ static int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
   return bpam_open(handle, OPEN_OUTPUT, opts);
 }
 
-
 static void validate_var_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   if (!opts->debug) {
@@ -163,6 +162,7 @@ int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     return rc;
   }
   rc = CHECK(bh->decb);
+  debug(opts, "RC:%d from CHECK on READ of block.\n", rc);
 
   /*
    * Initialize record offset information so that next_record can be called.
@@ -453,7 +453,7 @@ int read_member_dir_entry(struct desp* PTR32 desp, const DBG_Opts* opts)
 }
 
 const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
-static void add_mem_stats(struct stowlist_add* PTR32 sla, const struct mstat* mstat, unsigned int ttr)
+static void add_mem_stats(struct stowlist_add* PTR32 sla, const struct mstat* mstat, unsigned int ttr, const DBG_Opts* opts)
 {
   char userid[8+1] = "        "; 
   *sla = stowlistadd_template;
@@ -563,7 +563,7 @@ int write_member_dir_entry(const struct mstat* mstat, FM_BPAMHandle* bh, const D
     return 4;
   }
 
-  add_mem_stats(stowlistadd, mstat, bh->memstart_ttr);
+  add_mem_stats(stowlistadd, mstat, bh->memstart_ttr, opts);
 
   stowlist->iff = stowlistiff_template;
 
