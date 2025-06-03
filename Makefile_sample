@@ -1,8 +1,5 @@
 SRCDIR=sample
-<<<<<<< HEAD
 DEPDIR=sample/deps
-=======
->>>>>>> 9f824da12839da4d25ea03933e04f65bae8378cf
 BLDDIR=obj
 BINDIR=bin
 archive=asmdio.a
@@ -10,11 +7,7 @@ archive=asmdio.a
 csource := $(shell find $(SRCDIR) -type f -name *.c)
 cobjs   := $(patsubst $(SRCDIR)/%,$(BLDDIR)/%,$(csource:.c=.o))
 objects := $(cobjs)
-<<<<<<< HEAD
 cdeps   := $(patsubst $(SRCDIR)/%,$(DEPDIR)/%,$(csource:.c=.d))
-=======
-cdeps   := $(cobjs:.o=.d)
->>>>>>> 9f824da12839da4d25ea03933e04f65bae8378cf
 pgms    := $(BINDIR)/f2m $(BINDIR)/m2f $(BINDIR)/mlsx $(BINDIR)/mchtag $(BINDIR)/readupdate $(BINDIR)/readwriterec
 all: $(pgms)
 

@@ -39,11 +39,17 @@ static int can_add_record_to_block(FM_BPAMHandle* bh, size_t rec_len)
 /*
  * copy_record_to_block returns 'truncated' (non-zero if record truncated, otherwise zero)
  */
-static int copy_record_to_block(FM_BPAMHandle* bh, size_t rec_len, const char* rec, DBG_Opts* opts)
+static int copy_record_to_block(FM_BPAMHandle* bh, unsigned short usr_rec_len, const char* rec, DBG_Opts* opts)
 {
   int truncated = 0;
-  debug(opts, "Add Record of length: %d bytes. Block bytes used: %d\n", rec_len, bh->bytes_used);
+  debug(opts, "Add Record of length: %d bytes. Block bytes used: %d\n", usr_rec_len, bh->bytes_used);
  
+  const int BDW_SIZE = 4;
+  const int RDW_SIZE = 4;
+
+  unsigned short disk_len;
+  unsigned short rec_len;
+
   char* block_char = (char*) (bh->block);
   int rec_hdr_size;
   if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
@@ -51,42 +57,53 @@ static int copy_record_to_block(FM_BPAMHandle* bh, size_t rec_len, const char* r
      * Variable format
      */    
     unsigned short* next_rec;
-    rec_hdr_size = sizeof(unsigned int);
+    rec_hdr_size = BDW_SIZE;
     if (bh->bytes_used == 0) {
       /*
        * First word is block length - clear it to 0 for now
-       * Set the block size to be the full block size since the 
-       * WRITE routine knows to get the logical block size from the
-       * first word.
        */
       unsigned int* start = (unsigned int*) (bh->block);
       start[0] = 0;
-      bh->bytes_used += sizeof(unsigned int);
+      bh->bytes_used += BDW_SIZE;
     }
     /*
-     * Write out length of record for variable length record format
+     * Determine logical and disk record length
      */
     next_rec = (unsigned short*) (&block_char[bh->bytes_used]);
-    if (rec_len > bh->dcb->dcblrecl) {
-      rec_len = bh->dcb->dcblrecl;
+    disk_len = usr_rec_len + RDW_SIZE;
+    if (disk_len > bh->dcb->dcblrecl) {
+      rec_len = bh->dcb->dcblrecl - RDW_SIZE;
+      disk_len = bh->dcb->dcblrecl;
+      truncated = 1;
+    } else {
+      rec_len = usr_rec_len;
     }
-    next_rec[0] = rec_len;
+    
+    next_rec[0] = disk_len;
+    
     next_rec[1] = 0;
-    bh->bytes_used += rec_hdr_size;
-
+    bh->bytes_used += RDW_SIZE;
     debug(opts, "Disk Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
   } else {
     /*
      * Fixed format
      */
     rec_hdr_size = 0;
+    if (usr_rec_len > bh->dcb->dcblrecl) {
+      disk_len = bh->dcb->dcblrecl;
+      rec_len = disk_len;
+      truncated = 1;
+    } else {
+      disk_len = usr_rec_len;
+      rec_len = disk_len;
+    }
   }
-  if (rec_len > bh->dcb->dcblrecl) {
-    info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", bh->line_num, bh->dcb->dcblrecl, rec_len);
-    rec_len = bh->dcb->dcblrecl;
-    truncated = 1;
+  if (truncated) {
+    info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", bh->line_num, bh->dcb->dcblrecl, usr_rec_len);
   }
 
+  debug(opts, "Copy data to disk from offset: %d for %d bytes. disk_len:%d rec_len:%d\n", bh->bytes_used, rec_len, disk_len, rec_len);
+  
   memcpy(&block_char[bh->bytes_used], rec, rec_len);
   bh->bytes_used += rec_len; 
  
@@ -175,7 +192,6 @@ static int write_member(FM_BPAMHandle* bh, const char* ds, const char* mem_name,
   const char* next;
   int num_lines = 0;
 
-  bh->line_num = 0;
   while ((next = strchr(cur, '\n')) != NULL) { /* msf - choose ASCII or EBCDIC newline based on ccsid */
     size_t rec_len = next - cur;
     ssize_t bytes_written = write_record(bh, rec_len, cur, opts);
@@ -185,7 +201,6 @@ static int write_member(FM_BPAMHandle* bh, const char* ds, const char* mem_name,
     }
     cur = &next[1];
     ++num_lines;
-    bh->line_num = num_lines;
   }
   ssize_t rc = write_block(bh, opts); /* msf - need to write the partial block - maybe this should be on 'close' ? */
   if (rc < 0) {
@@ -398,7 +413,3 @@ int main(int argc, char* argv[])
 
   return 0;
 }
-
-
-
-
