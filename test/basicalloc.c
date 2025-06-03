@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "dio.h"
+#include "mem.h"
 #include "s99.h"
 #include "iosvcs.h"
 

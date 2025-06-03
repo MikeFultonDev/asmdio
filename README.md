@@ -18,7 +18,7 @@ For applications that need to perform common I/O operations, the Language Enviro
 - [BPAM DCB](https://tech.mikefulton.ca/BPAMDCBLayout)
 - [DCBE](https://tech.mikefulton.ca/DCBELayout)  
 - [IOB](https://tech.mikefulton.ca/IOBLayout)
-- [DECB?]()
+- DECB?
 
 ### I/O SVCs
 
@@ -32,7 +32,7 @@ For applications that need to perform common I/O operations, the Language Enviro
 - [DCBD Macro](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-dcbdprovide-symbolic-reference-data-control-blocks-bdam-bisam-bpam-bsam-qisam-qsam): Data Control Block symbolic names.
 - [DCB BPAM Macro](https://tech.mikefulton.ca/DCBBPAMMacro): DCB Macro for BPAM usage
 - [Dynalloc Macro](https://tech.mikefulton.ca/DynallocMacro): Dynamic Allocation of DCB
-- [OPEN](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMOPEN), 
+- [OPEN](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMOPEN),
   - [Macro](https://tech.mikefulton.ca/DynallocMacro): DYNALLOC aka SVC99.
 - [BLDL](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-bldl-macro-construct-directory-entry-list) Macro: Read one or more directory entries into virtual storage.
 - [FIND](https://www.ibm.com/docs/en/zos/3.1.0?topic=descriptions-findestablish-beginning-data-set-member-bpam) Macro: Establish the beginning of a data set member using a BLDL list or directory.
@@ -41,17 +41,17 @@ For applications that need to perform common I/O operations, the Language Enviro
   - [DESERV DFSMS Information](https://www.ibm.com/docs/en/zos/3.1.0?topic=smde-funcget-all)
 - [SMDE Macro](https://tech.mikefulton.ca/SMDEMacro): Directory Entry information returned from DESERV GET.
 - [ISITMGD](https://www.ibm.com/docs/en/zos/3.1.0?topic=pmp-using-isitmgd-determine-whether-data-set-is-system-managed) Macro: Determine if data set is SMS managed and info about a PDSE.
-- [NOTE](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-note-macro-provide-relative-position) Macro: Return the TTRz that can subsequently be used by POINT.
-- [POINT](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-point-macro-position-block) Macro: Cause the next READ or WRITE to be from the TTRz specified.
+- [NOTE](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-note-macro-provide-relative-position) [Macro](https://tech.mikefulton.ca/NOTEMacro): Return the TTRz that can subsequently be used by POINT.
+- [POINT](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-point-macro-position-block) [Macro](https://tech.mikefulton.ca/POINTMacro): Cause the next READ or WRITE to be from the TTRz specified.
 - [IHAPDS Macro](https://tech.mikefulton.ca/IHAPDSMacro) PDSD2 Directory Entry for input to STOW.
 - [STOW](https://www.ibm.com/docs/en/zos/3.1.0?topic=pdse-using-stow-macro-update-directory) [Macro](https://tech.mikefulton.ca/STOWMacro): Modify (Add, Delete, Replace, Change) a member in the directory.
 - [DECB Macro](https://tech.mikefulton.ca/DECBMacro): Input/Output for the READ and WRITE services.
 - [GETBUF Macro](https://tech.mikefulton.ca/GETBufMacro): Obtain a buffer.
-- [READ/WRITE](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-read-write) 
+- [READ/WRITE](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-read-write)
   - [READ Macro](https://tech.mikefulton.ca/READMacro): Read BLOCKs, not records.
   - [WRITE Macro](https://tech.mikefulton.ca/WRITEMacro): Write BLOCKs, not records.
   - [Non-VSAM I/O Exit Routines](https://tech.mikefulton.ca/NonVSAMIOExitRoutines): How to process end of data, synchronous error, etc.
-- [GET/PUT](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-get-put) Macros: Get and Put RECORDS, not blocks. 
+- [GET/PUT](https://www.ibm.com/docs/en/zos/3.1.0?topic=records-accessing-data-get-put) Macros: Get and Put RECORDS, not blocks.
 - [CLOSE](https://www.ibm.com/docs/en/zos/3.1.0?topic=nvmd-openconnect-program-data-bdam-bisam-interface-vsam-bpam-bsam-qisam-interface-vsam-qsam) [Macro](https://tech.mikefulton.ca/QSAMCLOSE)
 
 ## Other References
@@ -84,6 +84,7 @@ For applications that need to perform common I/O operations, the Language Enviro
 - The STOW service lets you modify member entries, which lets you SET the CCSID (see the IFF function)
 
 ## ISPF Member Stats decoder
+
 - [ISPF Stats](https://ibmmainframes.com/viewtopic.php?t=23109&highlight=smf)
 
 ## Terminology

@@ -4,9 +4,24 @@
   #include <glob.h>
   #include <sys/stat.h>
   #include <stddef.h>
-  #include "asmdiocommon.h"
+  #include "asmdio.h"
   #include "dio.h"
 
+  #define BINARY_CCSID 65535
+  #define UNTAG_CCSID      0
+  #define ISO8859_CCSID  819
+  #define IBM1047_CCSID 1047
+
+  #define ISO8859_NL    0x0A
+  #define IBM1047_NL    0x15
+  #define ISO8859_SPACE 0x20
+  #define IBM1047_SPACE 0x40
+
+  /*
+   * msf: need to make this dynamic but for now, support write of text members up to 2**24 bytes (16MB)
+   */
+  #define MAX_TEXT_FILE_SIZE (1<<24) 
+  
   typedef struct {
     int cur_value;
     char* values[0];
@@ -30,10 +45,14 @@
     struct opencb* PTR32 opencb;
     struct decb* PTR32 decb;
     void* PTR32 block;
+    char* PTR32 next_record_start;
+    size_t next_record_len;
     size_t block_size;
     size_t bytes_used;
-    unsigned int ttr;
-    int ttr_known:1;
+    unsigned int memstart_ttr;
+    unsigned int pdsstart_ttr;
+    int memstart_ttr_known:1;
+    int pdsstart_ttr_known:1;
     size_t line_num;
   } FM_BPAMHandle;
 
@@ -56,6 +75,9 @@
 
     char data_a[REC_LEN];
     char data_b[REC_LEN];
+    char* file_buffer;
+    size_t file_buffer_max;
+    size_t file_buffer_cur;
     size_t line_num;
   } FM_FileHandle;
 

@@ -3,9 +3,8 @@
 # Basic script to clean built files
 #
 
-# Use set -e to force failure if something doesn't build
-set -e
+. ./setenv
 
-gmake -C src clean
-gmake -C test clean
-gmake -C sample clean
+gmake --makefile=Makefile_src clean
+gmake --makefile=Makefile_test clean
+gmake --makefile=Makefile_sample clean

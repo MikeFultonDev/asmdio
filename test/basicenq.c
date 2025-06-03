@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "dio.h"
+#include "mem.h"
 
 /*
  * BasicEnq gets the ENQ for dataset member SYS1.MACLIB(ADRDEX01) 
@@ -12,8 +13,8 @@ static int pass(void)
   char dsname[44+1] = "SYS1.MACLIB";
   char memname[8+1] = "ADRDEX01";
   char enqname[8+1] = "SPFEDIT ";
-  char* __ptr32 qname;
-  char* __ptr32 rname;
+  char* PTR32 qname;
+  char* PTR32 rname;
   unsigned int rname_len = sizeof(dsname)+sizeof(memname)-2 ; 
 
   qname = MALLOC31(sizeof(enqname));

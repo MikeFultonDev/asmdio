@@ -2,20 +2,21 @@
 #define _ISOC99_SOURCE
 #define _POSIX_SOURCE
 #define _OPEN_SYS_FILE_EXT 1
-#define _OPEN_SYS_EXT
+#define _OPEN_SYS_EXT 1
 #define _XOPEN_SOURCE_EXTENDED 1
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/ps.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <sys/ps.h>
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 
 #include "util.h"
 #include "dio.h"
+#include "mem.h"
 #include "iosvcs.h"
 #include "fm.h"
 #include "fmopts.h"
@@ -25,6 +26,7 @@
 #include "ispf.h"
 #include "ztime.h"
 #include "memdir.h"
+#include "iob.h"
 
 static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
 {
@@ -98,6 +100,9 @@ static int bpam_open(FM_BPAMHandle* handle, int mode, const DBG_Opts* opts)
   handle->block_size = dcb->dcbblksi;
   handle->bytes_used = 0;
 
+  handle->pdsstart_ttr = NOTE(dcb);
+  handle->pdsstart_ttr_known = 1;
+
   return 0;
 }
 
@@ -111,8 +116,7 @@ static int bpam_open_write(FM_BPAMHandle* handle, const DBG_Opts* opts)
   return bpam_open(handle, OPEN_OUTPUT, opts);
 }
 
-
-static void validate_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
+static void validate_var_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   if (!opts->debug) {
     return;
@@ -150,12 +154,6 @@ int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
   SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
   bh->decb->area = bh->block;
 
-  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n",
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N',
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N',
-    bh->bytes_used,
-    bh->block_size
-  );
 
   /* Read one block */
   int rc = READ(bh->decb);
@@ -164,8 +162,15 @@ int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     return rc;
   }
   rc = CHECK(bh->decb);
+  debug(opts, "RC:%d from CHECK on READ of block.\n", rc);
 
-  return 0;
+  /*
+   * Initialize record offset information so that next_record can be called.
+   */
+  bh->next_record_start = NULL;
+  bh->next_record_len = 0;
+
+  return rc;
 }
 
 /*
@@ -194,7 +199,7 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     halfword[3] = 0;
     bh->dcb->dcbblksi = bh->block_size;
 
-    validate_block(bh, opts);
+    validate_var_block(bh, opts);
     debug(opts, "(Block Write) First Record length:%d bytes used:%d\n", halfword[2], halfword[0]);
 
   } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) { 
@@ -210,13 +215,74 @@ int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
     return rc;
   }
 
-  if (!bh->ttr_known) {
-    bh->ttr = NOTE(bh->dcb);
-    bh->ttr_known = 1;
+  if (!bh->memstart_ttr_known) {
+    bh->memstart_ttr = NOTE(bh->dcb);
+    bh->memstart_ttr_known = 1;
   }
 
   bh->bytes_used = 0;
   return 0;
+}
+
+/*
+ * Read a record. Return non-zero when no next record.
+ * Fixed Block Short blocks need special consideration: https://tech.mikefulton.ca/BlockLengthReadDetermination
+ */
+
+int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  char* block_char = (char*) (bh->block);
+  unsigned short* block_hw = (unsigned short*) (bh->block);
+
+  if (bh->next_record_start == NULL) {
+    /*
+     * Skip over header of block
+     */
+    if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+      bh->next_record_start = &block_char[4];
+    } else {
+      bh->next_record_start = block_char;
+    }
+  } else {
+    bh->next_record_start = &bh->next_record_start[bh->next_record_len];
+  }
+
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    unsigned short block_size = block_hw[0];
+    if (bh->next_record_start >= &block_char[block_size]) {
+      return 0;
+    }
+
+    /*
+     * If variable record length, then length is in first half word.
+     * Also note the length includes the 4 byte prefix as well.
+     */
+    unsigned short* vreclenp = (unsigned short*) (bh->next_record_start);
+    bh->next_record_len = (*vreclenp - 4);
+    bh->next_record_start += 4;
+  } else {
+    /*
+     * The residual count indicates how many pad bytes are at the end
+     * of the last block of a fixed block member. This needs to be
+     * subtracted from the block size to determine if you are at the 
+     * end of the block.
+     */
+    struct iob* PTR32 iob = (struct iob* PTR32) bh->decb->stat_addr;
+    unsigned short residual = iob->iobcsw.iobresct;
+    unsigned short block_size = bh->dcb->dcbblksi;
+    unsigned short bytes_in_block = block_size - residual;
+
+    if (bh->next_record_start >= &block_char[bytes_in_block]) {
+      return 0;
+    }
+
+    /*
+     * The record is fixed length, so the length of the record is always
+     * the same.
+     */
+    bh->next_record_len = bh->dcb->dcblrecl;
+  }
+  return 1;
 }
 
 const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
@@ -387,7 +453,7 @@ int read_member_dir_entry(struct desp* PTR32 desp, const DBG_Opts* opts)
 }
 
 const struct stowlist_add stowlistadd_template = { "        ", 0, 0, 0, 0 };
-static void add_mem_stats(struct stowlist_add* PTR32 sla, const struct mstat* mstat, unsigned int ttr)
+static void add_mem_stats(struct stowlist_add* PTR32 sla, const struct mstat* mstat, unsigned int ttr, const DBG_Opts* opts)
 {
   char userid[8+1] = "        "; 
   *sla = stowlistadd_template;
@@ -497,7 +563,7 @@ int write_member_dir_entry(const struct mstat* mstat, FM_BPAMHandle* bh, const D
     return 4;
   }
 
-  add_mem_stats(stowlistadd, mstat, bh->ttr);
+  add_mem_stats(stowlistadd, mstat, bh->memstart_ttr, opts);
 
   stowlist->iff = stowlistiff_template;
 
@@ -618,6 +684,7 @@ static void copy_node(struct mem_node* node, const char *name, int is_alias, cha
   node->is_alias = is_alias ? 1 : 0;
   memcpy(node->userdata, userdata, userdata_len);
   node->userdata_len = userdata_len;
+
 }
 
 /*
@@ -759,6 +826,12 @@ struct mem_node* pds_mem(FM_BPAMHandle* bh, const DBG_Opts* opts)
   last_ptr = NULL;
   int rc;
   int offset;
+
+  unsigned int ttr = NOTE(bh->dcb);
+  if (ttr != 0) {
+    fprintf(stderr, "Need to perform pds_mem before any read/write operations\n");
+    return NULL;
+  }
 
   /*
    * Read the PDS directory one block at a time until either the 
@@ -941,7 +1014,7 @@ struct desp* PTR32 find_desp(FM_BPAMHandle* bh, const char* memname, const DBG_O
     return NULL;
   }
 
-  return desp;;
+  return desp;
 }
 
 void free_desp(struct desp* PTR32 desp, const DBG_Opts* opts)

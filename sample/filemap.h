@@ -4,7 +4,7 @@
   #include <glob.h>
   #include <string.h>
   
-  #include "asmdiocommon.h"
+  #include "asmdio.h"
   #include "fmopts.h"
   #include "fm.h"
 

@@ -1,7 +1,7 @@
 #ifndef __BPAMIO_H__
   #define __BPAMIO_H__ 1
 
-  #include "asmdiocommon.h"
+  #include "asmdio.h"
   #include "fm.h"
   #include "dbgopts.h"
 
@@ -37,6 +37,7 @@
 
   int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
   int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
+  int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts);
 
   int close_pds(FM_BPAMHandle* bh, const DBG_Opts* opts);
 #endif

@@ -3,10 +3,11 @@
 *.a
 *.x
 *.so
+*.d
 
-# Compiler listings
+# Compiler and linker listings
 *.lst
-*.map
+*.llst
 
 # Debug side files
 *.dbg
@@ -24,7 +25,8 @@ CEEDUMP.*
 # Vim backup files
 *~
 
-.vscode
+# Mac stuff
+.DS_Store
 
 # Compiled executable files
 basicread
@@ -42,3 +44,6 @@ m2f
 mchtag
 mlsx
 readupdate
+readwriterec
+basicmem
+obj/

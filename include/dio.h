@@ -1,7 +1,7 @@
 #ifndef __DIO_H__
 #define __DIO_H__ 1
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 
 #include "closecb.h"
 #include "decb.h"
@@ -28,11 +28,12 @@ int READ(struct decb* PTR32 decb);
 int WRITE(struct decb* PTR32 decb);
 int CHECK(struct decb* PTR32 decb);
 unsigned int NOTE(struct ihadcb* PTR32 dcb);
+unsigned int POINT(struct ihadcb* PTR32 dcb, unsigned int ttr);
 unsigned int DESERV(struct desp* PTR32 desp);
 int STOW(union stowlist* PTR32 list, struct ihadcb* PTR32 dcb, enum stowtype type);
 int CLOSE(struct closecb* PTR32 closecb);
-int SYEXENQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
-int SYEXDEQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
+int SYEXENQ(char* PTR32 qname, char* PTR32 rname, unsigned int rname_len);
+int SYEXDEQ(char* PTR32 qname, char* PTR32 rname, unsigned int rname_len);
 
 #pragma map(OPEN, "DOPEN")
 #pragma map(FIND, "DFIND")
@@ -40,18 +41,12 @@ int SYEXDEQ(char* __ptr32 qname, char* __ptr32 rname, unsigned int rname_len);
 #pragma map(WRITE, "DWRITE")
 #pragma map(CHECK, "DCHECK")
 #pragma map(NOTE, "DNOTE")
+#pragma map(POINT, "DPOINT")
 #pragma map(STOW, "DSTOW")
 #pragma map(CLOSE, "DCLOSE")
 
-void* PTR32 MALLOC24(size_t len);
-int FREE24(void* PTR32 addr, size_t len);
 
 int S99(struct s99rb* PTR32 s99rbp);
 int S99MSG(struct s99_em* PTR32 s99em);
-
-void dumpstg(FILE* stream, void* p, size_t len);
-
-void* PTR32 MALLOC31(size_t len);
-void FREE31(void* PTR32 addr);
 
 #endif

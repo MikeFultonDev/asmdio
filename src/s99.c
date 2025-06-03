@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "dio.h"
+#include "mem.h"
 #include "s99.h"
 #include "wrappers.h"
 

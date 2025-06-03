@@ -9,9 +9,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "util.h"
 #include "dio.h"
+#include "mem.h"
 #include "iosvcs.h"
 #include "fm.h"
 #include "fmopts.h"

@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "ihadcb.h"
 #include "dio.h"
+#include "mem.h"
 
 const struct ihadcb dcb_template = { 0 };
 const struct dcbe dcbe_template = { "DCBE", sizeof(struct dcbe) };

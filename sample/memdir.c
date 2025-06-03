@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE
 #define _ISOC99_SOURCE
 #define _POSIX_SOURCE
+#define _OPEN_SYS_EXT 1
 #define _OPEN_SYS_FILE_EXT 1
 #define _XOPEN_SOURCE_EXTENDED 1
 
@@ -8,112 +9,69 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/ps.h>
+#include "mem.h"
 #include "memdir.h"
 #include "ztime.h"
 #include "bpamio.h"
 #include "ispf.h"
+#include "msg.h"
 
-/*
- * msf - need to implement check of ranges of values
- */
-static int valid_ispf_disk_stats(unsigned char userdata_len, const struct ispf_disk_stats* ids)
+void print_member(struct mstat* mstat, int print_header)
 {
-  return 0; 
-}
-
-const struct tm zerotime = { 0 };
-static void set_create_time(struct ispf_stats* is, struct ispf_disk_stats* id)
-{
-  is->create_time = zerotime;
-  pdjd_to_tm(id->pd_create_julian, id->create_century, &is->create_time);
-}
-
-static void set_mod_time(struct ispf_stats* is, struct ispf_disk_stats* id)
-{
-  is->mod_time = zerotime;
-  pdjd_to_tm(id->pd_mod_julian, id->create_century, &is->mod_time);
-  is->mod_time.tm_hour = pd_to_d(id->pd_mod_hours);
-  is->mod_time.tm_min = pd_to_d(id->pd_mod_minutes);
-  is->mod_time.tm_sec = pd_to_d(id->pd_mod_seconds);
-}
-
-static int ispf_stats(const struct mem_node* np, struct ispf_stats* is)
-{
-  struct ispf_disk_stats* id = (struct ispf_disk_stats*) (np->userdata);
-  int rc = valid_ispf_disk_stats(np->userdata_len, id);
-
-  if (rc) {
-    return rc;
+  if (print_header) {
+    printf("MEM-ID ISPF EXT ALIAS MEM-NAME    ALIAS   EXT-ID    CCSID   EXT-CHANGED         VER MOD  CUR-LINES INIT-LINES  MOD-LINES CREATE-TIME           CHANGE-TIME  ISPF-ID\n");
   }
-  set_create_time(is, id);
-  set_mod_time(is, id);
-  memcpy(is->userid, id->userid, 8);
-  is->userid[8] = '\0';
+  char crttime_buff[4+1+2+1+2+1];                /* YYYY/MM/DD          */
+  char modtime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
+  char exttime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
 
-  is->ver_num = id->ver_num;
-  is->mod_num = id->mod_num;
-  is->sclm = id->sclm;
+  unsigned int memid = mstat->mem_id;
+  char* ispf  = mstat->ispf_stats ? "Y" : "N";
+  char* ext = mstat->has_ext ? "Y" : "N";
+  char* alias = mstat->is_alias ? "Y" : "N";
+  const char* name = (mstat->name) ? mstat->name : "NULL";
+  const char* alias_name = (mstat->alias_name) ? mstat->alias_name : "NULL";;
 
-  if (id->extended) {
-    is->curr_num_lines = id->full_curr_num_lines;
-    is->init_num_lines = id->full_init_num_lines;
-    is->mod_num_lines = id->full_mod_num_lines;
+  char* ext_id = (mstat->ext_id) ? mstat->ext_id : "NULL";
+  unsigned short ccsid = mstat->ext_ccsid;
+  if (mstat->has_ext) {
+    struct tm* exttime = localtime(&mstat->ext_changed);
+    strftime(exttime_buff, sizeof(exttime_buff), "%Y/%m/%d %H:%M:%S", exttime);
   } else {
-    is->curr_num_lines = id->curr_num_lines;
-    is->init_num_lines = id->init_num_lines;
-    is->mod_num_lines = id->mod_num_lines;
+    memcpy(exttime_buff, "none", 5);
   }
-    
-  return 0;
+  short ver_num = mstat->ispf_version;
+  short mod_num = mstat->ispf_modification;
+  int cur = mstat->ispf_current_lines;
+  int init = mstat->ispf_initial_lines;
+  int mod = mstat->ispf_modified_lines;
+  if (mstat->ispf_stats) {
+    struct tm* ispf_created_time = localtime(&mstat->ispf_created);
+    struct tm* ispf_changed_time = localtime(&mstat->ispf_changed);
+    strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", ispf_created_time);
+    strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", ispf_changed_time);
+  } else {
+    memcpy(crttime_buff, "none", 5);
+    memcpy(modtime_buff, "none", 5);
+  }
+  char* ispf_id = (mstat->ispf_id) ? mstat->ispf_id : "NULL";
+
+  printf("%6.6x %4s %3s %5s %8s %8s %8s %8x %21s %3d %3d %10d %10d %10d %11s %21s %8s\n", 
+    memid, ispf, ext, alias, name, alias_name, ext_id, ccsid, exttime_buff, 
+    ver_num, mod_num, cur, init, mod, 
+    crttime_buff, modtime_buff, ispf_id);
 }
 
 static void print_members(struct mstat* mstat_arr, size_t members)
 {
   printf("\n%d members to print\n", members);
-  printf("MEM-ID ISPF EXT ALIAS MEM-NAME    ALIAS   EXT-ID    CCSID   EXT-CHANGED         VER MOD  CUR-LINES INIT-LINES  MOD-LINES CREATE-TIME           CHANGE-TIME  ISPF-ID\n");
   for (int i=0; i<members; ++i) {
-    struct mstat* mstat = &mstat_arr[i];
-    char crttime_buff[4+1+2+1+2+1];                /* YYYY/MM/DD          */
-    char modtime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
-    char exttime_buff[4+1+2+1+2+1+2+1+2+1+2+1];    /* YYYY/MM/DD HH:MM:SS */
-
-    unsigned int memid = mstat->mem_id;
-    char* ispf  = mstat->ispf_stats ? "Y" : "N";
-    char* ext = mstat->has_ext ? "Y" : "N";
-    char* alias = mstat->is_alias ? "Y" : "N";
-    const char* name = (mstat->name) ? mstat->name : "NULL";
-    const char* alias_name = (mstat->alias_name) ? mstat->alias_name : "NULL";;
-
-    char* ext_id = (mstat->ext_id) ? mstat->ext_id : "NULL";
-    unsigned short ccsid = mstat->ext_ccsid;
-    if (mstat->has_ext) {
-      struct tm* exttime = localtime(&mstat->ext_changed);
-      strftime(exttime_buff, sizeof(exttime_buff), "%Y/%m/%d %H:%M:%S", exttime);
-    } else {
-      memcpy(exttime_buff, "none", 5);
-    }
-    short ver_num = mstat->ispf_version;
-    short mod_num = mstat->ispf_modification;
-    int cur = mstat->ispf_current_lines;
-    int init = mstat->ispf_initial_lines;
-    int mod = mstat->ispf_modified_lines;
-    if (mstat->ispf_stats) {
-      struct tm* ispf_created_time = localtime(&mstat->ispf_created);
-      struct tm* ispf_changed_time = localtime(&mstat->ispf_changed);
-      strftime(crttime_buff, sizeof(crttime_buff), "%Y/%m/%d", ispf_created_time);
-      strftime(modtime_buff, sizeof(modtime_buff), "%Y/%m/%d %H:%M:%S", ispf_changed_time);
-    } else {
-      memcpy(crttime_buff, "none", 5);
-      memcpy(modtime_buff, "none", 5);
-    }
-    char* ispf_id = (mstat->ispf_id) ? mstat->ispf_id : "NULL";
-
-    printf("%6.6x %4s %3s %5s %8s %8s %8s %8x %21s %3d %3d %10d %10d %10d %11s %21s %8s\n", 
-      memid, ispf, ext, alias, name, alias_name, ext_id, ccsid, exttime_buff, 
-      ver_num, mod_num, cur, init, mod, 
-      crttime_buff, modtime_buff, ispf_id);
+    print_member(&mstat_arr[i], (i==0));
   }
 }
+
+#if 0
 
 static struct mstat* memnode_to_mstat(const struct mem_node* np, struct mstat* mstat, const DBG_Opts* opts)
 {
@@ -213,6 +171,7 @@ static struct mstat* memnodes_to_mstats(const struct mem_node* np, const DBG_Opt
   }
   return mstat;
 }
+#endif
 
 static struct mstat* desp_copy_name_and_alias(struct mstat* mstat, const struct smde* PTR32 smde)
 {
@@ -274,36 +233,103 @@ static struct mstat* desp_copy_name_and_alias(struct mstat* mstat, const struct 
   return mstat;
 }
 
+static struct mstat* copy_extended_attributes_into_mstat(struct smde_ext_attr* ext_attr, struct mstat* mstat)
+{  
+  unsigned long long tod = *((long long *) ext_attr->smde_change_timestamp);
+  time_t ltime = tod_to_time(tod);
+
+  mstat->has_ext = 1;
+  mstat->ext_ccsid = *((unsigned short*)(ext_attr->smde_ccsid));
+
+  char* ext_id = malloc(USERID_LEN+1);
+  if (!ext_id) {
+    return NULL;
+  }
+  memcpy(ext_id, ext_attr->smde_userid_last_change, USERID_LEN);
+  ext_id[USERID_LEN] = '\0';
+  mstat->ext_id = ext_id;
+  mstat->ext_changed = ltime;
+  return mstat;
+}
+
+static struct mstat* copy_ispf_stats_into_mstat(const char* userdata, int userdata_len, struct mstat* mstat, const DBG_Opts* opts)
+{
+  if (userdata_len < ISPF_DISK_STATS_LEN) {
+    debug(opts, "User data length too small. Only %d bytes\n.", userdata_len);
+    mstat->ispf_stats = 0;
+    return mstat;
+  }
+
+  struct ispf_stats is;
+  int rc = ispf_disk_stats_to_ispf_stats(userdata, userdata_len, &is);
+  if (rc) {
+    mstat->ispf_stats = 0;
+    debug(opts, "ISPF Stats copy failed.\n.");
+    return mstat;
+  }
+
+  mstat->ispf_stats = 1;
+  mstat->ispf_created = mktime(&is.create_time);
+  mstat->ispf_changed = mktime(&is.mod_time);
+
+  char* ispf_id = malloc(USERID_LEN+1);
+  if (!ispf_id) {
+    return NULL;
+  }
+  memcpy(ispf_id, is.userid, USERID_LEN);
+  ispf_id[USERID_LEN] = '\0';
+  mstat->ispf_id = ispf_id;
+
+  mstat->ispf_version = is.ver_num;
+  mstat->ispf_modification = is.mod_num;
+  mstat->ispf_current_lines = is.curr_num_lines;
+  mstat->ispf_initial_lines = is.init_num_lines;
+  mstat->ispf_modified_lines = is.mod_num_lines;
+
+  return mstat;
+}
 
 static struct mstat* smde_to_mstat(const struct smde* PTR32 smde, struct mstat* mstat, const DBG_Opts* opts)
 {
+  if (!mstat) {
+    fprintf(stderr, "NULL mstat passed to smde_to_mstat.\n");
+    return NULL;
+  }
+
   /*
-   * Copy name, alias, and extended attributes.
+   * Copy name, alias, extended attributes, and ISPF user data
    */
   const unsigned char* mlt = smde->smde_mltk.smde_mlt;
   unsigned int mem_id = (*(unsigned int*) mlt) >> 8;
   mstat->mem_id = mem_id;
 
   if (!desp_copy_name_and_alias(mstat, smde)) {
+    fprintf(stderr, "Unable to copy name and alias to mstat.\n");
     return NULL;
   }
-  if (smde->smde_ext_attr_off != 0) {
+  if (smde->smde_ext_attr_off != 0) { /* Extended attributes available */
     struct smde_ext_attr* PTR32 ext_attr = (struct smde_ext_attr*) (((char*) smde) + smde->smde_ext_attr_off);
-    unsigned long long tod = *((long long *) ext_attr->smde_change_timestamp);
-    time_t ltime = tod_to_time(tod);
-
-    mstat->has_ext = 1;
-    mstat->ext_ccsid = *((unsigned short*)(ext_attr->smde_ccsid));
-
-    char* ext_id = malloc(8+1);
-    if (!ext_id) {
+    mstat = copy_extended_attributes_into_mstat(ext_attr, mstat);
+    if (!mstat) {
+      fprintf(stderr, "Unable to copy extended attributes to mstat.\n");
       return NULL;
     }
-    memcpy(ext_id, ext_attr->smde_userid_last_change, 8);
-    ext_id[8] = '\0';
-    mstat->ext_id = ext_id;
+    debug(opts, "Extended attribute offset information copied.\n");
+  } else {
+    debug(opts, "No extended attribute offset information present.\n");
+  }
 
-    mstat->ext_changed = ltime;
+  if (smde->smde_usrd_off.smde_pmar_off != 0) { /* User data available */
+    char* PTR32 userdata = (((char*) smde) + smde->smde_usrd_off.smde_pmar_off);
+    int userdata_len = smde->smde_usrd_len.smde_pmar_len;
+    mstat = copy_ispf_stats_into_mstat(userdata, userdata_len, mstat, opts);
+    if (!mstat) {
+      fprintf(stderr, "Unable to copy ISPF Stats to mstat.\n");
+      return NULL;
+    }
+    debug(opts, "User data offset information copied.\n");    
+  } else {
+    debug(opts, "No user data offset information present.\n");
   }
   return mstat;
 }
@@ -346,7 +372,7 @@ static struct mstat* desp_to_mstats(const struct desp* PTR32 desp, const DBG_Opt
      */
     struct smde* PTR32 smde = (struct smde* PTR32) (cur_desb->desb_data);
     for (i=0; i<sub_members; ++i) {
-      if (smde_to_mstat(smde, &mstat[entry], opts)) {
+      if (!smde_to_mstat(smde, &mstat[entry], opts)) {
         return NULL;
       }
       smde = (struct smde* PTR32) (((char*) smde) + smde->smde_len);
@@ -477,12 +503,16 @@ static void free_mstat(struct mstat* mstat, size_t entries)
   }
 }
 
+#if 0
 static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mstat* de_mstat, size_t de_members, int sort_time, int sort_reverse, const DBG_Opts* opts)
 {
   if (mn_members != de_members) {
     fprintf(stderr, 
       "Internal error: Directory has %d members and alias but Directory Entry Services reports %d members aliases. These should be the same.\n", 
       mn_members, de_members);
+    return NULL;
+  }
+  if (mn_members == 0) {
     return NULL;
   }
 
@@ -580,6 +610,87 @@ static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mst
     
   return (MEMDIR*) mdi;
 }
+#else
+static MEMDIR* mstat_to_mdir(struct mstat* de_mstat, size_t de_members, int sort_time, int sort_reverse, const DBG_Opts* opts)
+{
+  if (de_members == 0) {
+    return NULL;
+  }
+
+  /*
+   * Sort the two arrays so they can be walked together
+   */
+  qsort(de_mstat, de_members, sizeof(struct mstat), cmp_mem_primary_alias);
+
+  size_t entries = de_members;
+  struct MEMDIR_Internal* mdi = malloc(sizeof(struct MEMDIR_Internal) + (entries*sizeof(struct mstat)));
+  if (!mdi) {
+    return NULL;
+  }
+  mdi->entries = entries;
+  mdi->cur = 0;
+  struct mstat* mdir_mstat = mdi->head;
+ 
+  /*
+   * Copy the mstat info over, dup'ing as required.
+   */
+  for (int i=0; i<entries; ++i) {
+    mdir_mstat[i] = de_mstat[i];
+
+    /*
+     * Make sure all names are properly dup'ed so that the original
+     * mstat structures can be completely freed
+     */
+    mdir_mstat[i].name = strdup(de_mstat[i].name);
+
+    if (mdir_mstat[i].is_alias) {
+      if (mdir_mstat[i].alias_name == NULL) {
+        mdir_mstat[i].alias_name = strdup(de_mstat[i].alias_name);
+      } else {
+        mdir_mstat[i].alias_name = strdup(de_mstat[i].alias_name);
+      }
+    }
+    if (mdir_mstat[i].ispf_stats && mdir_mstat[i].ispf_id != NULL) {
+      mdir_mstat[i].ispf_id = strdup(de_mstat[i].ispf_id);
+    }
+
+    if (de_mstat[i].has_ext) {
+      mdir_mstat[i].has_ext = 1;
+      if (de_mstat[i].ext_id != NULL) {
+        mdir_mstat[i].ext_id = strdup(de_mstat[i].ext_id);
+      }
+      mdir_mstat[i].ext_ccsid = de_mstat[i].ext_ccsid;
+      mdir_mstat[i].ext_changed = de_mstat[i].ext_changed;
+    }
+  }
+
+  free_mstat(de_mstat, entries);
+  free(de_mstat);
+
+  /*
+   * Sort the array of mstat information
+   */
+  if (sort_time) {
+    if (sort_reverse) {
+      qsort(mdir_mstat, entries, sizeof(struct mstat), cmp_mem_reverse_time);
+    } else {
+      qsort(mdir_mstat, entries, sizeof(struct mstat), cmp_mem_time);
+    }
+  } else {
+    if (sort_reverse) {
+      qsort(mdir_mstat, entries, sizeof(struct mstat), cmp_mem_reverse_name);
+    } else {
+      qsort(mdir_mstat, entries, sizeof(struct mstat), cmp_mem_name);
+    }
+  }
+
+  if (opts->debug) {
+    print_members(mdir_mstat, entries);
+  }
+    
+  return (MEMDIR*) mdi;
+}
+#endif
 
 MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const DBG_Opts* opts)
 {
@@ -589,15 +700,31 @@ MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const D
   if (open_pds_for_read(dataset, &bh, opts)) {
     return NULL;
   }
+#if 0  
   struct mem_node* np = pds_mem(&bh, opts);
+#endif
   struct desp* PTR32 desp = get_desp_all(&bh, opts);
-  if (np == NULL || desp == NULL) {
+  if (desp == NULL) {
     return NULL;
   }
   struct mstat* de_mstat = desp_to_mstats(desp, opts, &de_members);
+#if 0
   struct mstat* mn_mstat = memnodes_to_mstats(np, opts, &mn_members);
 
-  return merge_mstat(mn_mstat, mn_members, de_mstat, de_members, sort_time, sort_reverse, opts);
+  if (opts->debug) {
+    printf("Members before merge:\n");
+    print_members(mn_mstat, mn_members);
+    print_members(de_mstat, de_members);
+  }
+
+  MEMDIR* merge = merge_mstat(mn_mstat, mn_members, de_mstat, de_members, sort_time, sort_reverse, opts);
+#else
+  MEMDIR* memdir = mstat_to_mdir(de_mstat, de_members, sort_time, sort_reverse, opts);
+#endif
+
+  close_pds(&bh, opts);
+
+  return memdir;
 }
 
 struct mstat* readmemdir(MEMDIR* memdir, const DBG_Opts* opts)
@@ -631,118 +758,74 @@ int writememdir_entry(FM_BPAMHandle* bh, const struct mstat* mstat, const DBG_Op
 
 int readmemdir_entry(FM_BPAMHandle* bh, const char* mem, struct mstat* mstat, const DBG_Opts* opts)
 {
-
   /*
    * Find the SMDE for the member and then find the mem_node for the member.
    * Merge the contents together.
    * Free up the 31-bit storage allocated for desp
    */ 
-  struct desp* PTR32 desp = find_desp(bh, mem, opts);
-  struct smde* PTR32 smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
+  struct desp* PTR32 desp;
+  struct smde* PTR32 smde; 
+    
+  desp = find_desp(bh, mem, opts);
+  if (!desp) {
+    fprintf(stderr, "Unable to find member %s.\n", mem);
+    return 4;
+  }
 
   smde = (struct smde* PTR32) (desp->desp_area_ptr->desb_data);
 
-  struct mstat smde_mstat = { 0 };
-  if (!smde_to_mstat(smde, &smde_mstat, opts)) {
+  if (!smde_to_mstat(smde, mstat, opts)) {
+    fprintf(stderr, "Unable to copy statistics from smde for %s.\n", mem);
     return 4;
-  }
-
-  struct mem_node match_node = { 0 };
-  if (!find_mem(bh, mem, &match_node, opts)) {
-    return 4;
-  }
-  struct mstat memnode_mstat = { 0 };
-  if (!memnode_to_mstat(&match_node, &memnode_mstat, opts)) {
-    return 4;
-  }
-
-  /*
-   * Copy over all the ISPF stats from mnode_mstat
-   * and if there are also extended attributes, copy
-   * them. 
-   * This leaves a few wrinkles with aliases, which
-   * could be supported when necessary. (msf tbd)
-   */ 
-  *mstat = memnode_mstat;
-  if (smde_mstat.has_ext) {
-    mstat->has_ext = 1;
-    mstat->ext_id = strdup(smde_mstat.ext_id);
-    mstat->ext_ccsid = smde_mstat.ext_ccsid;
-    mstat->ext_changed = smde_mstat.ext_changed;
   }
 
   free_desp(desp, opts);
 
   if (opts->debug) {
-    print_members(mstat, 1);
+    fprintf(stdout, "Print out member entry %s.\n", mem);
+    print_member(mstat, 1);
   }
   return 0;
 }
 
-static char* PTR32 ispf_rname(const char* ds, const char* mem)
+struct mstat* create_mstat(struct mstat* mstat, char* userid, const char* alias_name, const char* name, const void* ttr, int num_lines, int ccsid, const DBG_Opts* opts)
 {
-  unsigned int rname_len = strlen(ds) + strlen(mem);
-
-  if (rname_len > 44+8) {
-    fprintf(stderr, "Invalid dataset or member name passed to ENQ/DEQ %s(%s)\n", ds, mem);
-    return NULL;
+  time_t cur_time;
+  unsigned int mem_id = (*(unsigned int*) ttr) >> 8;
+  mstat->mem_id = mem_id;
+  if (alias_name != NULL) {
+    mstat->is_alias = 1;
+    mstat->alias_name = alias_name;
+  } else {
+    mstat->is_alias = 0;
+    mstat->name = name;
   }
 
-  char* __ptr32 rname;
-  rname = MALLOC31(52+1);
-  if (!rname) {
-    fprintf(stderr, "Unable to obtain storage for ENQ/DEQ\n");
-    return NULL;
-  }
-  sprintf(rname, "%-44s%-8s", ds, mem);
+  time ( &cur_time );
 
-  return rname;
-}
+  mstat->ispf_stats = 1;
 
-static char* PTR32 ispf_qname(const char* qn)
-{
-  unsigned int qname_len = strlen(qn);
+  mstat->ispf_created = cur_time;
+  mstat->ispf_changed = cur_time;
 
-  if (qname_len > 8) {
-    fprintf(stderr, "Invalid queue name passed to ENQ/DEQ %s\n", qn);
-    return NULL;
+  if (userid == NULL) {
+    char default_userid[USERID_LEN+1];
+    __getuserid(default_userid, USERID_LEN);
+    mstat->ispf_id = strdup(default_userid);
+  } else {
+    mstat->ispf_id = strdup(userid);
   }
 
-  char* __ptr32 qname;
-  qname = MALLOC31(8+1);
-  if (!qname) {
-    fprintf(stderr, "Unable to obtain storage for ENQ/DEQ\n");
-    return NULL;
-  }
-  sprintf(qname, "%-8s", qn);
+  mstat->ispf_version = 1;
+  mstat->ispf_modification = 1;
+  mstat->ispf_current_lines = num_lines;
+  mstat->ispf_initial_lines = num_lines;
+  mstat->ispf_modified_lines = num_lines;
 
-  return qname;
-}
+  mstat->has_ext = 1;
+  mstat->ext_ccsid = ccsid;
+  mstat->ext_id = strdup(mstat->ispf_id);
+  mstat->ext_changed = cur_time;
 
-int ispf_enq_dataset_member(const char* ds, const char* wmem) 
-{
-  char* __ptr32 rname = ispf_rname(ds, wmem);
-  char* __ptr32 qname = ispf_qname("SPFEDIT");
-
-  if (!rname || !qname) {
-    return 4;
-  }
-  int rc = SYEXENQ(qname, rname, strlen(rname));
-  free(rname);
-  free(qname);
-  return rc;
-}
-
-int ispf_deq_dataset_member(const char* ds, const char* wmem) 
-{
-  char* __ptr32 rname = ispf_rname(ds, wmem);
-  char* __ptr32 qname = ispf_qname("SPFEDIT");
-
-  if (!rname || !qname) {
-    return 4;
-  }
-  int rc = SYEXDEQ(qname, rname, strlen(rname));
-  free(rname);
-  free(qname);
-  return rc;
+  return mstat;
 }

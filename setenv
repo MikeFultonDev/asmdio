@@ -1,0 +1,29 @@
+
+# Meant to be source'd. Set up environment variables for build and clean
+
+# Default build is 64-bit.  Use "MODE=31" envar to build a 31-bit version.
+if [ -z "${MODE}" ]; then
+  MODE='64'
+fi
+
+if [ "${MODE}" = "64" ]; then
+  DATA_MODEL="lp64"
+fi
+
+ASAMODE="AMODE${MODE}"
+LIST="list'()',source,offset,flag'(i)',suppress'(3764)'"
+INFO="info'(cmp,cnv,cns,enu,lan,por,pro,ret)'"
+
+export AS=as
+export ASFLAGS="--SYSPARM'(${ASAMODE})',GOFF,LIST,SUPRWARN'(425,434)'"
+export CC=xlc
+export CFLAGS="-Wc,OPT'(3)',${DATA_MODEL},AGGR,${LIST},${INFO}"
+export CFLAGS="-Wc,debug,${DATA_MODEL},AGGR,${LIST},${INFO}"
+export CPPFLAGS="-DAMODE=${MODE} -Iintinclude -Iinclude"
+export LD=xlc
+export LDFLAGS="-Wl,${DATA_MODEL},edit=yes,map,case=mixed"
+
+#
+# add clang to the path
+#
+export PATH=/usr/local/oelcpp/usr/lpp/IBM/oelcpp/v2r0/bin:$PATH

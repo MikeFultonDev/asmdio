@@ -3,9 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "decb.h"
 #include "dio.h"
+#include "mem.h"
 #include "ihadcb.h"
 #include "iosvcs.h"
 #include "s99.h"

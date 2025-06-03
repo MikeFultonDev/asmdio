@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "asmdiocommon.h"
+#include "asmdio.h"
 #include "dio.h"
+#include "mem.h"
 #include "ihadcb.h"
 #include "iosvcs.h"
 #include "s99.h"
@@ -228,6 +229,7 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
     return rc;
   }
 
+  
 
   rc = CHECK(decb);
   if (rc) {

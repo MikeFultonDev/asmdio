@@ -1,7 +1,7 @@
 #ifndef __IO_SERVICES__
   #define __IO_SERVICES__ 1
 
-  #include "asmdiocommon.h"
+  #include "asmdio.h"
 
   #include "s99.h"
 
