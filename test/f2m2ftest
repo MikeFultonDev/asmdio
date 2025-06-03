@@ -1,0 +1,60 @@
+#!/bin/sh
+
+ME=$(basename $0)
+MYDIR="$(cd "$(dirname "$0")" > /dev/null 2>&1 && pwd -P)"
+ROOT="${MYDIR}/../"
+cd "${ROOT}"
+
+#
+# Test will copy files from a couple directories
+# to a mapped set of datasets.
+# Need to allocate datasets first.
+#
+# It will then proceed to copy the files back again to a new temp directory
+
+#
+# MSF - currently not copying the LST file for m2f because it is VB.
+# Code needs to be restructured - see issue: https://github.com/MikeFultonDev/asmdio/issues/45
+#
+
+hlq=$(hlq)
+mlq="DIO.F2M"
+f2mtmpdir="/tmp/diof2m$$"
+m2ftmpdirc="/tmp/diom2f_c$$"
+m2ftmpdirl="/tmp/diom2_lstf$$"
+
+drm -f "${hlq}.${mlq}.*"
+mkdir "${f2mtmpdir}"
+mkdir "${m2ftmpdirc}"
+mkdir "${m2ftmpdirl}"
+
+cp -rpf src "${f2mtmpdir}"
+cp -rpf include "${f2mtmpdir}"
+cp -rpf obj "${f2mtmpdir}"
+
+dtouch "${hlq}.${mlq}.c"
+dtouch "${hlq}.${mlq}.h"
+dtouch "${hlq}.${mlq}.dbg"
+dtouch "${hlq}.${mlq}.o"
+dtouch "${hlq}.${mlq}.a"
+dtouch "${hlq}.${mlq}.s"
+dtouch -l 137 -r vba "${hlq}.${mlq}.lst"
+
+time bin/f2m "${f2mtmpdir}/src" "${hlq}.${mlq}" '*.*'
+time bin/f2m "${f2mtmpdir}/include" "${hlq}.${mlq}" '*.*'
+time bin/f2m "${f2mtmpdir}/obj" "${hlq}.${mlq}" '*.*'
+
+#
+# run again with all members already existing
+#
+time bin/f2m "${f2mtmpdir}/src" "${hlq}.${mlq}" '*.*'
+time bin/f2m "${f2mtmpdir}/include" "${hlq}.${mlq}" '*.*'
+time bin/f2m "${f2mtmpdir}/obj" "${hlq}.${mlq}" '*.*'
+
+#
+# Copy the files into a temp directory
+#
+
+time bin/m2f -i "${hlq}.${mlq}.c" "${m2ftmpdirc}" '*'
+time bin/m2f -i "${hlq}.${mlq}.lst" "${m2ftmpdirl}" '*'
+
