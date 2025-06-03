@@ -277,10 +277,5 @@ printf("Before DCB:%p DCBE:%p EODAD:%p\n", dcb, dcb->dcbdcbe, dcb->dcbdcbe->eoda
   }
   FREE31(opencb);
 
-  rc = ddfree(&dd);
-  if (rc) {
-    return 4;
-  }
-
   return 0;
 }

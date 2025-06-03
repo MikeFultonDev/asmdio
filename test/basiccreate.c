@@ -13,7 +13,7 @@
 #include "util.h"
 
 /*
- * Basic Create of a PDSE Member:
+ * Basic Create of a FB PDSE Member:
  * - Allocate System-Generated DDName to (PDSE name passed in)
  * - Establish DCB for DDName
  * - Perform OPEN on PDSE

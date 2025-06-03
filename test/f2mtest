@@ -1,5 +1,10 @@
 #!/bin/sh
 
+ME=$(basename $0)
+MYDIR="$(cd "$(dirname "$0")" > /dev/null 2>&1 && pwd -P)"
+ROOT="${MYDIR}/../"
+cd "${ROOT}"
+
 #
 # Test will copy files from a couple directories
 # to a mapped set of datasets.
