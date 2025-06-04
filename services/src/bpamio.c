@@ -126,15 +126,15 @@ static void validate_var_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 
   debug(opts, "Validate Block: Block Size: %d\n", block_size);
   char* next_rec_start = &(((char*)block_hw)[4]);
+  int line_num = 1;
   while ((next_rec_start - block_char) < block_size) {
     unsigned short rec_length = *((unsigned short*) next_rec_start); 
-    debug(opts, "Record %d Length: %d\n", bh->line_num, rec_length);
+    debug(opts, "Record %d Length: %d\n", line_num++, rec_length);
     if (rec_length < 4) {
       fprintf(stderr, "Unexpected record length. Validation Failed.\n");
       exit(4);
     }
     next_rec_start = &next_rec_start[rec_length];
-    bh->line_num++;
   }
   if (next_rec_start - block_char != block_size) {
     fprintf(stderr, "Total record length did not match block size: (%d,%d)\n", next_rec_start - block_char, block_size);
@@ -145,13 +145,12 @@ static void validate_var_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 /*
  * Read block.
  */
-int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
+static int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   const struct decb decb_template = { 0, 0x8020 };
   *(bh->decb) = decb_template;
   SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
   bh->decb->area = bh->block;
-
 
   /* Read one block */
   int rc = READ(bh->decb);
@@ -170,64 +169,12 @@ int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
 
   return rc;
 }
-
-/*
- * Write out a block. Returns 0 if successful, non-zero otherwise
- */
-int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
-{
-  const struct decb decb_template = { 0, 0x8020 };
-  *(bh->decb) = decb_template;
-  SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
-  bh->decb->area = bh->block;
-
-  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n", 
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N', 
-    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N', 
-    bh->bytes_used, 
-    bh->block_size
-  );
-  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
-    /*
-     * Specify the block size for the variable length records 
-     */
-    unsigned short* halfword = (unsigned short*) (bh->block);
-    halfword[0] = bh->bytes_used;  /* size of block */
-    halfword[1] = 0;
-    halfword[3] = 0;
-    bh->dcb->dcbblksi = bh->block_size;
-
-    validate_var_block(bh, opts);
-    debug(opts, "(Block Write) First Record length:%d bytes used:%d\n", halfword[2], halfword[0]);
-
-  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) { 
-    bh->dcb->dcbblksi = bh->bytes_used;
-  } else {
-    fprintf(stderr, "Not sure how to write a block that is not recv or recf\n");
-    return 4;
-  }
-
-  int rc = WRITE(bh->decb);
-  if (rc) {
-    fprintf(stderr, "Unable to perform WRITE. rc:%d\n", rc);
-    return rc;
-  }
-
-  if (!bh->memstart_ttr_known) {
-    bh->memstart_ttr = NOTE(bh->dcb);
-    bh->memstart_ttr_known = 1;
-  }
-
-  bh->bytes_used = 0;
-  return 0;
-}
-
 /*
  * Read a record. Return non-zero when no next record.
  * Fixed Block Short blocks need special consideration: https://tech.mikefulton.ca/BlockLengthReadDetermination
  */
 
-int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts)
+static int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts)
 {
   char* block_char = (char*) (bh->block);
   unsigned short* block_hw = (unsigned short*) (bh->block);
@@ -281,6 +228,230 @@ int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts)
     bh->next_record_len = bh->dcb->dcblrecl;
   }
   return 1;
+}
+
+/*
+ * Write out a block. Returns 0 if successful, non-zero otherwise
+ */
+static int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  if (bh->bytes_used == 0) {
+    return 0; /* empty block */
+  }
+
+  const struct decb decb_template = { 0, 0x8020 };
+  *(bh->decb) = decb_template;
+  SET_24BIT_PTR(bh->decb->dcb24, bh->dcb);
+  bh->decb->area = bh->block;
+
+  debug(opts, "FB:%c VB:%c bytes_used:%d block_size:%d\n", 
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) ? 'Y' : 'N', 
+    (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) ? 'Y' : 'N', 
+    bh->bytes_used, 
+    bh->block_size
+  );
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    /*
+     * Specify the block size for the variable length records 
+     */
+    unsigned short* halfword = (unsigned short*) (bh->block);
+    halfword[0] = bh->bytes_used;  /* size of block */
+    halfword[1] = 0;
+    halfword[3] = 0;
+    bh->dcb->dcbblksi = bh->block_size;
+
+    validate_var_block(bh, opts);
+    debug(opts, "(Block Write) First Record length:%d bytes used:%d\n", halfword[2], halfword[0]);
+
+  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) { 
+    bh->dcb->dcbblksi = bh->bytes_used;
+  } else {
+    fprintf(stderr, "Not sure how to write a block that is not recv or recf\n");
+    return 4;
+  }
+
+  int rc = WRITE(bh->decb);
+  if (rc) {
+    fprintf(stderr, "Unable to perform WRITE. rc:%d\n", rc);
+    return rc;
+  }
+
+  if (!bh->memstart_ttr_known) {
+    bh->memstart_ttr = NOTE(bh->dcb);
+    bh->memstart_ttr_known = 1;
+  }
+
+  bh->bytes_used = 0;
+  return 0;
+}
+static int can_add_record_to_block(FM_BPAMHandle* bh, size_t rec_len)
+{
+  int line_length;
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    const int hdr_size = sizeof(unsigned int);
+    line_length = rec_len + hdr_size;
+  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
+    line_length = bh->dcb->dcblrecl;
+  }
+  int rc = (line_length + bh->bytes_used <= bh->block_size);
+  return rc;
+}
+
+/*
+ * copy_record_to_block returns 'truncated' (non-zero if record truncated, otherwise zero)
+ */
+static int copy_record_to_block(FM_BPAMHandle* bh, unsigned short usr_rec_len, const char* rec, const DBG_Opts* opts)
+{
+  int truncated = 0;
+  debug(opts, "Add Record of length: %d bytes. Block bytes used: %d\n", usr_rec_len, bh->bytes_used);
+ 
+  const int BDW_SIZE = 4;
+  const int RDW_SIZE = 4;
+
+  unsigned short disk_len;
+  unsigned short rec_len;
+
+  char* block_char = (char*) (bh->block);
+  int rec_hdr_size;
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    /*
+     * Variable format
+     */    
+    unsigned short* next_rec;
+    rec_hdr_size = BDW_SIZE;
+    if (bh->bytes_used == 0) {
+      /*
+       * First word is block length - clear it to 0 for now
+       */
+      unsigned int* start = (unsigned int*) (bh->block);
+      start[0] = 0;
+      bh->bytes_used += BDW_SIZE;
+    }
+    /*
+     * Determine logical and disk record length
+     */
+    next_rec = (unsigned short*) (&block_char[bh->bytes_used]);
+    disk_len = usr_rec_len + RDW_SIZE;
+    if (disk_len > bh->dcb->dcblrecl) {
+      rec_len = bh->dcb->dcblrecl - RDW_SIZE;
+      disk_len = bh->dcb->dcblrecl;
+      truncated = 1;
+    } else {
+      rec_len = usr_rec_len;
+    }
+    
+    next_rec[0] = disk_len;
+    
+    next_rec[1] = 0;
+    bh->bytes_used += RDW_SIZE;
+    debug(opts, "Disk Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
+  } else {
+    /*
+     * Fixed format
+     */
+    rec_hdr_size = 0;
+    if (usr_rec_len > bh->dcb->dcblrecl) {
+      disk_len = bh->dcb->dcblrecl;
+      rec_len = disk_len;
+      truncated = 1;
+    } else {
+      disk_len = usr_rec_len;
+      rec_len = disk_len;
+    }
+  }
+  if (truncated) {
+    info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", bh->line_num, bh->dcb->dcblrecl, usr_rec_len);
+  }
+
+  debug(opts, "Copy data to disk from offset: %d for %d bytes. disk_len:%d rec_len:%d\n", bh->bytes_used, rec_len, disk_len, rec_len);
+  
+  memcpy(&block_char[bh->bytes_used], rec, rec_len);
+  bh->bytes_used += rec_len; 
+ 
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
+    /*
+     *  If the record is FIXED, then pad the record out with blanks
+     */
+    int pad_length = bh->dcb->dcblrecl - rec_len;
+    debug(opts, "Pad record %d by %d blanks\n", bh->line_num, pad_length);
+    if (pad_length > 0) {
+      memset(&block_char[bh->bytes_used], ' ', pad_length); /* msf - choose ASCII or EBCDIC space based on ccsid */
+    }
+    bh->bytes_used += pad_length;
+  }
+  return truncated;
+}
+
+/*
+ * flush any records to disk, if it is a partial block.
+ * Non-zero return code indicates failure to flush
+ */
+int flush(FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  int rc = write_block(bh, opts);
+  if (rc) {
+    return -1;
+  } else {
+    return 0;
+  }
+}
+
+ssize_t write_record(FM_BPAMHandle* bh, size_t rec_len, const char* rec, const DBG_Opts* opts)
+{
+  /*
+   * Batch up records until there is a full block and write it out 
+   */
+  ssize_t rc;
+  if (can_add_record_to_block(bh, rec_len)) {
+    int truncated = copy_record_to_block(bh, rec_len, rec, opts);
+    bh->line_num++;
+    rc = 0;
+  } else {
+    rc = write_block(bh, opts);
+  }
+  return rc;
+}
+
+size_t record_length(FM_BPAMHandle* bh, const DBG_Opts* opts)
+{
+  return bh->dcb->dcblrecl;
+}
+
+ssize_t read_record_direct(FM_BPAMHandle* bh, char** rec, size_t* rec_len, const DBG_Opts* opts)
+{
+  /*
+   * See if we need to read another block
+   */
+  if ((bh->line_num == 0) || !next_record(bh, opts)) {
+    ssize_t rc = read_block(bh, opts);
+    if (rc) {
+      return -1;
+    }
+    next_record(bh, opts);
+    bh->line_num++;
+  }
+  debug(opts, "Read record direct. Start: %p Length:%d\n", bh->next_record_start, bh->next_record_len);
+  *rec = bh->next_record_start;
+  *rec_len = bh->next_record_len;
+  return bh->next_record_len;
+}
+
+ssize_t read_record(FM_BPAMHandle* bh, size_t max_rec_len, char* rec, const DBG_Opts* opts)
+{
+
+  size_t internal_len;
+  char* internal_rec;
+  ssize_t rec_len = read_record_direct(bh, &internal_rec, &internal_len, opts);
+  if (rec_len < 0) {
+    return rec_len;
+  }
+  if (rec_len > max_rec_len) {
+    fprintf(stderr, "record length is too large. max:%d received: %d.\n", max_rec_len, rec_len);
+    return -1;
+  }
+  memcpy(rec, internal_rec, rec_len);
+
+  return rec_len;
 }
 
 const struct desp desp_template = { { { "IGWDESP ", sizeof(struct desp), 1, 0 } } };
@@ -424,6 +595,12 @@ int find_member(FM_BPAMHandle* bh, const char* mem, const DBG_Opts* opts)
     fprintf(stderr, "Unable to perform FIND. rc:%d\n", rc);
     return rc;
   }
+
+  /*
+   * Clear the next record code so that we can know to read a block at the start of next_record
+   */
+  bh->next_record_len = 0;
+  bh->next_record_start = NULL;
 
   return 0;
 }
@@ -670,6 +847,7 @@ int close_pds(FM_BPAMHandle* bh, const DBG_Opts* opts)
   return rc;
 }
 
+#if 0
 static void copy_node(struct mem_node* node, const char *name, int is_alias, char* ttr, const char* userdata, char userdata_len)
 {
   /* copy the name into the node and NULL terminate it */
@@ -940,6 +1118,7 @@ void free_mem(struct mem_node* node)
   }
   return;
 }
+#endif
 
 struct desp* PTR32 find_desp(FM_BPAMHandle* bh, const char* memname, const DBG_Opts* opts)
 {
@@ -1023,147 +1202,9 @@ void free_desp(struct desp* PTR32 desp, const DBG_Opts* opts)
   free(desp);
 }
 
-static int can_add_record_to_block(FM_BPAMHandle* bh, size_t rec_len)
-{
-  int line_length;
-  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
-    const int hdr_size = sizeof(unsigned int);
-    line_length = rec_len + hdr_size;
-  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
-    line_length = bh->dcb->dcblrecl;
-  }
-  int rc = (line_length + bh->bytes_used <= bh->block_size);
-  return rc;
-}
 
-/*
- * copy_record_to_block returns 'truncated' (non-zero if record truncated, otherwise zero)
- */
-static int copy_record_to_block(FM_BPAMHandle* bh, unsigned short usr_rec_len, const char* rec, DBG_Opts* opts)
-{
-  int truncated = 0;
-  debug(opts, "Add Record of length: %d bytes. Block bytes used: %d\n", usr_rec_len, bh->bytes_used);
- 
-  const int BDW_SIZE = 4;
-  const int RDW_SIZE = 4;
 
-  unsigned short disk_len;
-  unsigned short rec_len;
 
-  char* block_char = (char*) (bh->block);
-  int rec_hdr_size;
-  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
-    /*
-     * Variable format
-     */    
-    unsigned short* next_rec;
-    rec_hdr_size = BDW_SIZE;
-    if (bh->bytes_used == 0) {
-      /*
-       * First word is block length - clear it to 0 for now
-       */
-      unsigned int* start = (unsigned int*) (bh->block);
-      start[0] = 0;
-      bh->bytes_used += BDW_SIZE;
-    }
-    /*
-     * Determine logical and disk record length
-     */
-    next_rec = (unsigned short*) (&block_char[bh->bytes_used]);
-    disk_len = usr_rec_len + RDW_SIZE;
-    if (disk_len > bh->dcb->dcblrecl) {
-      rec_len = bh->dcb->dcblrecl - RDW_SIZE;
-      disk_len = bh->dcb->dcblrecl;
-      truncated = 1;
-    } else {
-      rec_len = usr_rec_len;
-    }
-    
-    next_rec[0] = disk_len;
-    
-    next_rec[1] = 0;
-    bh->bytes_used += RDW_SIZE;
-    debug(opts, "Disk Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
-  } else {
-    /*
-     * Fixed format
-     */
-    rec_hdr_size = 0;
-    if (usr_rec_len > bh->dcb->dcblrecl) {
-      disk_len = bh->dcb->dcblrecl;
-      rec_len = disk_len;
-      truncated = 1;
-    } else {
-      disk_len = usr_rec_len;
-      rec_len = disk_len;
-    }
-  }
-  if (truncated) {
-    info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", bh->line_num, bh->dcb->dcblrecl, usr_rec_len);
-  }
-
-  debug(opts, "Copy data to disk from offset: %d for %d bytes. disk_len:%d rec_len:%d\n", bh->bytes_used, rec_len, disk_len, rec_len);
-  
-  memcpy(&block_char[bh->bytes_used], rec, rec_len);
-  bh->bytes_used += rec_len; 
- 
-  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
-    /*
-     *  If the record is FIXED, then pad the record out with blanks
-     */
-    int pad_length = bh->dcb->dcblrecl - rec_len;
-    debug(opts, "Pad record %d by %d blanks\n", bh->line_num, pad_length);
-    if (pad_length > 0) {
-      memset(&block_char[bh->bytes_used], ' ', pad_length); /* msf - choose ASCII or EBCDIC space based on ccsid */
-    }
-    bh->bytes_used += pad_length;
-  }
-  return truncated;
-}
-
-ssize_t write_record(FM_BPAMHandle* bh, size_t rec_len, const char* rec, DBG_Opts* opts)
-{
-  /*
-   * Batch up records until there is a full block and write it out 
-   */
-  ssize_t rc;
-  if (can_add_record_to_block(bh, rec_len)) {
-    int truncated = copy_record_to_block(bh, rec_len, rec, opts);
-    rc = 0;
-  } else {
-    rc = write_block(bh, opts);
-  }
-  return rc;
-}
-
-int record_length(FM_BPAMHandle* bh, DBG_Opts* opts)
-{
-  return bh->dcb->dcblrecl;
-}
-
-ssize_t read_record(FM_BPAMHandle* bh, size_t max_rec_len, char* rec, size_t num_lines, DBG_Opts* opts)
-{
-  /*
-   * See if we need to read another block
-   */
-  if ((num_lines == 0) || !next_record(bh, opts)) {
-    ssize_t rc = read_block(bh, opts);
-    if (rc) {
-      fprintf(stderr, "read_block returned rc:%d\n", rc);
-      return -1;
-    }
-    next_record(bh, opts);
-  }
-
-  ssize_t rec_len = bh->next_record_len;
-  if (rec_len > max_rec_len) {
-    fprintf(stderr, "record length is too large. max:%d received: %d.\n", max_rec_len, rec_len);
-    return -1;
-  }
-  memcpy(rec, bh->next_record_start, rec_len);
-
-  return rec_len;
-}
 
 
 static char* PTR32 ispf_rname(const char* ds, const char* mem)

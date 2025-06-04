@@ -169,18 +169,16 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
       find_time += (finish - start);
 
       start = clock();
-      int blocks_read = 0;
-      while (!read_block(&bh, &opts->dbg)) {
+      char* rec;
+      ssize_t rec_len;
+      while (read_record_direct(&bh, &rec, &rec_len, &opts->dbg) >= 0) {
         finish = clock();
         read_time += (finish - start);
-        blocks_read++;
-        while (next_record(&bh, &opts->dbg)) {
-          start = clock();
-          buffer_write(&fh, bh.next_record_start, bh.next_record_len);
-          buffer_write(&fh, &fh.newline_char, 1);
-          finish = clock();
-          write_time += (finish - start);
-        }
+
+        buffer_write(&fh, rec, rec_len);
+        buffer_write(&fh, &fh.newline_char, 1);
+        finish = clock();
+        write_time += (finish - start);
         start = clock();
       }
       start = clock();

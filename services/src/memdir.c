@@ -699,11 +699,11 @@ MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const D
 {
   FM_BPAMHandle bh;
   size_t de_members;
-  size_t mn_members;
   if (open_pds_for_read(dataset, &bh, opts)) {
     return NULL;
   }
 #if 0  
+  size_t mn_members;
   struct mem_node* np = pds_mem(&bh, opts);
 #endif
   struct desp* PTR32 desp = get_desp_all(&bh, opts);

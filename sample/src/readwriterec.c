@@ -37,7 +37,7 @@ static ssize_t read_member(FM_BPAMHandle* bh, const char* ds, const char* mem_na
   ssize_t bytes_read;
   size_t tot_bytes_read = 0;
   int num_lines = 0;
-  while ((bytes_read = read_record(bh, max_bytes_to_read, cur, num_lines, opts)) >= 0) {
+  while ((bytes_read = read_record(bh, max_bytes_to_read, cur, opts)) >= 0) {
     cur += bytes_read;
     *cur = '\n'; /* msf - choose ASCII or EBCDIC newline based on ccsid */
     ++cur;
@@ -66,7 +66,7 @@ static int write_member(FM_BPAMHandle* bh, const char* ds, const char* mem_name,
     cur = &next[1];
     ++num_lines;
   }
-  ssize_t rc = write_block(bh, opts); /* msf - need to write the partial block - maybe this should be on 'close' ? */
+  int rc = flush(bh, opts); /* flush any remaining records */
   if (rc < 0) {
     fprintf(stderr, "Unable to write final block for member %s(%s)\n", ds, mem_name);
     return -1;
