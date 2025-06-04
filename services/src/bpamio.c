@@ -1022,3 +1022,214 @@ void free_desp(struct desp* PTR32 desp, const DBG_Opts* opts)
   free(desp->desp_name_list_ptr);
   free(desp);
 }
+
+static int can_add_record_to_block(FM_BPAMHandle* bh, size_t rec_len)
+{
+  int line_length;
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    const int hdr_size = sizeof(unsigned int);
+    line_length = rec_len + hdr_size;
+  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
+    line_length = bh->dcb->dcblrecl;
+  }
+  int rc = (line_length + bh->bytes_used <= bh->block_size);
+  return rc;
+}
+
+/*
+ * copy_record_to_block returns 'truncated' (non-zero if record truncated, otherwise zero)
+ */
+static int copy_record_to_block(FM_BPAMHandle* bh, unsigned short usr_rec_len, const char* rec, DBG_Opts* opts)
+{
+  int truncated = 0;
+  debug(opts, "Add Record of length: %d bytes. Block bytes used: %d\n", usr_rec_len, bh->bytes_used);
+ 
+  const int BDW_SIZE = 4;
+  const int RDW_SIZE = 4;
+
+  unsigned short disk_len;
+  unsigned short rec_len;
+
+  char* block_char = (char*) (bh->block);
+  int rec_hdr_size;
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
+    /*
+     * Variable format
+     */    
+    unsigned short* next_rec;
+    rec_hdr_size = BDW_SIZE;
+    if (bh->bytes_used == 0) {
+      /*
+       * First word is block length - clear it to 0 for now
+       */
+      unsigned int* start = (unsigned int*) (bh->block);
+      start[0] = 0;
+      bh->bytes_used += BDW_SIZE;
+    }
+    /*
+     * Determine logical and disk record length
+     */
+    next_rec = (unsigned short*) (&block_char[bh->bytes_used]);
+    disk_len = usr_rec_len + RDW_SIZE;
+    if (disk_len > bh->dcb->dcblrecl) {
+      rec_len = bh->dcb->dcblrecl - RDW_SIZE;
+      disk_len = bh->dcb->dcblrecl;
+      truncated = 1;
+    } else {
+      rec_len = usr_rec_len;
+    }
+    
+    next_rec[0] = disk_len;
+    
+    next_rec[1] = 0;
+    bh->bytes_used += RDW_SIZE;
+    debug(opts, "Disk Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
+  } else {
+    /*
+     * Fixed format
+     */
+    rec_hdr_size = 0;
+    if (usr_rec_len > bh->dcb->dcblrecl) {
+      disk_len = bh->dcb->dcblrecl;
+      rec_len = disk_len;
+      truncated = 1;
+    } else {
+      disk_len = usr_rec_len;
+      rec_len = disk_len;
+    }
+  }
+  if (truncated) {
+    info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", bh->line_num, bh->dcb->dcblrecl, usr_rec_len);
+  }
+
+  debug(opts, "Copy data to disk from offset: %d for %d bytes. disk_len:%d rec_len:%d\n", bh->bytes_used, rec_len, disk_len, rec_len);
+  
+  memcpy(&block_char[bh->bytes_used], rec, rec_len);
+  bh->bytes_used += rec_len; 
+ 
+  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
+    /*
+     *  If the record is FIXED, then pad the record out with blanks
+     */
+    int pad_length = bh->dcb->dcblrecl - rec_len;
+    debug(opts, "Pad record %d by %d blanks\n", bh->line_num, pad_length);
+    if (pad_length > 0) {
+      memset(&block_char[bh->bytes_used], ' ', pad_length); /* msf - choose ASCII or EBCDIC space based on ccsid */
+    }
+    bh->bytes_used += pad_length;
+  }
+  return truncated;
+}
+
+ssize_t write_record(FM_BPAMHandle* bh, size_t rec_len, const char* rec, DBG_Opts* opts)
+{
+  /*
+   * Batch up records until there is a full block and write it out 
+   */
+  ssize_t rc;
+  if (can_add_record_to_block(bh, rec_len)) {
+    int truncated = copy_record_to_block(bh, rec_len, rec, opts);
+    rc = 0;
+  } else {
+    rc = write_block(bh, opts);
+  }
+  return rc;
+}
+
+int record_length(FM_BPAMHandle* bh, DBG_Opts* opts)
+{
+  return bh->dcb->dcblrecl;
+}
+
+ssize_t read_record(FM_BPAMHandle* bh, size_t max_rec_len, char* rec, size_t num_lines, DBG_Opts* opts)
+{
+  /*
+   * See if we need to read another block
+   */
+  if ((num_lines == 0) || !next_record(bh, opts)) {
+    ssize_t rc = read_block(bh, opts);
+    if (rc) {
+      fprintf(stderr, "read_block returned rc:%d\n", rc);
+      return -1;
+    }
+    next_record(bh, opts);
+  }
+
+  ssize_t rec_len = bh->next_record_len;
+  if (rec_len > max_rec_len) {
+    fprintf(stderr, "record length is too large. max:%d received: %d.\n", max_rec_len, rec_len);
+    return -1;
+  }
+  memcpy(rec, bh->next_record_start, rec_len);
+
+  return rec_len;
+}
+
+
+static char* PTR32 ispf_rname(const char* ds, const char* mem)
+{
+  unsigned int rname_len = strlen(ds) + strlen(mem);
+
+  if (rname_len > 44+8) {
+    fprintf(stderr, "Invalid dataset or member name passed to ENQ/DEQ %s(%s)\n", ds, mem);
+    return NULL;
+  }
+
+  char* PTR32 rname;
+  rname = MALLOC31(52+1);
+  if (!rname) {
+    fprintf(stderr, "Unable to obtain storage for ENQ/DEQ\n");
+    return NULL;
+  }
+  sprintf(rname, "%-44s%-8s", ds, mem);
+
+  return rname;
+}
+
+static char* PTR32 ispf_qname(const char* qn)
+{
+  unsigned int qname_len = strlen(qn);
+
+  if (qname_len > 8) {
+    fprintf(stderr, "Invalid queue name passed to ENQ/DEQ %s\n", qn);
+    return NULL;
+  }
+
+  char* PTR32 qname;
+  qname = MALLOC31(8+1);
+  if (!qname) {
+    fprintf(stderr, "Unable to obtain storage for ENQ/DEQ\n");
+    return NULL;
+  }
+  sprintf(qname, "%-8s", qn);
+
+  return qname;
+}
+
+int ispf_enq_dataset_member(const char* ds, const char* wmem) 
+{
+  char* PTR32 rname = ispf_rname(ds, wmem);
+  char* PTR32 qname = ispf_qname("SPFEDIT");
+
+  if (!rname || !qname) {
+    return 4;
+  }
+  int rc = SYEXENQ(qname, rname, strlen(rname));
+  free(rname);
+  free(qname);
+  return rc;
+}
+
+int ispf_deq_dataset_member(const char* ds, const char* wmem) 
+{
+  char* PTR32 rname = ispf_rname(ds, wmem);
+  char* PTR32 qname = ispf_qname("SPFEDIT");
+
+  if (!rname || !qname) {
+    return 4;
+  }
+  int rc = SYEXDEQ(qname, rname, strlen(rname));
+  free(rname);
+  free(qname);
+  return rc;
+}

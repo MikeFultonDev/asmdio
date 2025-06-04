@@ -51,7 +51,5 @@
   };
 
   int ispf_disk_stats_to_ispf_stats(const char* userdata, int userdata_len, struct ispf_stats* is);
-  int ispf_enq_dataset_member(const char* dataset, const char* wmem);
-  int ispf_deq_dataset_member(const char* dataset, const char* wmem);
   
 #endif

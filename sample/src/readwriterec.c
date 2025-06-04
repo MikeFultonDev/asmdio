@@ -16,149 +16,13 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "util.h"
 #include "bpamio.h"
 #include "memdir.h"
 #include "dbgopts.h"
 #include "msg.h"
-#include "ispf.h"
 
-static int can_add_record_to_block(FM_BPAMHandle* bh, size_t rec_len)
-{
-  int line_length;
-  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
-    const int hdr_size = sizeof(unsigned int);
-    line_length = rec_len + hdr_size;
-  } else if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
-    line_length = bh->dcb->dcblrecl;
-  }
-  int rc = (line_length + bh->bytes_used <= bh->block_size);
-  return rc;
-}
-
-/*
- * copy_record_to_block returns 'truncated' (non-zero if record truncated, otherwise zero)
- */
-static int copy_record_to_block(FM_BPAMHandle* bh, unsigned short usr_rec_len, const char* rec, DBG_Opts* opts)
-{
-  int truncated = 0;
-  debug(opts, "Add Record of length: %d bytes. Block bytes used: %d\n", usr_rec_len, bh->bytes_used);
- 
-  const int BDW_SIZE = 4;
-  const int RDW_SIZE = 4;
-
-  unsigned short disk_len;
-  unsigned short rec_len;
-
-  char* block_char = (char*) (bh->block);
-  int rec_hdr_size;
-  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecv) {
-    /*
-     * Variable format
-     */    
-    unsigned short* next_rec;
-    rec_hdr_size = BDW_SIZE;
-    if (bh->bytes_used == 0) {
-      /*
-       * First word is block length - clear it to 0 for now
-       */
-      unsigned int* start = (unsigned int*) (bh->block);
-      start[0] = 0;
-      bh->bytes_used += BDW_SIZE;
-    }
-    /*
-     * Determine logical and disk record length
-     */
-    next_rec = (unsigned short*) (&block_char[bh->bytes_used]);
-    disk_len = usr_rec_len + RDW_SIZE;
-    if (disk_len > bh->dcb->dcblrecl) {
-      rec_len = bh->dcb->dcblrecl - RDW_SIZE;
-      disk_len = bh->dcb->dcblrecl;
-      truncated = 1;
-    } else {
-      rec_len = usr_rec_len;
-    }
-    
-    next_rec[0] = disk_len;
-    
-    next_rec[1] = 0;
-    bh->bytes_used += RDW_SIZE;
-    debug(opts, "Disk Record length:%d bytes used:%d\n", next_rec[0], bh->bytes_used);
-  } else {
-    /*
-     * Fixed format
-     */
-    rec_hdr_size = 0;
-    if (usr_rec_len > bh->dcb->dcblrecl) {
-      disk_len = bh->dcb->dcblrecl;
-      rec_len = disk_len;
-      truncated = 1;
-    } else {
-      disk_len = usr_rec_len;
-      rec_len = disk_len;
-    }
-  }
-  if (truncated) {
-    info(opts, "Long record encountered on line %d and truncated. Maximum %d expected but record is %d bytes\n", bh->line_num, bh->dcb->dcblrecl, usr_rec_len);
-  }
-
-  debug(opts, "Copy data to disk from offset: %d for %d bytes. disk_len:%d rec_len:%d\n", bh->bytes_used, rec_len, disk_len, rec_len);
-  
-  memcpy(&block_char[bh->bytes_used], rec, rec_len);
-  bh->bytes_used += rec_len; 
- 
-  if (bh->dcb->dcbexlst.dcbrecfm & dcbrecf) {
-    /*
-     *  If the record is FIXED, then pad the record out with blanks
-     */
-    int pad_length = bh->dcb->dcblrecl - rec_len;
-    debug(opts, "Pad record %d by %d blanks\n", bh->line_num, pad_length);
-    if (pad_length > 0) {
-      memset(&block_char[bh->bytes_used], ' ', pad_length); /* msf - choose ASCII or EBCDIC space based on ccsid */
-    }
-    bh->bytes_used += pad_length;
-  }
-  return truncated;
-}
-
-static ssize_t write_record(FM_BPAMHandle* bh, size_t rec_len, const char* rec, DBG_Opts* opts)
-{
-  /*
-   * Batch up records until there is a full block and write it out 
-   */
-  ssize_t rc;
-  if (can_add_record_to_block(bh, rec_len)) {
-    int truncated = copy_record_to_block(bh, rec_len, rec, opts);
-    rc = 0;
-  } else {
-    rc = write_block(bh, opts);
-  }
-  return rc;
-}
-
-static ssize_t read_record(FM_BPAMHandle* bh, size_t max_rec_len, char* rec, size_t num_lines, DBG_Opts* opts)
-{
-  /*
-   * See if we need to read another block
-   */
-  if ((num_lines == 0) || !next_record(bh, opts)) {
-    ssize_t rc = read_block(bh, opts);
-    if (rc) {
-      fprintf(stderr, "read_block returned rc:%d\n", rc);
-      return -1;
-    }
-    next_record(bh, opts);
-  }
-
-  ssize_t rec_len = bh->next_record_len;
-  if (rec_len > max_rec_len) {
-    fprintf(stderr, "record length is too large. max:%d received: %d.\n", max_rec_len, rec_len);
-    return -1;
-  }
-  memcpy(rec, bh->next_record_start, rec_len);
-
-  return rec_len;
-}
 
 static ssize_t read_member(FM_BPAMHandle* bh, const char* ds, const char* mem_name, char* buffer, size_t buffer_len, DBG_Opts* opts)
 {
@@ -337,8 +201,10 @@ int main(int argc, char* argv[])
    * It should be the same once the blanks are excluded (if it's an FB file)
    */
   char* buffer;
-  size_t first_file_len = NUM_LINES_MEM * (bh_read_mem.dcb->dcblrecl+1);
-  size_t second_file_len = NUM_LINES_NEWMEM * (bh_read_mem.dcb->dcblrecl+1);
+  int record_len = record_length(&bh_read_mem, &opts);
+
+  size_t first_file_len = NUM_LINES_MEM * (record_len + 1);
+  size_t second_file_len = NUM_LINES_NEWMEM * (record_len + 1);
   size_t buffer_len = first_file_len + 1;
   ssize_t bytes_read;
   buffer = malloc(buffer_len);
@@ -346,7 +212,7 @@ int main(int argc, char* argv[])
     fprintf(stderr, "Unable to allocate buffer for read/write of member.\n");
     return 8;
   }
-  debug(&opts, "Read into buffer of size %d to read %d lines of record length %d\n", first_file_len, NUM_LINES_MEM, bh_read_mem.dcb->dcblrecl);
+  debug(&opts, "Read into buffer of size %d to read %d lines of record length %d\n", first_file_len, NUM_LINES_MEM, record_len);
 
   if ((bytes_read = read_member(&bh_read_mem, ds, mem, buffer, buffer_len, &opts)) < 0 ) {
     fprintf(stderr, "Unable to read back initial member %s(%s). rc:%d\n", ds, mem, rc);

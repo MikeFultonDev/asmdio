@@ -78,5 +78,14 @@
   int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
   int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts);
 
+  ssize_t write_record(FM_BPAMHandle* bh, size_t rec_len, const char* rec, DBG_Opts* opts);
+  ssize_t read_record(FM_BPAMHandle* bh, size_t max_rec_len, char* rec, size_t num_lines, DBG_Opts* opts); 
+
+  int record_length(FM_BPAMHandle* bh, DBG_Opts* opts);
+
   int close_pds(FM_BPAMHandle* bh, const DBG_Opts* opts);
+
+  int ispf_enq_dataset_member(const char* dataset, const char* wmem);
+  int ispf_deq_dataset_member(const char* dataset, const char* wmem);
+    
 #endif

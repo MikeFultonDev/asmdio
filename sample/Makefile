@@ -22,22 +22,28 @@ $(DEPDIR)/%.d: $(SRCDIR)/%.c
 
 include $(cdeps)
 
-$(BINDIR)/readwriterec: $(BLDDIR)/readwriterec.o $(corear) $(svcsar)
+$(BINDIR)/readwriterec: $(BLDDIR)/readwriterec.o $(svcsar) $(corear)
+	mkdir -p $(BINDIR)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
 
-$(BINDIR)/readupdate: $(BLDDIR)/readupdate.o $(corear) $(svcsar)
+$(BINDIR)/readupdate: $(BLDDIR)/readupdate.o $(svcsar) $(corear)
+	mkdir -p $(BINDIR)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
 
-$(BINDIR)/f2m: $(BLDDIR)/f2m.o $(BLDDIR)/fsio.o $(BLDDIR)/fmopts.o $(BLDDIR)/filemap.o $(corear) $(svcsar)
+$(BINDIR)/f2m: $(BLDDIR)/f2m.o $(BLDDIR)/fsio.o $(BLDDIR)/fmopts.o $(BLDDIR)/filemap.o $(svcsar) $(corear)
+	mkdir -p $(BINDIR)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
 
-$(BINDIR)/mlsx: $(BLDDIR)/mlsx.o $(BLDDIR)/mlsxopts.o $(corear) $(svcsar)
+$(BINDIR)/mlsx: $(BLDDIR)/mlsx.o $(BLDDIR)/mlsxopts.o $(svcsar) $(corear)
+	mkdir -p $(BINDIR)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
 
 $(BINDIR)/mchtag: $(BLDDIR)/mchtag.o
+	mkdir -p $(BINDIR)
 	$(LD) $(LDFLAGS) -o $@ $< >$@.lst
 
-$(BINDIR)/m2f: $(BLDDIR)/m2f.o $(BLDDIR)/fsio.o $(BLDDIR)/fmopts.o $(BLDDIR)/filemap.o $(corear) $(svcsar)
+$(BINDIR)/m2f: $(BLDDIR)/m2f.o $(BLDDIR)/fsio.o $(BLDDIR)/fmopts.o $(BLDDIR)/filemap.o $(svcsar) $(corear)
+	mkdir -p $(BINDIR)
 	$(LD) $(LDFLAGS) -o $@ $^ >$@.llst
 
 $(BLDDIR)/%.o: $(SRCDIR)/%.c

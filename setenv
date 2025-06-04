@@ -3,7 +3,7 @@
 
 if [ "${ASMDIOROOT}" = '' ]; then
   echo "ASMDIOROOT has to be set by the script source'ing this file" >&2
-  exit 4
+  return 4
 fi
 
 # Default build is 64-bit.  Use "MODE=31" envar to build a 31-bit version.
