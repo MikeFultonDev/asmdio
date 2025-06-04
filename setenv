@@ -1,6 +1,11 @@
 
 # Meant to be source'd. Set up environment variables for build and clean
 
+if [ "${ASMDIOROOT}" = '' ]; then
+  echo "ASMDIOROOT has to be set by the script source'ing this file" >&2
+  exit 4
+fi
+
 # Default build is 64-bit.  Use "MODE=31" envar to build a 31-bit version.
 if [ -z "${MODE}" ]; then
   MODE='64'
@@ -19,7 +24,9 @@ export ASFLAGS="--SYSPARM'(${ASAMODE})',GOFF,LIST,SUPRWARN'(425,434)'"
 export CC=xlc
 export CFLAGS="-Wc,OPT'(3)',${DATA_MODEL},AGGR,${LIST},${INFO}"
 export CFLAGS="-Wc,debug,${DATA_MODEL},AGGR,${LIST},${INFO}"
-export CPPFLAGS="-DAMODE=${MODE} -Iintinclude -Iinclude"
+export CORE_CPPFLAGS="-DAMODE=${MODE} -I${ASMDIOROOT}/core/intinclude -I${ASMDIOROOT}/core/include"
+export SERVICES_CPPFLAGS="-DAMODE=${MODE} -I${ASMDIOROOT}/core/include -I${ASMDIOROOT}/services/include -I${ASMDIOROOT}/services/intinclude"
+export SAMPLE_CPPFLAGS="-DAMODE=${MODE} -I${ASMDIOROOT}/sample/include -I${ASMDIOROOT}/services/include"
 export LD=xlc
 export LDFLAGS="-Wl,${DATA_MODEL},edit=yes,map,case=mixed"
 

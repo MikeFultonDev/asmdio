@@ -1,0 +1,9 @@
+#!/bin/env bash
+ME=$(basename $0)
+MYDIR="$(cd "$(dirname "$0")" > /dev/null 2>&1 && pwd -P)"
+cd "${MYDIR}"
+
+set -e
+
+bin/basicalloc
+exit $?

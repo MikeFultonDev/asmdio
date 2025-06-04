@@ -1,0 +1,82 @@
+#ifndef __BPAMIO_H__
+  #define __BPAMIO_H__ 1
+
+  #include "dbgopts.h"
+
+  /*
+   * struct mem_node: a pointer to this structure is returned from the call to pds_mem().
+   * It is a linked list of information about the member - each array contains a member
+   * name and possibly user data. Each next pointer points * to the next member, except the last
+   * next member which points to NULL.
+  */
+
+  #ifndef MEM_MAX
+    #define MEM_MAX (8)
+  #endif
+  #ifndef DD_MAX
+    #define DD_MAX (8)
+  #endif
+  #ifndef DS_MAX
+    #define DS_MAX (44) 
+  #endif 
+  #ifndef TTR_LEN
+    #define TTR_LEN (3)
+  #endif
+  
+  struct mem_node {
+    struct mem_node *next;
+    char name[MEM_MAX+1];
+    int is_alias:1;
+    char ttr[TTR_LEN];
+    char userdata_len;
+    char userdata[64];
+  };
+  struct mstat;
+
+  struct ihadcb;
+  struct opencb;
+  struct decb;
+
+  #ifndef PTR32
+    #ifdef VSCODE
+      #define PTR32
+    #else
+      #define PTR32 __ptr32
+    #endif
+  #endif
+  
+  typedef struct {
+    char ddname[DD_MAX+1];
+    struct ihadcb* PTR32 dcb;
+    struct opencb* PTR32 opencb;
+    struct decb* PTR32 decb;
+    void* PTR32 block;
+    char* PTR32 next_record_start;
+    size_t next_record_len;
+    size_t block_size;
+    size_t bytes_used;
+    unsigned int memstart_ttr;
+    unsigned int pdsstart_ttr;
+    int memstart_ttr_known:1;
+    int pdsstart_ttr_known:1;
+    size_t line_num;
+  } FM_BPAMHandle;
+
+  struct mem_node* pds_mem(FM_BPAMHandle* bh, const DBG_Opts* opts);
+  struct desp* PTR32 get_desp_all(const FM_BPAMHandle* bh, const DBG_Opts* opts);
+  struct mem_node* find_mem(FM_BPAMHandle* bh, const char* memname, struct mem_node* match_node, const DBG_Opts* opts);
+  struct desp* PTR32 find_desp(FM_BPAMHandle* bh, const char* memname, const DBG_Opts* opts);
+  void free_desp(struct desp* PTR32, const DBG_Opts* opts);
+
+  int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);
+  int open_pds_for_read(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);
+
+  int find_member(FM_BPAMHandle* bh, const char* mem, const DBG_Opts* opts);
+  int write_member_dir_entry(const struct mstat* mstat, FM_BPAMHandle* bh, const DBG_Opts* opts);
+
+  int read_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
+  int write_block(FM_BPAMHandle* bh, const DBG_Opts* opts);
+  int next_record(FM_BPAMHandle* bh, const DBG_Opts* opts);
+
+  int close_pds(FM_BPAMHandle* bh, const DBG_Opts* opts);
+#endif
