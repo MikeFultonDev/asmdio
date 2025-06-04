@@ -12,11 +12,6 @@ cd "${ROOT}"
 #
 # It will then proceed to copy the files back again to a new temp directory
 
-#
-# MSF - currently not copying the LST file for m2f because it is VB.
-# Code needs to be restructured - see issue: https://github.com/MikeFultonDev/asmdio/issues/45
-#
-
 hlq=$(hlq)
 mlq="DIO.F2M"
 f2mtmpdir="/tmp/diof2m$$"
