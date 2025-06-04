@@ -17,6 +17,6 @@ set -e
 
 . ./setenv
 
-#gmake --makefile=Makefile_src
-#gmake --makefile=Makefile_test
-#gmake --makefile=Makefile_sample
+(cd core && gmake)
+(cd services && gmake)
+(cd sample && gmake)

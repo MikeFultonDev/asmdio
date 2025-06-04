@@ -170,7 +170,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
 
       start = clock();
       char* rec;
-      ssize_t rec_len;
+      size_t rec_len;
       while (read_record_direct(&bh, &rec, &rec_len, &opts->dbg) >= 0) {
         finish = clock();
         read_time += (finish - start);

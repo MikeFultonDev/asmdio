@@ -10,7 +10,7 @@ objects := $(cobjs)
 cdeps   := $(patsubst $(SRCDIR)/%,$(DEPDIR)/%,$(csource:.c=.d))
 pgms    := $(BINDIR)/f2m $(BINDIR)/m2f $(BINDIR)/mlsx $(BINDIR)/mchtag $(BINDIR)/readupdate $(BINDIR)/readwriterec
 
-all: $(ARDIR)/$(archive)
+all-services: $(ARDIR)/$(archive)
 
 $(ARDIR)/$(archive): $(objects)
 	mkdir -p $(ARDIR)
@@ -22,7 +22,7 @@ clean:
 $(DEPDIR)/%.d: $(SRCDIR)/%.c
 	mkdir -p $(DEPDIR) ; \
 	rm -f $@; \
-	clang -MM -MP $(SERVICES_CPPFLAGS) $< > $@;
+	clang -MM -MT $(BLDDIR)/$(*F).o $(SERVICES_CPPFLAGS) $< > $@;
 
 include $(cdeps)
 

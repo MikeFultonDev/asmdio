@@ -10,7 +10,7 @@ cobjs   := $(patsubst $(SRCDIR)/%,$(BLDDIR)/%,$(csource:.c=.o))
 objects := $(cobjs)
 cdeps   := $(patsubst $(SRCDIR)/%,$(DEPDIR)/%,$(csource:.c=.d))
 pgms    := $(BINDIR)/f2m $(BINDIR)/m2f $(BINDIR)/mlsx $(BINDIR)/mchtag $(BINDIR)/readwriterec
-all: $(pgms)
+all-samples: $(pgms)
 
 clean:
 	rm -rf $(BLDDIR) $(BINDIR) $(DEPDIR)
@@ -18,7 +18,7 @@ clean:
 $(DEPDIR)/%.d: $(SRCDIR)/%.c
 	mkdir -p $(DEPDIR) ; \
 	rm -f $@; \
-	clang -MM -MP $(SAMPLE_CPPFLAGS) $< > $@;
+	clang -MM -MT $(BLDDIR)/$(*F).o $(SAMPLE_CPPFLAGS) $< > $@;
 
 include $(cdeps)
 

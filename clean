@@ -1,10 +1,20 @@
-#!/bin/sh
+#!/bin/env bash
 #
 # Basic script to clean built files
 #
+ME=$(basename $0)
+export ASMDIOROOT="$(cd "$(dirname "$0")" > /dev/null 2>&1 && pwd -P)"
+
+host_config="${ASMDIOROOT}/$(hostname -s).cfg"
+if [ -e "${host_config}" ]; then
+  source "${host_config}"
+fi
+
+# Use set -e to force failure if something doesn't build
+set -e
 
 . ./setenv
 
-gmake --makefile=Makefile_src clean
-gmake --makefile=Makefile_test clean
-gmake --makefile=Makefile_sample clean
+(cd core && gmake clean)
+(cd services && gmake clean)
+(cd sample && gmake clean)

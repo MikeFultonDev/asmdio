@@ -19,18 +19,7 @@
   #ifndef DS_MAX
     #define DS_MAX (44) 
   #endif 
-  #ifndef TTR_LEN
-    #define TTR_LEN (3)
-  #endif
   
-  struct mem_node {
-    struct mem_node *next;
-    char name[MEM_MAX+1];
-    int is_alias:1;
-    char ttr[TTR_LEN];
-    char userdata_len;
-    char userdata[64];
-  };
   struct mstat;
 
   struct ihadcb;
@@ -62,9 +51,7 @@
     size_t line_num;
   } FM_BPAMHandle;
 
-  struct mem_node* pds_mem(FM_BPAMHandle* bh, const DBG_Opts* opts);
   struct desp* PTR32 get_desp_all(const FM_BPAMHandle* bh, const DBG_Opts* opts);
-  struct mem_node* find_mem(FM_BPAMHandle* bh, const char* memname, struct mem_node* match_node, const DBG_Opts* opts);
   struct desp* PTR32 find_desp(FM_BPAMHandle* bh, const char* memname, const DBG_Opts* opts);
   void free_desp(struct desp* PTR32, const DBG_Opts* opts);
 

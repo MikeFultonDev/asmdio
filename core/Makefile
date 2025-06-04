@@ -12,7 +12,7 @@ aobjs   := $(patsubst $(SRCDIR)/%,$(BLDDIR)/%,$(asource:.s=.o))
 objects := $(cobjs) $(aobjs)
 cdeps   := $(patsubst $(SRCDIR)/%,$(DEPDIR)/%,$(csource:.c=.d))
 
-all: $(ARDIR)/$(archive)
+all-core: $(ARDIR)/$(archive)
 
 $(ARDIR)/$(archive): $(objects)
 	mkdir -p $(ARDIR)
@@ -29,7 +29,7 @@ check:
 $(DEPDIR)/%.d: $(SRCDIR)/%.c
 	mkdir -p $(DEPDIR) ; \
 	rm -f $@; \
-	clang -MM -MP $(CORE_CPPFLAGS) $< > $@;
+	clang -MM -MT $(BLDDIR)/$(*F).o $(CORE_CPPFLAGS) $< > $@;
 
 include $(cdeps)
 
