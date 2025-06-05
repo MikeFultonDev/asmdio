@@ -526,9 +526,8 @@ int closememdir(MEMDIR* memdir, const DBG_Opts* opts)
 }
 
 /*
- * msf - may want to either push read/write member directory services to bpamio
- * or pull them all back and put them into memdir.
- * Right now, it's odd having a bit of both in both.
+ * Logically, writememdir_entry makes sense in memdir, but the underlying code
+ * perhaps fits better in bpamio (where this request is forwarded).
  */
 int writememdir_entry(FM_BPAMHandle* bh, const struct mstat* mstat, const DBG_Opts* opts)
 {

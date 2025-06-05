@@ -5,7 +5,6 @@
   #include "dbgopts.h"
   #include "bpamio.h"
 
-
   /*
    * MEMDIR: opaque structure (like FILE or DIR)
    * used to iterate over the members in a dataset

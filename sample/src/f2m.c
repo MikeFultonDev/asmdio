@@ -338,7 +338,7 @@ static int write_member(FM_BPAMHandle* bh, const char* dataset, const char* file
   partial_mstat.name = member;
   partial_mstat.ext_ccsid = fh.tag.ft_ccsid;
 
-  memrc = write_member_dir_entry(&partial_mstat, bh, &opts->dbg);
+  memrc = writememdir_entry(bh, &partial_mstat, &opts->dbg);
 
   rc = close_file(&fh, opts);
 

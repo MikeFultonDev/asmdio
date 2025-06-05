@@ -3,6 +3,17 @@
   
   #include "dbgopts.h"
 
+  /*
+   * info prints informational messages (controlled by the verbose flag in DBG_Opts).
+   * If the verbose flag is on, the message is printed. If it is off, it is suppressed.
+   * The parameters that follow are standard 'printf' style parameters.
+   */
   int info(const DBG_Opts* opts, const char* fmt, ...);
+
+  /*
+   * debug prints debug messages (controlled by the debug flag in DBG_Opts).
+   * If the debug flag is on, the message is printed. If it is off, it is suppressed.
+   * The parameters that follow are standard 'printf' style parameters.
+   */  
   int debug(const DBG_Opts* opts, const char* fmt, ...);
 #endif

@@ -83,7 +83,7 @@ static int write_member(FM_BPAMHandle* bh, const char* ds, const char* mem_name,
     return 8;
   }
 
-  if (ispf_enq_dataset_member(ds, mem_name)) {
+  if (enq_dataset_member(ds, mem_name, opts)) {
     fprintf(stderr, "Unable to obtain ENQ for PDS member %s(%s). Member not written\n", ds, mem_name);
     return 8;
   }
@@ -95,7 +95,7 @@ static int write_member(FM_BPAMHandle* bh, const char* ds, const char* mem_name,
     fprintf(stderr, "Unable to write directory entry for member %s(%s)\n", ds, mem_name);
     return 8;
   }
-  if (ispf_deq_dataset_member(ds, mem_name)) {
+  if (deq_dataset_member(ds, mem_name, opts)) {
     fprintf(stderr, "Unable to obtain ENQ for PDS member %s(%s). Member not written\n", ds, mem_name);
     return 8;
   }

@@ -948,12 +948,7 @@ void free_desp(struct desp* PTR32 desp, const DBG_Opts* opts)
   free(desp);
 }
 
-
-
-
-
-
-static char* PTR32 ispf_rname(const char* ds, const char* mem)
+static char* PTR32 ispf_rname(const char* ds, const char* mem, const DBG_Opts* opt)
 {
   unsigned int rname_len = strlen(ds) + strlen(mem);
 
@@ -973,7 +968,7 @@ static char* PTR32 ispf_rname(const char* ds, const char* mem)
   return rname;
 }
 
-static char* PTR32 ispf_qname(const char* qn)
+static char* PTR32 ispf_qname(const char* qn, const DBG_Opts* opt)
 {
   unsigned int qname_len = strlen(qn);
 
@@ -993,10 +988,10 @@ static char* PTR32 ispf_qname(const char* qn)
   return qname;
 }
 
-int ispf_enq_dataset_member(const char* ds, const char* wmem) 
+int enq_dataset_member(const char* ds, const char* wmem, const DBG_Opts* opts) 
 {
-  char* PTR32 rname = ispf_rname(ds, wmem);
-  char* PTR32 qname = ispf_qname("SPFEDIT");
+  char* PTR32 rname = ispf_rname(ds, wmem, opts);
+  char* PTR32 qname = ispf_qname("SPFEDIT", opts);
 
   if (!rname || !qname) {
     return 4;
@@ -1007,10 +1002,10 @@ int ispf_enq_dataset_member(const char* ds, const char* wmem)
   return rc;
 }
 
-int ispf_deq_dataset_member(const char* ds, const char* wmem) 
+int deq_dataset_member(const char* ds, const char* wmem, const DBG_Opts* opts) 
 {
-  char* PTR32 rname = ispf_rname(ds, wmem);
-  char* PTR32 qname = ispf_qname("SPFEDIT");
+  char* PTR32 rname = ispf_rname(ds, wmem, opts);
+  char* PTR32 qname = ispf_qname("SPFEDIT", opts);
 
   if (!rname || !qname) {
     return 4;
