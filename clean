@@ -15,6 +15,6 @@ set -e
 
 . ./setenv
 
-(cd core && gmake clean)
-(cd services && gmake clean)
-(cd sample && gmake clean)
+gmake -f core/Makefile clean
+gmake -f services/Makefile clean
+gmake -f sample/Makefile clean

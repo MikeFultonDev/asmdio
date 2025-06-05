@@ -16,13 +16,18 @@ if [ "${MODE}" = "64" ]; then
 fi
 
 ASAMODE="AMODE${MODE}"
-LIST="list'()',source,offset,flag'(i)',suppress'(3764)'"
-INFO="info'(cmp,cnv,cns,enu,lan,por,pro,ret)'"
+LIST="list'()',source,offset"
+INFO="flag'(i)',suppress'(3764)',info'(cmp,cnv,cns,enu,lan,por,pro,ret)'"
 
 export AS=as
 export ASFLAGS="--SYSPARM'(${ASAMODE})',GOFF,LIST,SUPRWARN'(425,434)'"
 export CC=xlc
-export CFLAGS="-Wc,OPT'(3)',${DATA_MODEL},AGGR,${LIST},${INFO}"
+
+#
+# msf - for now, build only with debug. OPT is exposing a failure
+# in f2m writing VB files, e.g. write a listing to a VB PDS member
+#
+export CFLAGS="-Wc,OPT'(3)',${DATA_MODEL},${INFO}"
 export CFLAGS="-Wc,debug,${DATA_MODEL},AGGR,${LIST},${INFO}"
 export CORE_CPPFLAGS="-DAMODE=${MODE} -I${ASMDIOROOT}/core/intinclude -I${ASMDIOROOT}/core/include"
 export SERVICES_CPPFLAGS="-DAMODE=${MODE} -I${ASMDIOROOT}/core/include -I${ASMDIOROOT}/services/include -I${ASMDIOROOT}/services/intinclude"
