@@ -1,15 +1,16 @@
-SRCDIR=src
-DEPDIR=src/deps
-BLDDIR=obj
-BINDIR=bin
-corear=../core/lib/bpamiocore.a
-svcsar=../services/lib/bpamiosvcs.a
+SRCDIR=sample/src
+DEPDIR=sample/src/deps
+BLDDIR=sample/obj
+BINDIR=sample/bin
+corear=core/lib/bpamiocore.a
+svcsar=services/lib/bpamiosvcs.a
 
 csource := $(shell find $(SRCDIR) -type f -name *.c)
 cobjs   := $(patsubst $(SRCDIR)/%,$(BLDDIR)/%,$(csource:.c=.o))
 objects := $(cobjs)
 cdeps   := $(patsubst $(SRCDIR)/%,$(DEPDIR)/%,$(csource:.c=.d))
 pgms    := $(BINDIR)/f2m $(BINDIR)/m2f $(BINDIR)/mlsx $(BINDIR)/mchtag $(BINDIR)/readwriterec
+
 all-samples: $(pgms)
 
 clean:

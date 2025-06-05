@@ -1,8 +1,8 @@
-MACDIR=maclib
-SRCDIR=src
-BLDDIR=obj
-DEPDIR=src/deps
-ARDIR=lib
+MACDIR=core/maclib
+SRCDIR=core/src
+BLDDIR=core/obj
+DEPDIR=core/src/deps
+ARDIR=core/lib
 archive=bpamiocore.a
 
 csource := $(shell find $(SRCDIR) -type f -name *.c)
