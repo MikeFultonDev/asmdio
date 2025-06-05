@@ -11,6 +11,31 @@ without having to write assembler code, and that these services are available in
 
 For applications that need to perform common I/O operations, the Language Environment C services may be a better option.
 
+## Getting Started
+
+The code is organized into 3 directories:
+
+- sample: this directory has samples that show how to use the underlying services.
+  - readwriterec: write to a PDS member, and then read back from the member
+  - mlsx: print out the members of a dataset, including aliases, extended attributes, and ISPF editor attributes
+  - f2m: copy files to PDS members
+  - m2f: copy PDS members to files
+- services: this directory has the services used by the samples. See the header files under 'include' for a
+  description of the services provided.
+- core: this directory has the core functions used by services. This is the low-level interfaces that are
+  written in a combination of C and assembler.
+
+To build the code, run `build` which is a simple script that runs the makefile for each of the 3 directories.
+The core code is built into an archive, as is the services code.
+To use the code, you can link with these archives. Ensure that the services archive is specified ahead of the
+core archive, otherwise you may end up with unresolved references to the core services.
+
+## Digging deeper
+
+If you want to see how things are implemented, and perhaps provide some new function, start with the
+`sample` code to understand how the services work, then read the `services` code, and then dive into the
+`core` code.
+
 ## References
 
 ### DSECT Layouts

@@ -1,0 +1,9 @@
+#!bin/env bash
+
+#
+# These tests are not currently self-checking.
+# If they run without abending or errors, all is good.
+#
+for tst in *test; do
+  bash "${tst}"
+done

@@ -3,11 +3,10 @@
 # Basic script to compile / link code to test dataset listing services
 #
 
-
 ME=$(basename $0)
-MYDIR="$(cd "$(dirname "$0")" > /dev/null 2>&1 && pwd -P)"
+export ASMDIOROOT="$(cd "$(dirname "$0")" > /dev/null 2>&1 && pwd -P)"
 
-host_config="${MYDIR}/$(hostname -s).cfg"
+host_config="${ASMDIOROOT}/$(hostname -s).cfg"
 if [ -e "${host_config}" ]; then
   source "${host_config}"
 fi
@@ -18,6 +17,6 @@ set -e
 
 . ./setenv
 
-gmake --makefile=Makefile_src
-gmake --makefile=Makefile_test
-gmake --makefile=Makefile_sample
+(cd core && gmake)
+(cd services && gmake)
+(cd sample && gmake)
