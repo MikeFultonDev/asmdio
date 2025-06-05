@@ -1,7 +1,7 @@
-SRCDIR=src
-DEPDIR=src/deps
-BLDDIR=obj
-ARDIR=lib
+SRCDIR=services/src
+DEPDIR=services/src/deps
+BLDDIR=services/obj
+ARDIR=services/lib
 archive=bpamiosvcs.a
 
 csource := $(shell find $(SRCDIR) -type f -name *.c)

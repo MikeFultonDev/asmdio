@@ -17,6 +17,6 @@ set -e
 
 . ./setenv
 
-(cd core && gmake)
-(cd services && gmake)
-(cd sample && gmake)
+gmake -f core/Makefile
+gmake -f services/Makefile
+gmake -f sample/Makefile
