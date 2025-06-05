@@ -75,7 +75,7 @@ static int write_member(FM_BPAMHandle* bh, const char* ds, const char* mem_name,
   struct mstat mstat;
   char userid[USERID_LEN+1];
   char* alias_name = NULL;
-  void* ttr = (void*) bh->memstart_ttr; /* msf - perhaps the TTR should not be part of the mstat? */
+  void* ttr = NULL; /* msf - perhaps the TTR should not be part of the mstat? */
 
   int ccsid = 1047;
   if (!create_mstat(&mstat, userid, alias_name, mem_name, ttr, num_lines, ccsid, opts)) {
@@ -138,10 +138,10 @@ int main(int argc, char* argv[])
 #if 1
   opts.debug = 1;
 #endif
-  FM_BPAMHandle bh_write_mem;
-  FM_BPAMHandle bh_read_mem;
-  FM_BPAMHandle bh_write_newmem;
-  FM_BPAMHandle bh_read_newmem;
+  FM_BPAMHandle* bh_write_mem;
+  FM_BPAMHandle* bh_read_mem;
+  FM_BPAMHandle* bh_write_newmem;
+  FM_BPAMHandle* bh_read_newmem;
 
   int rc;
 
@@ -160,25 +160,25 @@ int main(int argc, char* argv[])
    * Open the PDS/PDSE for write (then read, then update), then close the dataset.
    */
 
-  rc = open_pds_for_write(ds, &bh_write_mem, &opts);
+  bh_write_mem = open_pds_for_write(ds, &opts);
 
-  if (rc) {
+  if (!bh_write_mem) {
     fprintf(stderr, "Unable to open %s for write. rc:%d\n", ds, rc);
     return 8;
   }
 
-  if (write_member(&bh_write_mem, ds, mem, ascii_data, &opts)) {
+  if (write_member(bh_write_mem, ds, mem, ascii_data, &opts)) {
     fprintf(stderr, "Unable to write initial member %s(%s). rc:%d\n", ds, mem, rc);
     return 8;    
   } else {
-    fprintf(stdout, "Member %s(%s) had %d records written to it.\n", ds, mem, bh_write_mem.line_num);
+    fprintf(stdout, "Member %s(%s) had records written to it.\n", ds, mem);
   }
 
-  rc = close_pds(&bh_write_mem, &opts);
-  rc = open_pds_for_read(ds, &bh_read_mem, &opts);
+  rc = close_pds(bh_write_mem, &opts);
+  bh_read_mem = open_pds_for_read(ds, &opts);
 
-  if (rc) {
-    fprintf(stderr, "Unable to open %s for read. rc:%d\n", ds, rc);
+  if (!bh_read_mem) {
+    fprintf(stderr, "Unable to open %s for read.\n", ds);
     return 8;
   }
 
@@ -186,7 +186,7 @@ int main(int argc, char* argv[])
    * Read the member entry and validate it looks right (visual check of time stamp and number of lines in ascii_data)
    */
   struct mstat read_mstat;
-  if (readmemdir_entry(&bh_read_mem, mem, &read_mstat, &opts)) {
+  if (readmemdir_entry(bh_read_mem, mem, &read_mstat, &opts)) {
     fprintf(stderr, "Unable to read directory entry for member %s(%s)\n", ds, mem);
     return 8;
   }
@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
    * It should be the same once the blanks are excluded (if it's an FB file)
    */
   char* buffer;
-  int record_len = record_length(&bh_read_mem, &opts);
+  int record_len = record_length(bh_read_mem, &opts);
 
   size_t first_file_len = NUM_LINES_MEM * (record_len + 1);
   size_t second_file_len = NUM_LINES_NEWMEM * (record_len + 1);
@@ -214,7 +214,7 @@ int main(int argc, char* argv[])
   }
   debug(&opts, "Read into buffer of size %d to read %d lines of record length %d\n", first_file_len, NUM_LINES_MEM, record_len);
 
-  if ((bytes_read = read_member(&bh_read_mem, ds, mem, buffer, buffer_len, &opts)) < 0 ) {
+  if ((bytes_read = read_member(bh_read_mem, ds, mem, buffer, buffer_len, &opts)) < 0 ) {
     fprintf(stderr, "Unable to read back initial member %s(%s). rc:%d\n", ds, mem, rc);
     return 8;    
   }
@@ -223,11 +223,11 @@ int main(int argc, char* argv[])
       first_file_len, ascii_data, bytes_read, buffer);
   }
 
-  rc = close_pds(&bh_read_mem, &opts);
-  rc = open_pds_for_write(ds, &bh_write_newmem, &opts);
+  rc = close_pds(bh_read_mem, &opts);
+  bh_write_newmem = open_pds_for_write(ds, &opts);
 
-  if (rc) {
-    fprintf(stderr, "Unable to open %s for read. rc:%d\n", ds, rc);
+  if (!bh_write_newmem) {
+    fprintf(stderr, "Unable to open %s for read.\n", ds);
     return 8;
   }  
   free(buffer);
@@ -243,22 +243,22 @@ int main(int argc, char* argv[])
   }
   sprintf(buffer, "%s%s", ascii_data, ascii_extra_data);
   
-  if (write_member(&bh_write_newmem, ds, newmem, buffer, &opts)) {
+  if (write_member(bh_write_newmem, ds, newmem, buffer, &opts)) {
     fprintf(stderr, "Unable to write initial new member %s(%s). rc:%d\n", ds, newmem, rc);
     return 8;    
   }
 
-  rc = close_pds(&bh_write_newmem, &opts);
-  rc = open_pds_for_read(ds, &bh_read_newmem, &opts);
+  rc = close_pds(bh_write_newmem, &opts);
+  bh_read_newmem = open_pds_for_read(ds, &opts);
 
-  if (rc) {
-    fprintf(stderr, "Unable to open %s for read. rc:%d\n", ds, rc);
+  if (!bh_read_newmem) {
+    fprintf(stderr, "Unable to open %s for read.\n", ds);
     return 8;
   }    
   /*
    * Read the new member entry and validate it looks right (visual check of time stamp and number of lines in ascii_data and ascii_extra_data)
    */
-  if (readmemdir_entry(&bh_read_newmem, newmem, &read_mstat, &opts)) {
+  if (readmemdir_entry(bh_read_newmem, newmem, &read_mstat, &opts)) {
     fprintf(stderr, "Unable to read directory entry for member %s(%s)\n", ds, newmem);
     return 8;
   }
@@ -267,7 +267,7 @@ int main(int argc, char* argv[])
   if (read_mstat.ispf_stats) {
     fprintf(stdout, "Member %s has %d current lines\n", newmem, read_mstat.ispf_current_lines);
   }
-  if ((bytes_read = read_member(&bh_read_newmem, ds, newmem, buffer, buffer_len, &opts)) < 0 ) {
+  if ((bytes_read = read_member(bh_read_newmem, ds, newmem, buffer, buffer_len, &opts)) < 0 ) {
     fprintf(stderr, "Unable to read back initial member %s(%s). rc:%d\n", ds, newmem, rc);
     return 8;    
   }
@@ -275,7 +275,7 @@ int main(int argc, char* argv[])
     fprintf(stderr, "Expected to read %d bytes with value \n%s%s but got %d bytes with value \n%s", buffer_len, ascii_data, ascii_extra_data, bytes_read, buffer);
   }
 
-  rc = close_pds(&bh_read_newmem, &opts);
+  rc = close_pds(bh_read_newmem, &opts);
 
   return 0;
 }

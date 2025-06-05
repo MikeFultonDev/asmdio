@@ -401,7 +401,7 @@ static int copy_files_to_multiple_dataset_members(const FM_Table* table, const c
   int ext;
   char dataset_buffer[DS_MAX+1];
   const char* dataset;
-  FM_BPAMHandle dd;
+  FM_BPAMHandle* dd;
 
   for (ext=0; ext < table->size; ext++) {
     const char* extname = table->entry[ext].key;
@@ -411,14 +411,14 @@ static int copy_files_to_multiple_dataset_members(const FM_Table* table, const c
       rc |= 2;
       continue;
     }
-    if (open_pds_for_write(dataset, &dd, &opts->dbg)) {
+    if (!(dd = open_pds_for_write(dataset, &opts->dbg))) {
       fprintf(stderr, "Unable to open dataset %s for write. Extension skipped\n", dataset);
       rc |= 4;
       continue;
     }
-    rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
+    rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, dd, dataset, opts);
 
-    if (close_pds(&dd, &opts->dbg)) {
+    if (close_pds(dd, &opts->dbg)) {
       fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
       rc |= 8;
       continue;
@@ -431,7 +431,7 @@ static int copy_files_to_one_dataset_members(glob_t* glob_set, const FM_Table* t
 {
   int rc = 0;
   int ext;
-  FM_BPAMHandle dd;
+  FM_BPAMHandle* dd;
 
   char dataset_buffer[DS_MAX+1];
   const char* dataset;
@@ -444,14 +444,14 @@ static int copy_files_to_one_dataset_members(glob_t* glob_set, const FM_Table* t
     fprintf(stderr, "Copy not performed.\n");
     return 8;
   }
-  if (open_pds_for_write(dataset, &dd, &opts->dbg)) {
+  if (!(dd = open_pds_for_write(dataset, &opts->dbg))) {
     fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
     return 4;
   }
   for (ext=0; ext < table->size; ext++) {
-    rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, &dd, dataset, opts);
+    rc |= copy_files(table, table->entry[ext].count, table->entry[ext].table, dd, dataset, opts);
   }
-  if (close_pds(&dd, &opts->dbg)) {
+  if (close_pds(dd, &opts->dbg)) {
     fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
     rc |= 8;
   }

@@ -12,6 +12,7 @@
 #include "memdir.h"
 #include "ztime.h"
 #include "bpamio.h"
+#include "bpamint.h"
 #include "ispf.h"
 #include "dio.h"
 

@@ -101,7 +101,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
 {
   int rc = 0;
   int ext;
-  FM_BPAMHandle bh;
+  FM_BPAMHandle* bh;
   int sorttime = 0;
   int sortreverse = 0;
 
@@ -136,7 +136,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
 
   start = clock();
 
-  if (open_pds_for_read(dataset, &bh, &opts->dbg)) {
+  if (!(bh = open_pds_for_read(dataset, &opts->dbg))) {
     fprintf(stderr, "Unable to allocate DDName for dataset %s. Files not copied.\n", dataset);
     return 4;
   }  
@@ -161,7 +161,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
       finish = clock();
       write_openclose_time += (finish - start);
       start = clock();
-      if (find_member(&bh, mem->name, &opts->dbg)) {
+      if (find_member(bh, mem->name, &opts->dbg)) {
         fprintf(stderr, "Unable to locate PDS member %s\n", mem->name);
         continue;
       }
@@ -171,7 +171,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
       start = clock();
       char* rec;
       size_t rec_len;
-      while (read_record_direct(&bh, &rec, &rec_len, &opts->dbg) >= 0) {
+      while (read_record_direct(bh, &rec, &rec_len, &opts->dbg) >= 0) {
         finish = clock();
         read_time += (finish - start);
 
@@ -197,7 +197,7 @@ static int copy_members_to_files(const char* dataset_pattern, const char* dir, F
   }
 
   start = clock();
-  if (close_pds(&bh, &opts->dbg)) {
+  if (close_pds(bh, &opts->dbg)) {
     fprintf(stderr, "Unable to free DDName for dataset %s.\n", dataset);
     rc |= 8;
   }

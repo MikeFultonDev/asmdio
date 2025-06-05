@@ -34,29 +34,14 @@
     #endif
   #endif
   
-  typedef struct {
-    char ddname[DD_MAX+1];
-    struct ihadcb* PTR32 dcb;
-    struct opencb* PTR32 opencb;
-    struct decb* PTR32 decb;
-    void* PTR32 block;
-    char* PTR32 next_record_start;
-    size_t next_record_len;
-    size_t block_size;
-    size_t bytes_used;
-    unsigned int memstart_ttr;
-    unsigned int pdsstart_ttr;
-    int memstart_ttr_known:1;
-    int pdsstart_ttr_known:1;
-    size_t line_num;
-  } FM_BPAMHandle;
+  typedef struct FM_BPAMHandle_InternalStruct FM_BPAMHandle;
 
   struct desp* PTR32 get_desp_all(const FM_BPAMHandle* bh, const DBG_Opts* opts);
   struct desp* PTR32 find_desp(FM_BPAMHandle* bh, const char* memname, const DBG_Opts* opts);
   void free_desp(struct desp* PTR32, const DBG_Opts* opts);
 
-  int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);
-  int open_pds_for_read(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts);
+  FM_BPAMHandle* open_pds_for_write(const char* dataset, const DBG_Opts* opts);
+  FM_BPAMHandle* open_pds_for_read(const char* dataset, const DBG_Opts* opts);
 
   int find_member(FM_BPAMHandle* bh, const char* mem, const DBG_Opts* opts);
   int write_member_dir_entry(const struct mstat* mstat, FM_BPAMHandle* bh, const DBG_Opts* opts);

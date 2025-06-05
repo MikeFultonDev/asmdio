@@ -20,6 +20,7 @@
 #include "iosvcs.h"
 #include "msg.h"
 #include "bpamio.h"
+#include "bpamint.h"
 #include "findcb.h"
 #include "ispf.h"
 #include "ztime.h"
@@ -798,22 +799,38 @@ static int alloc_pds(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opt
   return 0;
 }
 
-int open_pds_for_read(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts)
+FM_BPAMHandle* open_pds_for_read(const char* dataset, const DBG_Opts* opts)
 {
+  FM_BPAMHandle * bh = calloc(sizeof(FM_BPAMHandle), 1);
+  if (!bh) {
+    return bh;
+  }
   int rc = alloc_pds(dataset, bh, opts);
   if (!rc) {
     rc = bpam_open_read(bh, opts);
   }
-  return rc;
+  if (rc) {
+    return NULL;
+  } else {
+    return bh;
+  }
 }
 
-int open_pds_for_write(const char* dataset, FM_BPAMHandle* bh, const DBG_Opts* opts)
+FM_BPAMHandle* open_pds_for_write(const char* dataset, const DBG_Opts* opts)
 {
+  FM_BPAMHandle*bh = calloc(sizeof(FM_BPAMHandle), 1);
+  if (!bh) {
+    return bh;
+  }
   int rc = alloc_pds(dataset, bh, opts);
   if (!rc) {
     rc = bpam_open_write(bh, opts);
   }
-  return rc;
+  if (rc) {
+    return NULL;
+  } else {
+    return bh;
+  }
 }
 
 int close_pds(FM_BPAMHandle* bh, const DBG_Opts* opts)
@@ -843,6 +860,8 @@ int close_pds(FM_BPAMHandle* bh, const DBG_Opts* opts)
 
   rc = ddfree(&dd);
   debug(opts, "Free DD:%s\n", bh->ddname);
+
+  free(bh);
 
   return rc;
 }

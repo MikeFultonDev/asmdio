@@ -16,6 +16,7 @@
 #include "asmdio.h"
 #include "dio.h" 
 #include "bpamio.h"
+#include "bpamint.h"
 #include "ispf.h"
 #include "msg.h"
 #include "smde.h"
@@ -73,108 +74,6 @@ static void print_members(struct mstat* mstat_arr, size_t members)
     print_member(&mstat_arr[i], (i==0));
   }
 }
-
-#if 0
-
-static struct mstat* memnode_to_mstat(const struct mem_node* np, struct mstat* mstat, const DBG_Opts* opts)
-{
-  char* alias_name;
-  char* name;
-
-  unsigned int mem_id = (*(unsigned int*) np->ttr) >> 8;
-  mstat->mem_id = mem_id;
-  if ((np)->is_alias) {
-    mstat->is_alias = 1;
-    alias_name = malloc(8+1);
-    if (!alias_name) {
-      return NULL;
-    }
-    memcpy(alias_name, np->name, 8);
-    alias_name[8] = '\0';
-    mstat->alias_name = alias_name;
-  } else {
-    mstat->is_alias = 0;
-    name = malloc(8+1);
-    if (!name) {
-      return NULL;
-    }
-    memcpy(name, np->name, 8);
-    name[8] = '\0';
-    mstat->name = name;
-  }
-
-  if (np->userdata_len == 31 || np->userdata_len == 41) {
-    /* ISPF USER DATA */
-    /* https://tech.mikefulton.ca/ISPFStatsLayout */
-    struct ispf_stats is;
-    int rc = ispf_stats(np, &is);
-
-    if (!rc) {
-      mstat->ispf_stats = 1;
-      mstat->ispf_created = mktime(&is.create_time);
-      mstat->ispf_changed = mktime(&is.mod_time);
-
-      char* ispf_id = malloc(8+1);
-      if (!ispf_id) {
-        return NULL;
-      }
-      memcpy(ispf_id, is.userid, 8);
-      ispf_id[8] = '\0';
-      mstat->ispf_id = ispf_id;
-
-      mstat->ispf_version = is.ver_num;
-      mstat->ispf_modification = is.mod_num;
-      mstat->ispf_current_lines = is.curr_num_lines;
-      mstat->ispf_initial_lines = is.init_num_lines;
-      mstat->ispf_modified_lines = is.mod_num_lines;
-    } else {
-      mstat->ispf_stats = 0;
-    }
-  } else {
-    mstat->ispf_stats = 0;
-  }
-  return mstat;
-}
-
-static struct mstat* memnodes_to_mstats(const struct mem_node* np, const DBG_Opts* opts, size_t* members)
-{
-  /*
-   * Allocate array of mstat entries for all names coming from the PDS directory.
-   * Zero out all the fields on allocation.
-   */
-  size_t entries = 0;
-  const struct mem_node* cur_np = np;
-  while (cur_np) {
-    cur_np = cur_np->next;
-    ++entries;
-  }
-  struct mstat* mstat = calloc(entries, sizeof(struct mstat));
-  if (!mstat) {
-    return NULL;
-  }
-  *members = entries;
-
-  /*
-   * Walk through the nodes and populate corresponding entries with the information
-   * available.
-   * Even though some names are fixed length, allocate them out of the heap so that
-   * it is easier to just free all pointers (and also reduce code modification if
-   * longer names ever supported) since the mstat structure is external.
-   *
-   * Entries from the PDS directory will have EITHER a name OR an alias name.
-   */
-  cur_np = np;
-  int entry = 0;
-  while (cur_np) {
-    if (!memnode_to_mstat(cur_np, &mstat[entry], opts)) {
-      return NULL;
-    }
-    cur_np = cur_np->next;
-    entry++;
-  }
-  return mstat;
-}
-#endif
 
 static struct mstat* desp_copy_name_and_alias(struct mstat* mstat, const struct smde* PTR32 smde)
 {
@@ -506,114 +405,6 @@ static void free_mstat(struct mstat* mstat, size_t entries)
   }
 }
 
-#if 0
-static MEMDIR* merge_mstat(struct mstat* mn_mstat, size_t mn_members, struct mstat* de_mstat, size_t de_members, int sort_time, int sort_reverse, const DBG_Opts* opts)
-{
-  if (mn_members != de_members) {
-    fprintf(stderr, 
-      "Internal error: Directory has %d members and alias but Directory Entry Services reports %d members aliases. These should be the same.\n", 
-      mn_members, de_members);
-    return NULL;
-  }
-  if (mn_members == 0) {
-    return NULL;
-  }
-
-  /*
-   * Sort the two arrays so they can be walked together
-   */
-  qsort(de_mstat, de_members, sizeof(struct mstat), cmp_mem_primary_alias);
-  qsort(mn_mstat, mn_members, sizeof(struct mstat), cmp_mem_primary_alias);
-
-  size_t entries = de_members;
-  struct MEMDIR_Internal* mdi = malloc(sizeof(struct MEMDIR_Internal) + (entries*sizeof(struct mstat)));
-  if (!mdi) {
-    return NULL;
-  }
-  mdi->entries = entries;
-  mdi->cur = 0;
-  struct mstat* merge_mstat = mdi->head;
- 
-  /*
-   * Copy the mn member info over first and then copy the extended
-   * information and the alias if it is missing
-   */
-  for (int i=0; i<entries; ++i) {
-    merge_mstat[i] = mn_mstat[i];
-
-    /*
-     * Make sure all names are properly dup'ed so that the original
-     * mstat structures can be completely freed
-     */
-    merge_mstat[i].name = strdup(mn_mstat[i].name);
-
-    if (merge_mstat[i].is_alias) {
-      if (merge_mstat[i].alias_name == NULL) {
-        merge_mstat[i].alias_name = strdup(de_mstat[i].alias_name);
-      } else {
-        merge_mstat[i].alias_name = strdup(mn_mstat[i].alias_name);
-      }
-    }
-    if (merge_mstat[i].ispf_stats && merge_mstat[i].ispf_id != NULL) {
-      merge_mstat[i].ispf_id = strdup(mn_mstat[i].ispf_id);
-    }
-
-    if (de_mstat[i].has_ext) {
-      merge_mstat[i].has_ext = 1;
-      if (de_mstat[i].ext_id != NULL) {
-        merge_mstat[i].ext_id = strdup(de_mstat[i].ext_id);
-      }
-      merge_mstat[i].ext_ccsid = de_mstat[i].ext_ccsid;
-      merge_mstat[i].ext_changed = de_mstat[i].ext_changed;
-    }
-  }
-
-  /*
-   * Now walk the merged list and copy in any missing names
-   * for aliases without the original name
-   */
-  for (int i=0; i<entries; ++i) {
-    if (!merge_mstat[i].is_alias) {
-      int next=i+1;
-      while (next < entries) {
-        if (!merge_mstat[next].is_alias) break;
-        if (merge_mstat[i].mem_id == merge_mstat[next].mem_id && merge_mstat[next].name == NULL) {
-          merge_mstat[next].name = strdup(merge_mstat[i].name);
-        }
-        ++next;
-      }
-    }
-  }
-
-  free_mstat(de_mstat, entries);
-  free(de_mstat);
-  free_mstat(mn_mstat, entries);
-  free(mn_mstat);
-
-  /*
-   * Sort the array of mstat information
-   */
-  if (sort_time) {
-    if (sort_reverse) {
-      qsort(merge_mstat, entries, sizeof(struct mstat), cmp_mem_reverse_time);
-    } else {
-      qsort(merge_mstat, entries, sizeof(struct mstat), cmp_mem_time);
-    }
-  } else {
-    if (sort_reverse) {
-      qsort(merge_mstat, entries, sizeof(struct mstat), cmp_mem_reverse_name);
-    } else {
-      qsort(merge_mstat, entries, sizeof(struct mstat), cmp_mem_name);
-    }
-  }
-
-  if (opts->debug) {
-    print_members(merge_mstat, entries);
-  }
-    
-  return (MEMDIR*) mdi;
-}
-#else
 static MEMDIR* mstat_to_mdir(struct mstat* de_mstat, size_t de_members, int sort_time, int sort_reverse, const DBG_Opts* opts)
 {
   if (de_members == 0) {
@@ -693,39 +484,24 @@ static MEMDIR* mstat_to_mdir(struct mstat* de_mstat, size_t de_members, int sort
     
   return (MEMDIR*) mdi;
 }
-#endif
 
 MEMDIR* openmemdir(const char* dataset, int sort_time, int sort_reverse, const DBG_Opts* opts)
 {
-  FM_BPAMHandle bh;
+  FM_BPAMHandle* bh;
   size_t de_members;
-  if (open_pds_for_read(dataset, &bh, opts)) {
+  if (!(bh = open_pds_for_read(dataset, opts))) {
     return NULL;
   }
-#if 0  
-  size_t mn_members;
-  struct mem_node* np = pds_mem(&bh, opts);
-#endif
-  struct desp* PTR32 desp = get_desp_all(&bh, opts);
+
+  struct desp* PTR32 desp = get_desp_all(bh, opts);
   if (desp == NULL) {
     return NULL;
   }
   struct mstat* de_mstat = desp_to_mstats(desp, opts, &de_members);
-#if 0
-  struct mstat* mn_mstat = memnodes_to_mstats(np, opts, &mn_members);
 
-  if (opts->debug) {
-    printf("Members before merge:\n");
-    print_members(mn_mstat, mn_members);
-    print_members(de_mstat, de_members);
-  }
-
-  MEMDIR* merge = merge_mstat(mn_mstat, mn_members, de_mstat, de_members, sort_time, sort_reverse, opts);
-#else
   MEMDIR* memdir = mstat_to_mdir(de_mstat, de_members, sort_time, sort_reverse, opts);
-#endif
 
-  close_pds(&bh, opts);
+  close_pds(bh, opts);
 
   return memdir;
 }
