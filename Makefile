@@ -11,7 +11,6 @@ SAMPLE_MAKEFILE   = sample/Makefile
 # Install files
 CORE_LIB          = core/lib/bpamiocore.a
 SERVICES_LIB      = services/lib/bpamiosvcs.a
-SAMPLE_BIN_DIR    = sample/bin
 
 .PHONY: all clean install
 
@@ -26,16 +25,16 @@ all:
 install: all
 	@echo "--- Installing libraries, headers, and binaries to $(PREFIX) ---"
 	@mkdir -p $(PREFIX)/lib
-	@mkdir -p $(PREFIX)/include/asmdio
+	@mkdir -p $(PREFIX)/include/asmdio/core
+	@mkdir -p $(PREFIX)/include/asmdio/services
 	@mkdir -p $(PREFIX)/bin
 	# Copy the compiled library archives from their known locations.
 	cp $(CORE_LIB) $(PREFIX)/lib/
 	cp $(SERVICES_LIB) $(PREFIX)/lib/
 	# Copy public header files into the 'asmdio' subdirectory.
-	cp core/include/*.h $(PREFIX)/include/asmdio/
-	cp services/include/*.h $(PREFIX)/include/asmdio/
+	cp core/include/*.h $(PREFIX)/include/asmdio/core
+	cp services/include/*.h $(PREFIX)/include/asmdio/services
 	# Copy the sample binaries.
-	cp $(SAMPLE_BIN_DIR)/* $(PREFIX)/bin/
 	@echo "--- Installation complete ---"
 	@echo "Libraries installed in $(PREFIX)/lib"
 	@echo "Headers installed in $(PREFIX)/include/asmdio"
