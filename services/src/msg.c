@@ -54,7 +54,6 @@ int info(const DBG_Opts* opts, const char* fmt, ...)
   va_list arg_ptr;
   int rc;
   
-  // Proceed only if verbose option is set
   if (!opts || !opts->verbose) {
     return 0;
   }
