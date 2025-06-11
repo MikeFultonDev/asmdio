@@ -7,6 +7,7 @@ void init_opts(FM_Opts* opts)
   opts->help = 0;
   opts->dbg.verbose = 0;
   opts->dbg.debug = 0;
+  opts->dbg.msg_buffer = 0;
   opts->fmdbg = 0;
   opts->map  = 1;
 }
