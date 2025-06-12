@@ -8,6 +8,7 @@
   typedef struct {
     char* buffer;
     size_t size;
+    int truncated:1; // set to 1 if buffer is truncated
   } DBG_MsgBuffer;
 
   /*
@@ -18,6 +19,7 @@
   typedef struct {
     int verbose:1;
     int debug:1;
-    DBG_MsgBuffer* msg_buffer; // If not NULL, messages are written to here.
+    DBG_MsgBuffer* info_buffer;  // If not NULL, info messages are written here.
+    DBG_MsgBuffer* error_buffer; // If not NULL, error messages are written here.
   } DBG_Opts;
 #endif
