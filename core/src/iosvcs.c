@@ -7,6 +7,7 @@
 #include "ihadcb.h"
 #include "iosvcs.h"
 #include "s99.h"
+#include "msg.h"
 
 #define DD_SYSTEM "????????"
 #define ERRNO_NONEXISTANT_FILE (67)

@@ -5,6 +5,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <_Nascii.h>
+#ifndef __e2a_l
+  size_t __e2a_l(char *buffer, size_t buflen);
+#endif
 
 #include "msg.h"
 

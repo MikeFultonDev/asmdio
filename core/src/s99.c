@@ -7,6 +7,7 @@
 #include "mem.h"
 #include "s99.h"
 #include "wrappers.h"
+#include "msg.h"
 
 static size_t text_unit_size(struct s99_text_unit* inunit) 
 {
